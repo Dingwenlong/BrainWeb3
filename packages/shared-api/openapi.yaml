@@ -1,0 +1,646 @@
+openapi: 3.1.0
+info:
+  title: BrainWeb3 API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080/api/v1
+paths:
+  /system/status:
+    get:
+      summary: Read platform bootstrap status
+      operationId: getSystemStatus
+      responses:
+        "200":
+          description: Platform status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemStatus"
+  /datasets:
+    get:
+      summary: List bootstrap dataset assets
+      operationId: listDatasets
+      responses:
+        "200":
+          description: Dataset summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DatasetSummary"
+    post:
+      summary: Upload a bootstrap EEG dataset
+      operationId: uploadDataset
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, subjectCode, title, ownerOrganization]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                subjectCode:
+                  type: string
+                title:
+                  type: string
+                description:
+                  type: string
+                ownerOrganization:
+                  type: string
+                tags:
+                  type: string
+      responses:
+        "201":
+          description: Uploaded dataset detail with receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetUploadResponse"
+  /datasets/{datasetId}:
+    get:
+      summary: Read a dataset detail record
+      operationId: getDataset
+      parameters:
+        - in: path
+          name: datasetId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dataset detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetDetail"
+  /datasets/{datasetId}/brain-activity:
+    get:
+      summary: Fetch aggregated brain activity frames
+      operationId: getBrainActivity
+      parameters:
+        - in: header
+          name: X-Actor-Id
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Role
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Org
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: datasetId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: band
+          schema:
+            type: string
+            enum: [delta, theta, alpha, beta, gamma]
+        - in: query
+          name: windowSize
+          schema:
+            type: number
+            default: 2
+        - in: query
+          name: stepSize
+          schema:
+            type: number
+            default: 0.5
+        - in: query
+          name: timeStart
+          schema:
+            type: number
+            minimum: 0
+        - in: query
+          name: timeEnd
+          schema:
+            type: number
+            exclusiveMinimum: 0
+      responses:
+        "200":
+          description: Brain activity timeline
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrainActivityResponse"
+        "403":
+          description: Brain activity requires approval
+  /access-requests:
+    post:
+      summary: Create a dataset access request
+      operationId: createAccessRequest
+      parameters:
+        - in: header
+          name: X-Actor-Id
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Role
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Org
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccessRequest"
+      responses:
+        "201":
+          description: Access request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessRequest"
+    get:
+      summary: List access requests
+      operationId: listAccessRequests
+      parameters:
+        - in: header
+          name: X-Actor-Id
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Role
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Org
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: datasetId
+          schema:
+            type: string
+        - in: query
+          name: actorId
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Access requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AccessRequest"
+  /access-requests/{requestId}/approve:
+    post:
+      summary: Approve a dataset access request
+      operationId: approveAccessRequest
+      parameters:
+        - in: header
+          name: X-Actor-Id
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Role
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Org
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessDecisionRequest"
+      responses:
+        "200":
+          description: Approved access request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessRequest"
+  /access-requests/{requestId}/reject:
+    post:
+      summary: Reject a dataset access request
+      operationId: rejectAccessRequest
+      parameters:
+        - in: header
+          name: X-Actor-Id
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Role
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Org
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessDecisionRequest"
+      responses:
+        "200":
+          description: Rejected access request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessRequest"
+  /access-requests/{requestId}/revoke:
+    post:
+      summary: Revoke a dataset access request
+      operationId: revokeAccessRequest
+      parameters:
+        - in: header
+          name: X-Actor-Id
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Role
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Org
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Revoked access request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessRequest"
+  /audits:
+    get:
+      summary: Query audit trail events
+      operationId: listAudits
+      parameters:
+        - in: header
+          name: X-Actor-Id
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Role
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Actor-Org
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: datasetId
+          schema:
+            type: string
+        - in: query
+          name: actorId
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Audit events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditEvent"
+  /trainings/preview:
+    post:
+      summary: Preview a federated training job
+      operationId: previewTraining
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingPreviewRequest"
+      responses:
+        "200":
+          description: Preview result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingPreviewResponse"
+components:
+  schemas:
+    SystemStatus:
+      type: object
+      properties:
+        application:
+          type: string
+        stage:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        chain:
+          $ref: "#/components/schemas/ChainStatus"
+        modules:
+          type: object
+          additionalProperties:
+            type: string
+    ChainStatus:
+      type: object
+      properties:
+        provider:
+          type: string
+        enabled:
+          type: boolean
+        mode:
+          type: string
+        group:
+          type: string
+        contractName:
+          type: string
+        contractAddress:
+          type: string
+        rpcPeers:
+          type: array
+          items:
+            type: string
+        transportSecurity:
+          type: string
+    DatasetSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        subjectCode:
+          type: string
+        title:
+          type: string
+        ownerOrganization:
+          type: string
+        format:
+          type: string
+        uploadStatus:
+          type: string
+        proofStatus:
+          type: string
+        trainingReadiness:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+    DataAssetProof:
+      type: object
+      properties:
+        chainProvider:
+          type: string
+        chainGroup:
+          type: string
+        contractName:
+          type: string
+        contractAddress:
+          type: string
+        sm3Hash:
+          type: string
+        ipfsCid:
+          type: string
+        offChainReference:
+          type: string
+        chainTxHash:
+          type: string
+        didHolder:
+          type: string
+        accessPolicy:
+          type: string
+        auditState:
+          type: string
+    DatasetDetail:
+      allOf:
+        - $ref: "#/components/schemas/DatasetSummary"
+        - type: object
+          properties:
+            description:
+              type: string
+            originalFilename:
+              type: string
+            fileSizeBytes:
+              type: integer
+              format: int64
+            channelCount:
+              type: integer
+            sampleCount:
+              type: integer
+            durationSeconds:
+              type: number
+            samplingRate:
+              type: integer
+            tags:
+              type: array
+              items:
+                type: string
+            proof:
+              $ref: "#/components/schemas/DataAssetProof"
+    DatasetUploadResponse:
+      type: object
+      properties:
+        dataset:
+          $ref: "#/components/schemas/DatasetDetail"
+        uploadReceipt:
+          type: string
+    BrainActivityResponse:
+      type: object
+      properties:
+        datasetId:
+          type: string
+        samplingRate:
+          type: integer
+        band:
+          type: string
+        windowSize:
+          type: number
+        stepSize:
+          type: number
+        regions:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              label:
+                type: string
+              electrodes:
+                type: array
+                items:
+                  type: string
+        frames:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: number
+              intensities:
+                type: object
+                additionalProperties:
+                  type: number
+        qualityFlags:
+          type: array
+          items:
+            type: string
+        generatedAt:
+          type: string
+          format: date-time
+    TrainingPreviewRequest:
+      type: object
+      required: [name, datasetIds, rounds]
+      properties:
+        name:
+          type: string
+        datasetIds:
+          type: array
+          items:
+            type: string
+        rounds:
+          type: integer
+    TrainingPreviewResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        rounds:
+          type: integer
+        participants:
+          type: integer
+        status:
+          type: string
+        nextAction:
+          type: string
+    CreateAccessRequest:
+      type: object
+      required: [datasetId, purpose, requestedDurationHours, reason]
+      properties:
+        datasetId:
+          type: string
+        purpose:
+          type: string
+        requestedDurationHours:
+          type: integer
+        reason:
+          type: string
+    AccessDecisionRequest:
+      type: object
+      required: [approvedDurationHours, policy]
+      properties:
+        approvedDurationHours:
+          type: integer
+        policy:
+          type: string
+    AccessRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        datasetId:
+          type: string
+        actorId:
+          type: string
+        actorRole:
+          type: string
+        actorOrg:
+          type: string
+        purpose:
+          type: string
+        requestedDurationHours:
+          type: integer
+        reason:
+          type: string
+        status:
+          type: string
+        policyNote:
+          type: string
+        approvedDurationHours:
+          type: integer
+        approverId:
+          type: string
+        approverRole:
+          type: string
+        approverOrg:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        decidedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        datasetId:
+          type: string
+        actorId:
+          type: string
+        actorRole:
+          type: string
+        actorOrg:
+          type: string
+        action:
+          type: string
+        status:
+          type: string
+        detail:
+          type: string
+        createdAt:
+          type: string
+          format: date-time

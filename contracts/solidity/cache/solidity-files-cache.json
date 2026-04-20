@@ -1,0 +1,180 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "D:\\Devs\\BrainWeb3\\contracts\\solidity\\contracts\\AccessControl.sol": {
+      "lastModificationDate": 1776654635483,
+      "contentHash": "d97da770d77547496ce4475eb3e7741e",
+      "sourceName": "contracts/AccessControl.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.11"
+      ],
+      "artifacts": [
+        "AccessControl"
+      ]
+    },
+    "D:\\Devs\\BrainWeb3\\contracts\\solidity\\contracts\\ContributionLedger.sol": {
+      "lastModificationDate": 1776654635483,
+      "contentHash": "e8c8cb3b0040cc2ba56b6570803f931d",
+      "sourceName": "contracts/ContributionLedger.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.11"
+      ],
+      "artifacts": [
+        "ContributionLedger"
+      ]
+    },
+    "D:\\Devs\\BrainWeb3\\contracts\\solidity\\contracts\\DataNotary.sol": {
+      "lastModificationDate": 1776654635481,
+      "contentHash": "a0196e1360683bf4a85bf9fd8d303bfb",
+      "sourceName": "contracts/DataNotary.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.11"
+      ],
+      "artifacts": [
+        "DataNotary"
+      ]
+    },
+    "D:\\Devs\\BrainWeb3\\contracts\\solidity\\contracts\\DestroyManager.sol": {
+      "lastModificationDate": 1776654635484,
+      "contentHash": "3c3da88a439fc5ff0a1c322bbf141032",
+      "sourceName": "contracts/DestroyManager.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.11"
+      ],
+      "artifacts": [
+        "DestroyManager"
+      ]
+    },
+    "D:\\Devs\\BrainWeb3\\contracts\\solidity\\contracts\\DidRegistry.sol": {
+      "lastModificationDate": 1776654635485,
+      "contentHash": "14ce8995ce1d4dfa65d13b42ff1dbc29",
+      "sourceName": "contracts/DidRegistry.sol",
+      "solcConfig": {
+        "version": "0.8.11",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.11"
+      ],
+      "artifacts": [
+        "DidRegistry"
+      ]
+    }
+  }
+}

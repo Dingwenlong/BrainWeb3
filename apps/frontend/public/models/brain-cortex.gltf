@@ -1,0 +1,144 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "THREE.GLTFExporter r184"
+  },
+  "scenes": [
+    {
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "scene": 0,
+  "nodes": [
+    {
+      "mesh": 0
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 233772,
+      "target": 34962,
+      "byteStride": 12
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 233772,
+      "byteLength": 233772,
+      "target": 34962,
+      "byteStride": 12
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 467544,
+      "byteLength": 155848,
+      "target": 34962,
+      "byteStride": 8
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 623392,
+      "byteLength": 228480,
+      "target": 34963
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 851872,
+      "uri": "brain-cortex.bin"
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 19481,
+      "max": [
+        1.5066298246383667,
+        1.1710530519485474,
+        1.6858019828796387
+      ],
+      "min": [
+        -1.4999593496322632,
+        -0.9229839444160461,
+        -1.6905165910720825
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 19481,
+      "max": [
+        1,
+        0.9999735951423645,
+        0.999952495098114
+      ],
+      "min": [
+        -0.9997745156288147,
+        -0.9998825788497925,
+        -0.9995778799057007
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 19481,
+      "max": [
+        1.0031249523162842,
+        1
+      ],
+      "min": [
+        -0.0031250000465661287,
+        0
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5123,
+      "count": 114240,
+      "max": [
+        19480
+      ],
+      "min": [
+        0
+      ],
+      "type": "SCALAR"
+    }
+  ],
+  "materials": [
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.48514994004665124,
+          0.5775804404214573,
+          0.6038273388475408,
+          1
+        ],
+        "metallicFactor": 0.04,
+        "roughnessFactor": 0.68
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "mode": 4,
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3,
+          "material": 0
+        }
+      ]
+    }
+  ]
+}

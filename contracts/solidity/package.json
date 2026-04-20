@@ -1,0 +1,13 @@
+{
+  "name": "@brainweb3/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node"
+  },
+  "devDependencies": {
+    "hardhat": "^2.22.19"
+  }
+}

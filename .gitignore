@@ -1,0 +1,36 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Java
+target/
+.mvn/
+
+# Python
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+
+# Environment
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Docker
+.docker/
+.fisco/
+.brainweb3-storage/
+.brainweb3-samples/
+.codex-temp/
+
+# Coverage
+coverage/
+dist/

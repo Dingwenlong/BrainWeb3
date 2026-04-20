@@ -1,0 +1,59 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: brainweb3-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-brainweb3}
+      MYSQL_USER: ${MYSQL_USERNAME:-brainweb3}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-brainweb3}
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: brainweb3-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+
+  ipfs:
+    image: ipfs/kubo:latest
+    container_name: brainweb3-ipfs
+    restart: unless-stopped
+    ports:
+      - "${IPFS_SWARM_PORT:-4001}:4001"
+      - "${IPFS_API_PORT:-5001}:5001"
+      - "${IPFS_GATEWAY_PORT:-8088}:8080"
+    volumes:
+      - ipfs-data:/data/ipfs
+
+  minio:
+    image: minio/minio
+    container_name: brainweb3-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-brainweb3}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-brainweb3secret}
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+
+volumes:
+  mysql-data:
+  redis-data:
+  ipfs-data:
+  minio-data:

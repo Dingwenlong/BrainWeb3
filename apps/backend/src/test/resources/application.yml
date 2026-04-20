@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:brainweb3;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+brainweb3:
+  demo:
+    sample-root: .brainweb3-test-samples
+  chain:
+    enabled: false
+  storage:
+    provider: local

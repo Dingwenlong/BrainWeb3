@@ -1,0 +1,16 @@
+{
+  "name": "brainweb3-workspace",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/frontend",
+    "contracts/solidity"
+  ],
+  "scripts": {
+    "dev:frontend": "npm --workspace apps/frontend run dev -- --host 0.0.0.0",
+    "build:frontend": "npm --workspace apps/frontend run build",
+    "test:frontend": "npm --workspace apps/frontend run test",
+    "build:contracts": "npm --workspace contracts/solidity run compile",
+    "test:contracts": "npm --workspace contracts/solidity run test"
+  }
+}
