@@ -11,6 +11,7 @@ public record DatasetSummaryResponse(
     String uploadStatus,
     String proofStatus,
     String trainingReadiness,
+    String destructionStatus,
     Instant updatedAt
 ) {
 }

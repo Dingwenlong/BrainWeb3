@@ -10,7 +10,8 @@ import org.springframework.web.client.RestTemplate;
 @EnableConfigurationProperties({
     EegServiceProperties.class,
     ChainProperties.class,
-    StorageProperties.class
+    StorageProperties.class,
+    IdentityProperties.class
 })
 public class HttpClientConfiguration {
 

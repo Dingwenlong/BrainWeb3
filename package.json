@@ -7,6 +7,8 @@
     "contracts/solidity"
   ],
   "scripts": {
+    "dev:all": "powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\start-all.ps1",
+    "dev:stop": "powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\stop-all.ps1",
     "dev:frontend": "npm --workspace apps/frontend run dev -- --host 0.0.0.0",
     "build:frontend": "npm --workspace apps/frontend run build",
     "test:frontend": "npm --workspace apps/frontend run test",

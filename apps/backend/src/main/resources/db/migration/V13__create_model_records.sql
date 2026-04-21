@@ -1,0 +1,23 @@
+create table if not exists model_records (
+    id varchar(40) primary key,
+    training_job_id varchar(40) not null unique,
+    dataset_id varchar(40) not null,
+    dataset_title varchar(200) not null,
+    actor_id varchar(80) not null,
+    actor_role varchar(40) not null,
+    actor_org varchar(160) not null,
+    orchestrator varchar(40) not null,
+    algorithm varchar(80) not null,
+    model_name varchar(120) not null,
+    objective varchar(255) not null,
+    governance_status varchar(40) not null,
+    governance_note varchar(255),
+    artifact_ref varchar(120) not null,
+    metric_summary varchar(255),
+    result_summary varchar(1000),
+    last_governed_by varchar(80),
+    created_at timestamp(6) not null,
+    updated_at timestamp(6) not null,
+    governed_at timestamp(6),
+    completed_at timestamp(6)
+);

@@ -32,4 +32,19 @@ public class LocalStorageGateway implements StorageGateway {
       throw new IllegalStateException("Failed to persist uploaded dataset file.", exception);
     }
   }
+
+  @Override
+  public void delete(StorageDeleteCommand command) {
+    String storageKey = command.storageKey() == null ? "" : command.storageKey().trim();
+    if (storageKey.isBlank()) {
+      throw new IllegalStateException("Missing storage key for local deletion.");
+    }
+
+    try {
+      Path targetPath = localRoot.resolve(storageKey);
+      Files.deleteIfExists(targetPath);
+    } catch (IOException exception) {
+      throw new IllegalStateException("Failed to delete dataset file from local storage.", exception);
+    }
+  }
 }

@@ -27,9 +27,18 @@ public class AuditController {
   public List<AuditEventResponse> list(
       @RequestParam(required = false) String datasetId,
       @RequestParam(required = false) String actorId,
+      @RequestParam(required = false) String action,
+      @RequestParam(required = false) String status,
+      @RequestParam(required = false) String actorOrg,
       HttpServletRequest servletRequest
   ) {
-    actorContextResolver.resolveRequired(servletRequest);
-    return auditService.listEvents(datasetId, actorId);
+    return auditService.listEvents(
+        actorContextResolver.resolveRequired(servletRequest),
+        datasetId,
+        actorId,
+        action,
+        status,
+        actorOrg
+    );
   }
 }

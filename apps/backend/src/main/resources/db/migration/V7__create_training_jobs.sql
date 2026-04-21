@@ -1,0 +1,25 @@
+create table training_jobs (
+    id varchar(40) not null primary key,
+    dataset_id varchar(40) not null,
+    dataset_title varchar(200) not null,
+    actor_id varchar(80) not null,
+    actor_role varchar(40) not null,
+    actor_org varchar(160) not null,
+    orchestrator varchar(40) not null,
+    algorithm varchar(80) not null,
+    model_name varchar(120) not null,
+    objective varchar(255) not null,
+    requested_rounds integer not null,
+    completed_rounds integer not null,
+    status varchar(40) not null,
+    external_job_ref varchar(80),
+    latest_message varchar(255),
+    metric_summary varchar(255),
+    result_summary varchar(1000),
+    created_at timestamp(6) not null,
+    updated_at timestamp(6) not null,
+    started_at timestamp(6),
+    completed_at timestamp(6),
+    constraint fk_training_jobs_dataset
+        foreign key (dataset_id) references datasets (id)
+);

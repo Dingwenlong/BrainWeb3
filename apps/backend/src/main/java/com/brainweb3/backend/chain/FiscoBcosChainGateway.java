@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -35,25 +36,27 @@ public class FiscoBcosChainGateway implements ChainGateway, AutoCloseable {
   private volatile BcosSDK sdk;
   private volatile Client client;
   private volatile AssembleTransactionProcessor transactionProcessor;
-  private volatile String contractAddress;
+  private volatile String dataContractAddress;
+  private volatile String businessContractAddress;
 
   public FiscoBcosChainGateway(ChainProperties chainProperties, ResourceLoader resourceLoader) {
     this.chainProperties = chainProperties;
     this.resourceLoader = resourceLoader;
-    this.contractAddress = normalize(chainProperties.getContractAddress());
+    this.dataContractAddress = normalize(chainProperties.getContractAddress());
+    this.businessContractAddress = normalize(chainProperties.getBusinessContractAddress());
   }
 
   @Override
   public ChainRegistrationReceipt registerDataAsset(ChainRegistrationCommand command) {
     try {
       ensureReady();
-      String activeContractAddress = resolveContractAddress();
+      ContractBinding dataContract = resolveDataContract();
       String ownerDid = "did:brainweb3:%s".formatted(slugify(command.ownerOrganization()));
       String chainHash = buildChainHash(command.fingerprint());
 
       TransactionResponse response = transactionProcessor.sendTransactionAndGetResponse(
-          activeContractAddress,
-          loadAbi(),
+          dataContract.address(),
+          loadResource(dataContract.abiPath()),
           "registerDataAsset",
           List.of(
               command.datasetId(),
@@ -73,8 +76,8 @@ public class FiscoBcosChainGateway implements ChainGateway, AutoCloseable {
       return new ChainRegistrationReceipt(
           normalize(chainProperties.getProvider()),
           normalize(chainProperties.getGroup()).isBlank() ? "group0" : chainProperties.getGroup(),
-          normalize(chainProperties.getContractName()).isBlank() ? "DataNotary" : chainProperties.getContractName(),
-          activeContractAddress,
+          dataContract.contractName(),
+          dataContract.address(),
           chainHash,
           command.offChainReference(),
           command.offChainReference(),
@@ -85,6 +88,49 @@ public class FiscoBcosChainGateway implements ChainGateway, AutoCloseable {
       );
     } catch (Exception exception) {
       throw new IllegalStateException("Failed to register dataset on FISCO BCOS.", exception);
+    }
+  }
+
+  @Override
+  public ChainBusinessEventReceipt recordBusinessEvent(ChainBusinessEventCommand command) {
+    try {
+      ensureReady();
+      ContractBinding businessContract = resolveBusinessContract();
+      String eventHash = buildChainHash(buildBusinessEventSeed(command));
+      String ownerDid = "did:brainweb3:%s".formatted(slugify(command.actorOrg()));
+      String anchorAssetId = buildBusinessAnchorId(command, eventHash);
+
+      TransactionResponse response = transactionProcessor.sendTransactionAndGetResponse(
+          businessContract.address(),
+          loadResource(businessContract.abiPath()),
+          "registerDataAsset",
+          List.of(
+              anchorAssetId,
+              ownerDid,
+              eventHash,
+              buildBusinessAnchorReference(command)
+          )
+      );
+
+      TransactionReceipt receipt = response.getTransactionReceipt();
+      if (receipt == null || !receipt.isStatusOK()) {
+        throw new IllegalStateException(
+            "FISCO business-event transaction failed: %s"
+                .formatted(receipt == null ? "no receipt" : receipt.getMessage())
+        );
+      }
+
+      return new ChainBusinessEventReceipt(
+          normalize(chainProperties.getProvider()),
+          normalize(chainProperties.getGroup()).isBlank() ? "group0" : chainProperties.getGroup(),
+          businessContract.contractName(),
+          businessContract.address(),
+          eventHash,
+          receipt.getTransactionHash(),
+          Instant.now()
+      );
+    } catch (Exception exception) {
+      throw new IllegalStateException("Failed to anchor business event on FISCO BCOS.", exception);
     }
   }
 
@@ -116,34 +162,90 @@ public class FiscoBcosChainGateway implements ChainGateway, AutoCloseable {
     }
   }
 
-  private String resolveContractAddress() throws Exception {
-    if (!normalize(contractAddress).isBlank()) {
-      return contractAddress;
+  private ContractBinding resolveDataContract() throws Exception {
+    String contractName = normalize(chainProperties.getContractName()).isBlank() ? "DataNotary" : chainProperties.getContractName();
+    String abiPath = "classpath:fisco/contracts/DataNotary.abi";
+    String binPath = "classpath:fisco/contracts/DataNotary.bin";
+    String address = resolveContractAddress(
+        contractName,
+        chainProperties.isAutoDeploy(),
+        abiPath,
+        binPath,
+        true
+    );
+    return new ContractBinding(contractName, address, abiPath, binPath);
+  }
+
+  private ContractBinding resolveBusinessContract() throws Exception {
+    String contractName = normalize(chainProperties.getBusinessContractName());
+    if (contractName.isBlank()) {
+      contractName = "BusinessEventAnchor";
+    }
+    String abiPath = normalize(chainProperties.getBusinessContractAbiPath()).isBlank()
+        ? "classpath:fisco/contracts/DataNotary.abi"
+        : chainProperties.getBusinessContractAbiPath();
+    String binPath = normalize(chainProperties.getBusinessContractBinPath()).isBlank()
+        ? "classpath:fisco/contracts/DataNotary.bin"
+        : chainProperties.getBusinessContractBinPath();
+    String explicitAddress = normalize(chainProperties.getBusinessContractAddress());
+    if (explicitAddress.isBlank() && !chainProperties.isBusinessContractAutoDeploy()) {
+      ContractBinding dataContract = resolveDataContract();
+      return new ContractBinding(contractName, dataContract.address(), abiPath, binPath);
+    }
+
+    String address = resolveContractAddress(
+        contractName,
+        chainProperties.isBusinessContractAutoDeploy(),
+        abiPath,
+        binPath,
+        false
+    );
+    return new ContractBinding(contractName, address, abiPath, binPath);
+  }
+
+  private String resolveContractAddress(
+      String contractName,
+      boolean autoDeploy,
+      String abiPath,
+      String binPath,
+      boolean primaryContract
+  ) throws Exception {
+    String currentAddress = primaryContract ? dataContractAddress : businessContractAddress;
+    if (!normalize(currentAddress).isBlank()) {
+      return currentAddress;
     }
 
     synchronized (monitor) {
-      if (!normalize(contractAddress).isBlank()) {
-        return contractAddress;
+      currentAddress = primaryContract ? dataContractAddress : businessContractAddress;
+      if (!normalize(currentAddress).isBlank()) {
+        return currentAddress;
       }
-      if (!chainProperties.isAutoDeploy()) {
-        throw new IllegalStateException("CHAIN_CONTRACT_ADDRESS is required when auto deployment is disabled.");
+      if (!autoDeploy) {
+        throw new IllegalStateException(
+            "%s address is required when auto deployment is disabled.".formatted(contractName)
+        );
       }
 
       TransactionResponse deployResponse = transactionProcessor.deployAndGetResponse(
-          loadAbi(),
-          loadBin(),
+          loadResource(abiPath),
+          loadResource(binPath),
           List.of()
       );
       TransactionReceipt receipt = deployResponse.getTransactionReceipt();
       if (receipt == null || !receipt.isStatusOK()) {
         throw new IllegalStateException(
-            "Failed to deploy DataNotary: %s".formatted(receipt == null ? "no receipt" : receipt.getMessage())
+            "Failed to deploy %s: %s".formatted(contractName, receipt == null ? "no receipt" : receipt.getMessage())
         );
       }
 
-      contractAddress = normalize(deployResponse.getContractAddress());
-      log.info("Auto deployed {} to {}", chainProperties.getContractName(), contractAddress);
-      return contractAddress;
+      currentAddress = normalize(deployResponse.getContractAddress());
+      if (primaryContract) {
+        dataContractAddress = currentAddress;
+      } else {
+        businessContractAddress = currentAddress;
+      }
+      log.info("Auto deployed {} to {}", contractName, currentAddress);
+      return currentAddress;
     }
   }
 
@@ -153,6 +255,36 @@ public class FiscoBcosChainGateway implements ChainGateway, AutoCloseable {
       return "SM3:%s".formatted(hashValue);
     }
     return "HASH:%s".formatted(hashValue);
+  }
+
+  private String buildBusinessEventSeed(ChainBusinessEventCommand command) {
+    return String.join(
+        "|",
+        normalize(command.datasetId()),
+        normalize(command.eventType()),
+        normalize(command.referenceId()),
+        normalize(command.status()),
+        normalize(command.actorId()),
+        normalize(command.actorOrg()),
+        normalize(command.detail())
+    );
+  }
+
+  private String buildBusinessAnchorId(ChainBusinessEventCommand command, String eventHash) {
+    String normalizedEventType = slugify(command.eventType());
+    String digest = eventHash.contains(":") ? eventHash.substring(eventHash.indexOf(':') + 1) : eventHash;
+    String shortDigest = digest.length() > 16 ? digest.substring(0, 16) : digest;
+    return "evt-%s-%s".formatted(normalizedEventType, shortDigest);
+  }
+
+  private String buildBusinessAnchorReference(ChainBusinessEventCommand command) {
+    return "brainweb3://chain-event/%s/%s/%s?status=%s"
+        .formatted(
+            normalize(command.datasetId()),
+            normalize(command.eventType()),
+            normalize(command.referenceId()),
+            normalize(command.status())
+        );
   }
 
   @Override
@@ -174,21 +306,13 @@ public class FiscoBcosChainGateway implements ChainGateway, AutoCloseable {
         mode,
         normalize(chainProperties.getGroup()).isBlank() ? "group0" : chainProperties.getGroup(),
         normalize(chainProperties.getContractName()).isBlank() ? "DataNotary" : chainProperties.getContractName(),
-        normalize(contractAddress),
+        normalize(dataContractAddress),
         resolveRpcPeers(),
         resolveTransportSecurity()
     );
   }
 
-  private String loadAbi() throws IOException {
-    return readResource("classpath:fisco/contracts/DataNotary.abi");
-  }
-
-  private String loadBin() throws IOException {
-    return readResource("classpath:fisco/contracts/DataNotary.bin");
-  }
-
-  private String readResource(String location) throws IOException {
+  private String loadResource(String location) throws IOException {
     Resource resource = resourceLoader.getResource(location);
     if (!resource.exists()) {
       throw new IOException("Missing resource: " + location);
@@ -279,6 +403,14 @@ public class FiscoBcosChainGateway implements ChainGateway, AutoCloseable {
 
   private String normalize(String value) {
     return value == null ? "" : value.trim();
+  }
+
+  private record ContractBinding(
+      String contractName,
+      String address,
+      String abiPath,
+      String binPath
+  ) {
   }
 
   @Override

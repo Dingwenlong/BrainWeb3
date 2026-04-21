@@ -1,6 +1,7 @@
 package com.brainweb3.backend.access;
 
 import com.brainweb3.backend.audit.AuditService;
+import com.brainweb3.backend.chain.ChainBusinessRecordService;
 import com.brainweb3.backend.dataset.persistence.DatasetEntity;
 import com.brainweb3.backend.dataset.persistence.DatasetRepository;
 import java.time.Instant;
@@ -21,20 +22,24 @@ public class AccessRequestService {
   private final AccessRequestRepository accessRequestRepository;
   private final DatasetRepository datasetRepository;
   private final AuditService auditService;
+  private final ChainBusinessRecordService chainBusinessRecordService;
 
   public AccessRequestService(
       AccessRequestRepository accessRequestRepository,
       DatasetRepository datasetRepository,
-      AuditService auditService
+      AuditService auditService,
+      ChainBusinessRecordService chainBusinessRecordService
   ) {
     this.accessRequestRepository = accessRequestRepository;
     this.datasetRepository = datasetRepository;
     this.auditService = auditService;
+    this.chainBusinessRecordService = chainBusinessRecordService;
   }
 
   @Transactional
   public AccessRequestResponse create(ActorContext actor, CreateAccessRequest request) {
     DatasetEntity dataset = requireDataset(request.datasetId());
+    ensureDatasetAcceptingRequests(dataset);
 
     AccessRequestEntity entity = new AccessRequestEntity();
     entity.setId(nextAccessRequestId());
@@ -61,8 +66,9 @@ public class AccessRequestService {
   }
 
   @Transactional(readOnly = true)
-  public java.util.List<AccessRequestResponse> list(String datasetId, String actorId, String status) {
+  public java.util.List<AccessRequestResponse> list(ActorContext viewer, String datasetId, String actorId, String status) {
     return accessRequestRepository.findAllByOrderByCreatedAtDesc().stream()
+        .filter(entity -> isVisibleTo(viewer, entity))
         .filter(entity -> datasetId == null || datasetId.isBlank() || datasetId.equalsIgnoreCase(entity.getDatasetId()))
         .filter(entity -> actorId == null || actorId.isBlank() || actorId.equalsIgnoreCase(entity.getActorId()))
         .filter(entity -> status == null || status.isBlank() || status.equalsIgnoreCase(entity.getStatus()))
@@ -91,6 +97,14 @@ public class AccessRequestService {
         entity.getDatasetId(),
         actor,
         "ACCESS_REQUEST_APPROVED",
+        "approved",
+        "%s approved until %s".formatted(entity.getId(), entity.getExpiresAt())
+    );
+    chainBusinessRecordService.record(
+        entity.getDatasetId(),
+        actor,
+        "ACCESS_APPROVED",
+        entity.getId(),
         "approved",
         "%s approved until %s".formatted(entity.getId(), entity.getExpiresAt())
     );
@@ -150,12 +164,28 @@ public class AccessRequestService {
         "revoked",
         "%s revoked".formatted(entity.getId())
     );
+    chainBusinessRecordService.record(
+        entity.getDatasetId(),
+        actor,
+        "ACCESS_REVOKED",
+        entity.getId(),
+        "revoked",
+        "%s revoked".formatted(entity.getId())
+    );
     return toResponse(entity);
   }
 
   @Transactional(readOnly = true)
   public boolean canReadBrainActivity(String datasetId, ActorContext actor) {
+    return canAccessDataset(datasetId, actor);
+  }
+
+  @Transactional(readOnly = true)
+  public boolean canAccessDataset(String datasetId, ActorContext actor) {
     DatasetEntity dataset = requireDataset(datasetId);
+    if ("destroyed".equalsIgnoreCase(dataset.getDestructionStatus())) {
+      return false;
+    }
     if (actor.belongsTo(dataset.getOwnerOrganization())) {
       return true;
     }
@@ -189,6 +219,22 @@ public class AccessRequestService {
     if (!privilegedRole || !actor.belongsTo(dataset.getOwnerOrganization())) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Actor is not allowed to decide access requests.");
     }
+  }
+
+  private void ensureDatasetAcceptingRequests(DatasetEntity dataset) {
+    if (!"active".equalsIgnoreCase(dataset.getDestructionStatus())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Dataset is in destruction flow and cannot accept new access requests.");
+    }
+  }
+
+  private boolean isVisibleTo(ActorContext viewer, AccessRequestEntity entity) {
+    if (viewer.hasRole("admin")) {
+      return true;
+    }
+    if (viewer.hasRole("owner") || viewer.hasRole("approver")) {
+      return viewer.belongsTo(entity.getActorOrg()) || requireDataset(entity.getDatasetId()).getOwnerOrganization().equalsIgnoreCase(viewer.actorOrg());
+    }
+    return viewer.actorId() != null && viewer.actorId().equalsIgnoreCase(entity.getActorId());
   }
 
   private String nextAccessRequestId() {

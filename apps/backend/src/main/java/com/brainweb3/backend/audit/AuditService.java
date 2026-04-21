@@ -36,12 +36,37 @@ public class AuditService {
   }
 
   @Transactional(readOnly = true)
-  public List<AuditEventResponse> listEvents(String datasetId, String actorId) {
+  public List<AuditEventResponse> listEvents(
+      ActorContext viewer,
+      String datasetId,
+      String actorId,
+      String action,
+      String status,
+      String actorOrg
+  ) {
     return auditEventRepository.findAllByOrderByCreatedAtDesc().stream()
-        .filter(event -> datasetId == null || datasetId.isBlank() || datasetId.equalsIgnoreCase(event.getDatasetId()))
-        .filter(event -> actorId == null || actorId.isBlank() || actorId.equalsIgnoreCase(event.getActorId()))
+        .filter(event -> isVisibleTo(viewer, event))
+        .filter(event -> matchesIgnoreCase(datasetId, event.getDatasetId()))
+        .filter(event -> matchesIgnoreCase(actorId, event.getActorId()))
+        .filter(event -> matchesIgnoreCase(action, event.getAction()))
+        .filter(event -> matchesIgnoreCase(status, event.getStatus()))
+        .filter(event -> matchesIgnoreCase(actorOrg, event.getActorOrg()))
         .map(this::toResponse)
         .toList();
+  }
+
+  private boolean isVisibleTo(ActorContext viewer, AuditEventEntity event) {
+    if (viewer.hasRole("admin")) {
+      return true;
+    }
+    if (viewer.hasRole("owner") || viewer.hasRole("approver")) {
+      return viewer.belongsTo(event.getActorOrg());
+    }
+    return viewer.actorId() != null && viewer.actorId().equalsIgnoreCase(event.getActorId());
+  }
+
+  private boolean matchesIgnoreCase(String expected, String actual) {
+    return expected == null || expected.isBlank() || (actual != null && expected.equalsIgnoreCase(actual));
   }
 
   private AuditEventResponse toResponse(AuditEventEntity entity) {

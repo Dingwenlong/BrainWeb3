@@ -44,8 +44,7 @@ public class AccessRequestController {
       @RequestParam(required = false) String status,
       HttpServletRequest servletRequest
   ) {
-    actorContextResolver.resolveRequired(servletRequest);
-    return accessRequestService.list(datasetId, actorId, status);
+    return accessRequestService.list(actorContextResolver.resolveRequired(servletRequest), datasetId, actorId, status);
   }
 
   @PostMapping("/{requestId}/approve")

@@ -23,6 +23,23 @@ public class MockChainGateway implements ChainGateway {
   }
 
   @Override
+  public ChainBusinessEventReceipt recordBusinessEvent(ChainBusinessEventCommand command) {
+    String fingerprint = Integer.toHexString(
+        (command.datasetId() + "|" + command.eventType() + "|" + command.referenceId() + "|" + command.status()).hashCode()
+    ).replace("-", "f");
+    String normalized = (fingerprint + "00000000000000000000000000000000").substring(0, 32);
+    return new ChainBusinessEventReceipt(
+        "mock",
+        "sandbox",
+        "MockBusinessEventAnchor",
+        "mock://contracts/business-event-anchor",
+        "EVENT:%s".formatted(normalized),
+        "0x%s".formatted(normalized.substring(0, 24)),
+        command.occurredAt()
+    );
+  }
+
+  @Override
   public ChainRuntimeStatus describeStatus() {
     return new ChainRuntimeStatus(
         "mock",

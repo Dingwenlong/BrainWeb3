@@ -9,10 +9,13 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.brainweb3.backend.dataset.service.DatasetCatalogService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,17 +40,23 @@ class DatasetControllerTests {
   @Autowired
   private DatasetCatalogService datasetCatalogService;
 
+  @Autowired
+  private ObjectMapper objectMapper;
+
   private MockRestServiceServer mockServer;
+  private String ownerToken;
 
   @BeforeEach
   void setUp() {
     datasetCatalogService.resetCatalog();
     mockServer = MockRestServiceServer.bindTo(eegRestTemplate).build();
+    ownerToken = loginAs("owner-01");
   }
 
   @Test
   void listsDatasets() throws Exception {
-    mockMvc.perform(get("/api/v1/datasets"))
+    mockMvc.perform(get("/api/v1/datasets")
+            .header("Authorization", bearer(ownerToken)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(2)))
         .andExpect(jsonPath("$[0].id").value("ds-101"));
@@ -55,7 +64,8 @@ class DatasetControllerTests {
 
   @Test
   void returnsDatasetDetail() throws Exception {
-    mockMvc.perform(get("/api/v1/datasets/ds-101"))
+    mockMvc.perform(get("/api/v1/datasets/ds-101")
+            .header("Authorization", bearer(ownerToken)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.proof.ipfsCid").value("bafybeif6d4brainweb3demo101"))
         .andExpect(jsonPath("$.channelCount").value(64));
@@ -92,9 +102,7 @@ class DatasetControllerTests {
             .queryParam("band", "beta")
             .queryParam("timeStart", "5")
             .queryParam("timeEnd", "12")
-            .header("X-Actor-Id", "owner-01")
-            .header("X-Actor-Role", "owner")
-            .header("X-Actor-Org", "Huaxi Medical Union"))
+            .header("Authorization", bearer(ownerToken)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.band").value("beta"))
         .andExpect(jsonPath("$.frames[0].intensities.LEFT_FRONTAL").value(0.62));
@@ -134,7 +142,8 @@ class DatasetControllerTests {
             .param("title", "Upload Demo Session")
             .param("description", "A new upload ready for proof summary.")
             .param("ownerOrganization", "Sichuan Neuro Lab")
-            .param("tags", "upload-demo, motor"))
+            .param("tags", "upload-demo, motor")
+            .header("Authorization", bearer(ownerToken)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.dataset.id").value("ds-301"))
         .andExpect(jsonPath("$.dataset.format").value("EDF"))
@@ -147,12 +156,14 @@ class DatasetControllerTests {
         .andExpect(jsonPath("$.dataset.proof.ipfsCid").value(startsWith("bafy")))
         .andExpect(jsonPath("$.uploadReceipt").exists());
 
-    mockMvc.perform(get("/api/v1/datasets"))
+    mockMvc.perform(get("/api/v1/datasets")
+            .header("Authorization", bearer(ownerToken)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(3)))
         .andExpect(jsonPath("$[0].id").value("ds-301"));
 
-    mockMvc.perform(get("/api/v1/datasets/ds-301"))
+    mockMvc.perform(get("/api/v1/datasets/ds-301")
+            .header("Authorization", bearer(ownerToken)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.uploadStatus").value("uploaded"))
         .andExpect(jsonPath("$.proofStatus").value("notarized"))
@@ -174,7 +185,35 @@ class DatasetControllerTests {
             .file(file)
             .param("subjectCode", "PMMI-S099")
             .param("title", "Invalid Upload")
-            .param("ownerOrganization", "Sichuan Neuro Lab"))
+            .param("ownerOrganization", "Sichuan Neuro Lab")
+            .header("Authorization", bearer(ownerToken)))
         .andExpect(status().isBadRequest());
+  }
+
+  private String loginAs(String actorId) {
+    try {
+      String response = mockMvc.perform(post("/api/v1/auth/login")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(
+                  """
+                      {
+                        "actorId": "%s",
+                        "password": "brainweb3-demo"
+                      }
+                      """.formatted(actorId)
+              ))
+          .andExpect(status().isOk())
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
+      JsonNode payload = objectMapper.readTree(response);
+      return payload.path("token").asText();
+    } catch (Exception exception) {
+      throw new IllegalStateException("Failed to obtain auth token for tests.", exception);
+    }
+  }
+
+  private String bearer(String token) {
+    return "Bearer " + token;
   }
 }

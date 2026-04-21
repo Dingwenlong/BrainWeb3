@@ -1,76 +1,18 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useActorProfile } from '../composables/useActorProfile'
 import { formatOrganizationLabel, formatRoleLabel } from '../utils/labels'
 
-const presets = [
-  {
-    label: '研究员',
-    description: '提交访问申请并查看获批后的脑区数据。',
-    profile: {
-      actorId: 'researcher-01',
-      actorRole: 'researcher',
-      actorOrg: 'Sichuan Neuro Lab',
-    },
-  },
-  {
-    label: '归属方',
-    description: '代表资产机构审核请求并直接查看详情。',
-    profile: {
-      actorId: 'owner-01',
-      actorRole: 'owner',
-      actorOrg: 'Huaxi Medical Union',
-    },
-  },
-  {
-    label: '审批人',
-    description: '进入审批台处理待审核访问申请。',
-    profile: {
-      actorId: 'approver-01',
-      actorRole: 'approver',
-      actorOrg: 'Huaxi Medical Union',
-    },
-  },
-]
+const router = useRouter()
+const { actorProfile, displayName, isAdmin, logout } = useActorProfile()
 
-const { actorProfile, setActorProfile } = useActorProfile()
-
-const draft = reactive({
-  actorId: actorProfile.value.actorId,
-  actorRole: actorProfile.value.actorRole,
-  actorOrg: actorProfile.value.actorOrg,
-})
-
-const activePresetLabel = computed(
-  () =>
-    presets.find(
-      (preset) =>
-        preset.profile.actorId === actorProfile.value.actorId &&
-        preset.profile.actorRole === actorProfile.value.actorRole &&
-        preset.profile.actorOrg === actorProfile.value.actorOrg,
-    )?.label ?? '自定义',
-)
-
-watch(
-  actorProfile,
-  (profile) => {
-    draft.actorId = profile.actorId
-    draft.actorRole = profile.actorRole
-    draft.actorOrg = profile.actorOrg
-  },
-  { deep: true },
-)
-
-function applyPreset(index: number) {
-  setActorProfile(presets[index].profile)
+async function handleLogout() {
+  logout()
+  await router.replace({ name: 'login' })
 }
 
-function applyDraft() {
-  setActorProfile({
-    actorId: draft.actorId.trim() || actorProfile.value.actorId,
-    actorRole: draft.actorRole.trim() || actorProfile.value.actorRole,
-    actorOrg: draft.actorOrg.trim() || actorProfile.value.actorOrg,
-  })
+async function openAccounts() {
+  await router.push({ name: 'accounts' })
 }
 </script>
 
@@ -78,8 +20,8 @@ function applyDraft() {
   <div class="switcher">
     <div class="switcher__summary">
       <div class="switcher__summary-card">
-        <span>当前预设</span>
-        <strong>{{ activePresetLabel }}</strong>
+        <span>当前会话</span>
+        <strong>{{ displayName || actorProfile.actorId }}</strong>
       </div>
       <div class="switcher__summary-card">
         <span>角色</span>
@@ -92,36 +34,25 @@ function applyDraft() {
     </div>
 
     <div class="switcher__presets">
-      <button
-        v-for="(preset, index) in presets"
-        :key="preset.label"
-        type="button"
-        class="switcher__preset"
-        :class="{ 'switcher__preset--active': preset.label === activePresetLabel }"
-        @click="applyPreset(index)"
-      >
-        <strong>{{ preset.label }}</strong>
-        <p>{{ preset.description }}</p>
-      </button>
-    </div>
-
-    <div class="switcher__fields">
-      <label>
-        <span>Actor ID</span>
-        <input v-model="draft.actorId" type="text" />
-      </label>
-      <label>
-        <span>角色</span>
-        <input v-model="draft.actorRole" type="text" />
-      </label>
-      <label>
-        <span>机构</span>
-        <input v-model="draft.actorOrg" type="text" />
-      </label>
+      <article class="switcher__preset switcher__preset--active">
+        <strong>正式登录态</strong>
+        <p>当前操作者上下文来自后端签发的 JWT，会随所有受保护接口一起发送。</p>
+      </article>
+      <article class="switcher__preset">
+        <strong>Actor ID</strong>
+        <p>{{ actorProfile.actorId }}</p>
+      </article>
+      <article class="switcher__preset">
+        <strong>组织边界</strong>
+        <p>{{ formatOrganizationLabel(actorProfile.actorOrg) }}</p>
+      </article>
     </div>
 
     <div class="switcher__actions">
-      <button type="button" class="switcher__apply" @click="applyDraft">应用当前身份</button>
+      <button type="button" class="switcher__secondary" @click="openAccounts">
+        {{ isAdmin ? '管理账户' : '查看账户' }}
+      </button>
+      <button type="button" class="switcher__apply" @click="handleLogout">退出登录</button>
     </div>
   </div>
 </template>
@@ -133,8 +64,7 @@ function applyDraft() {
 }
 
 .switcher__summary,
-.switcher__presets,
-.switcher__fields {
+.switcher__presets {
   display: grid;
   gap: 12px;
 }
@@ -151,8 +81,7 @@ function applyDraft() {
   background: var(--bg-panel-soft);
 }
 
-.switcher__summary-card span,
-.switcher__fields span {
+.switcher__summary-card span {
   display: block;
   color: var(--text-faint);
   font-size: 0.72rem;
@@ -187,25 +116,6 @@ function applyDraft() {
   line-height: 1.45;
 }
 
-.switcher__fields {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.switcher__fields label {
-  display: grid;
-  gap: 8px;
-}
-
-.switcher__fields input {
-  width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(5, 16, 22, 0.92);
-  color: var(--text-main);
-}
-
 .switcher__actions {
   display: flex;
   justify-content: flex-end;
@@ -223,10 +133,21 @@ function applyDraft() {
   text-transform: uppercase;
 }
 
+.switcher__secondary {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(12, 24, 32, 0.92);
+  color: var(--text-main);
+  font-family: var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 900px) {
   .switcher__summary,
-  .switcher__presets,
-  .switcher__fields {
+  .switcher__presets {
     grid-template-columns: 1fr;
   }
 

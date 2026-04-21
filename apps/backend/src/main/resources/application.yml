@@ -28,6 +28,18 @@ management:
 
 brainweb3:
   stage: bootstrap
+  auth:
+    jwt-secret: ${AUTH_JWT_SECRET:brainweb3-demo-jwt-secret-2026-04-21-neural-trust-console}
+    token-ttl-hours: ${AUTH_TOKEN_TTL_HOURS:12}
+    refresh-token-ttl-days: ${AUTH_REFRESH_TOKEN_TTL_DAYS:14}
+    password-reset-ttl-minutes: ${AUTH_PASSWORD_RESET_TTL_MINUTES:30}
+    demo-password: ${AUTH_DEMO_PASSWORD:brainweb3-demo}
+  identity:
+    issuer-did: ${IDENTITY_ISSUER_DID:did:brainweb3:issuer:platform}
+    credential-ttl-days: ${IDENTITY_CREDENTIAL_TTL_DAYS:365}
+    credential-secret: ${IDENTITY_CREDENTIAL_SECRET:brainweb3-demo-identity-secret-2026-04-21}
+    revoked-actors: ${IDENTITY_REVOKED_ACTORS:}
+    revoked-organizations: ${IDENTITY_REVOKED_ORGANIZATIONS:}
   demo:
     sample-root: ${BRAINWEB3_SAMPLE_ROOT:.brainweb3-samples}
   chain:
@@ -37,6 +49,14 @@ brainweb3:
     contract-name: ${CHAIN_CONTRACT_NAME:DataNotary}
     contract-address: ${CHAIN_CONTRACT_ADDRESS:}
     auto-deploy: ${CHAIN_AUTO_DEPLOY:true}
+    business-contract-name: ${CHAIN_BUSINESS_CONTRACT_NAME:BusinessEventAnchor}
+    business-contract-address: ${CHAIN_BUSINESS_CONTRACT_ADDRESS:}
+    business-contract-auto-deploy: ${CHAIN_BUSINESS_CONTRACT_AUTO_DEPLOY:false}
+    business-contract-abi-path: ${CHAIN_BUSINESS_CONTRACT_ABI_PATH:classpath:fisco/contracts/DataNotary.abi}
+    business-contract-bin-path: ${CHAIN_BUSINESS_CONTRACT_BIN_PATH:classpath:fisco/contracts/DataNotary.bin}
+    required-event-types: ${CHAIN_REQUIRED_EVENT_TYPES:ACCESS_APPROVED,ACCESS_REVOKED,TRAINING_COMPLETED,TRAINING_FAILED,DESTRUCTION_COMPLETED}
+    optional-event-types: ${CHAIN_OPTIONAL_EVENT_TYPES:DESTRUCTION_STORAGE_PURGED,MODEL_REGISTERED,MODEL_GOVERNED}
+    disabled-event-types: ${CHAIN_DISABLED_EVENT_TYPES:}
     config-path: ${CHAIN_CONFIG_PATH:classpath:fisco/config-example.toml}
   storage:
     provider: ${STORAGE_PROVIDER:local}

@@ -1,21 +1,28 @@
 package com.brainweb3.backend.dataset.service;
 
+import com.brainweb3.backend.access.ActorContext;
 import com.brainweb3.backend.access.AccessRequestRepository;
 import com.brainweb3.backend.audit.AuditEventRepository;
+import com.brainweb3.backend.chain.ChainBusinessRecordRepository;
+import com.brainweb3.backend.chain.ChainBusinessRecordService;
 import com.brainweb3.backend.chain.ChainGateway;
 import com.brainweb3.backend.chain.ChainRegistrationCommand;
 import com.brainweb3.backend.chain.ChainRegistrationReceipt;
 import com.brainweb3.backend.dataset.api.DataAssetProofResponse;
 import com.brainweb3.backend.dataset.api.DatasetDetailResponse;
 import com.brainweb3.backend.dataset.api.DatasetSummaryResponse;
+import com.brainweb3.backend.dataset.api.UploadAuditResponse;
 import com.brainweb3.backend.dataset.persistence.DataAssetProofEntity;
 import com.brainweb3.backend.dataset.persistence.DatasetEntity;
 import com.brainweb3.backend.dataset.persistence.DatasetRepository;
 import com.brainweb3.backend.dataset.persistence.UploadAuditEntity;
 import com.brainweb3.backend.dataset.persistence.UploadAuditRepository;
+import com.brainweb3.backend.destruction.DestructionRequestRepository;
 import com.brainweb3.backend.storage.StorageGateway;
 import com.brainweb3.backend.storage.StoragePersistCommand;
 import com.brainweb3.backend.storage.StoragePersistReceipt;
+import com.brainweb3.backend.training.TrainingJobRepository;
+import com.brainweb3.backend.training.ModelRecordRepository;
 import jakarta.annotation.PostConstruct;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,8 +39,11 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -53,7 +63,13 @@ public class DatasetCatalogService {
   private final UploadAuditRepository uploadAuditRepository;
   private final AccessRequestRepository accessRequestRepository;
   private final AuditEventRepository auditEventRepository;
+  private final ChainBusinessRecordRepository chainBusinessRecordRepository;
+  private final ChainBusinessRecordService chainBusinessRecordService;
+  private final TrainingJobRepository trainingJobRepository;
+  private final ModelRecordRepository modelRecordRepository;
+  private final DestructionRequestRepository destructionRequestRepository;
   private final Path demoSampleRoot;
+  private final TransactionTemplate transactionTemplate;
 
   public DatasetCatalogService(
       ChainGateway chainGateway,
@@ -63,6 +79,12 @@ public class DatasetCatalogService {
       UploadAuditRepository uploadAuditRepository,
       AccessRequestRepository accessRequestRepository,
       AuditEventRepository auditEventRepository,
+      ChainBusinessRecordRepository chainBusinessRecordRepository,
+      ChainBusinessRecordService chainBusinessRecordService,
+      TrainingJobRepository trainingJobRepository,
+      ModelRecordRepository modelRecordRepository,
+      DestructionRequestRepository destructionRequestRepository,
+      PlatformTransactionManager transactionManager,
       @Value("${brainweb3.demo.sample-root:.brainweb3-samples}") String demoSampleRoot
   ) {
     this.chainGateway = chainGateway;
@@ -72,7 +94,13 @@ public class DatasetCatalogService {
     this.uploadAuditRepository = uploadAuditRepository;
     this.accessRequestRepository = accessRequestRepository;
     this.auditEventRepository = auditEventRepository;
+    this.chainBusinessRecordRepository = chainBusinessRecordRepository;
+    this.chainBusinessRecordService = chainBusinessRecordService;
+    this.trainingJobRepository = trainingJobRepository;
+    this.modelRecordRepository = modelRecordRepository;
+    this.destructionRequestRepository = destructionRequestRepository;
     this.demoSampleRoot = Path.of(demoSampleRoot);
+    this.transactionTemplate = new TransactionTemplate(transactionManager);
   }
 
   @PostConstruct
@@ -87,6 +115,10 @@ public class DatasetCatalogService {
     auditEventRepository.deleteAll();
     accessRequestRepository.deleteAll();
     uploadAuditRepository.deleteAll();
+    chainBusinessRecordRepository.deleteAll();
+    trainingJobRepository.deleteAll();
+    modelRecordRepository.deleteAll();
+    destructionRequestRepository.deleteAll();
     datasetRepository.deleteAll();
     seedCatalog();
   }
@@ -100,8 +132,7 @@ public class DatasetCatalogService {
 
   @Transactional(readOnly = true)
   public Optional<DatasetDetailResponse> getDataset(String datasetId) {
-    return datasetRepository.findById(datasetId)
-        .map(this::toDetail);
+    return loadDatasetDetailById(datasetId);
   }
 
   @Transactional(readOnly = true)
@@ -120,7 +151,6 @@ public class DatasetCatalogService {
         });
   }
 
-  @Transactional
   public DatasetUploadResult uploadDataset(
       MultipartFile file,
       String subjectCode,
@@ -142,8 +172,7 @@ public class DatasetCatalogService {
     Instant uploadedAt = Instant.now();
     List<String> normalizedTags = parseTags(tagsCsv, normalizedFormat);
     String traceId = "upload-%s".formatted(proofFingerprint.substring(0, 12));
-
-    DatasetEntity uploadedDataset = createPendingDataset(
+    savePendingUpload(
         datasetId,
         subjectCode,
         title,
@@ -156,10 +185,10 @@ public class DatasetCatalogService {
         durationSeconds,
         samplingRate,
         normalizedTags,
-        uploadedAt
+        uploadedAt,
+        proofFingerprint,
+        traceId
     );
-    uploadedDataset = datasetRepository.save(uploadedDataset);
-    recordAudit(uploadedDataset, "UPLOAD_ACCEPTED", "accepted", "EEG upload accepted for processing.", traceId);
 
     try {
       StoragePersistReceipt storageReceipt = persistFile(
@@ -169,42 +198,40 @@ public class DatasetCatalogService {
           subjectCode,
           fileBytes
       );
-      applyStorageReceipt(uploadedDataset, storageReceipt, uploadedAt);
-      recordAudit(uploadedDataset, "STORAGE_PERSISTED", "success", storageReceipt.storageUri(), traceId);
-      applyResolvedMetadata(uploadedDataset, storageReceipt.storageUri(), traceId);
+      Optional<EegDatasetMetadataResponse> metadata = eegMetadataGateway.getMetadata(storageReceipt.storageUri());
+      applyStorageStage(datasetId, storageReceipt, metadata, traceId);
 
-      ChainRegistrationReceipt chainReceipt = chainGateway.registerDataAsset(
-          new ChainRegistrationCommand(
-              datasetId,
-              subjectCode.trim(),
-              title.trim(),
-              ownerOrganization.trim(),
-              normalizedFormat,
-              proofFingerprint,
-              storageReceipt.offChainReference(),
-              normalizedTags,
-              uploadedAt
-          )
-      );
-      applyChainReceipt(uploadedDataset, chainReceipt, uploadedAt);
-      recordAudit(uploadedDataset, "CHAIN_REGISTERED", "success", chainReceipt.chainTxHash(), traceId);
+      ChainRegistrationReceipt chainReceipt = registerChain(loadChainCommand(datasetId));
+      applyChainStage(datasetId, chainReceipt, traceId, false);
     } catch (RuntimeException exception) {
-      uploadedDataset.setUploadStatus("failed");
-      uploadedDataset.setProofStatus("failed");
-      uploadedDataset.setTrainingReadiness("blocked");
-      uploadedDataset.setUpdatedAt(Instant.now());
-      DataAssetProofEntity proof = uploadedDataset.getProof();
-      if (proof != null && (proof.getAuditState() == null || proof.getAuditState().isBlank())) {
-        proof.setAuditState("upload-failed");
-      }
-      recordAudit(uploadedDataset, "UPLOAD_FAILED", "failed", exception.getMessage(), traceId);
-      throw exception;
+      markUploadFailure(datasetId, traceId, exception);
+      throw wrapFinalizationFailure(exception);
     }
 
     return new DatasetUploadResult(
-        toDetail(uploadedDataset),
+        loadDatasetDetailById(datasetId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dataset not found after upload.")),
         traceId
     );
+  }
+
+  public DatasetDetailResponse retryFinalization(String datasetId, ActorContext actor) {
+    validateRetryAccess(datasetId, actor);
+    String traceId = "retry-%s".formatted(UUID.randomUUID().toString().replace("-", "").substring(0, 12));
+    touchRetryRequest(datasetId, traceId);
+
+    try {
+      ChainRegistrationCommand command = loadChainCommand(datasetId);
+      Optional<EegDatasetMetadataResponse> metadata = eegMetadataGateway.getMetadata(resolveSourceUri(command.offChainReference()));
+      applyRetryMetadata(datasetId, metadata, traceId);
+      ChainRegistrationReceipt chainReceipt = registerChain(command);
+      applyChainStage(datasetId, chainReceipt, traceId, true);
+      return loadDatasetDetailById(datasetId)
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dataset not found after retry."));
+    } catch (RuntimeException exception) {
+      markUploadFailure(datasetId, traceId, exception);
+      throw wrapFinalizationFailure(exception);
+    }
   }
 
   private StoragePersistReceipt persistFile(
@@ -360,6 +387,7 @@ public class DatasetCatalogService {
             "bootstrap",
             "seed/ds-101/physionet_s001.edf",
             ds101SampleSource,
+            "9e0f8b1e4c74d6e19b5ab2d5f801c9939e0f8b1e4c74d6e19b5ab2d5f801c993",
             "bootstrap",
             "group0",
             "BootstrapDataNotary",
@@ -404,6 +432,7 @@ public class DatasetCatalogService {
             "did:brainweb3:org-westchina",
             "approval-in-flight",
             "awaiting-chain-write",
+            "c6da1c4f97b2f5d52d8fa2e4a5012048c6da1c4f97b2f5d52d8fa2e4a5012048",
             Instant.parse("2026-04-19T09:10:00Z")
         )
     ));
@@ -419,6 +448,7 @@ public class DatasetCatalogService {
         dataset.getUploadStatus(),
         dataset.getProofStatus(),
         dataset.getTrainingReadiness(),
+        dataset.getDestructionStatus(),
         dataset.getUpdatedAt()
     );
   }
@@ -437,11 +467,18 @@ public class DatasetCatalogService {
         dataset.getUploadStatus(),
         dataset.getProofStatus(),
         dataset.getTrainingReadiness(),
+        dataset.getDestructionStatus(),
         dataset.getChannelCount(),
         dataset.getSampleCount(),
         dataset.getDurationSeconds(),
         dataset.getSamplingRate(),
         List.copyOf(dataset.getTags()),
+        valueOrEmpty(dataset.getLastUploadTraceId()),
+        valueOrEmpty(dataset.getLastErrorMessage()),
+        isRetryAllowed(dataset),
+        uploadAuditRepository.findAllByDataset_IdOrderByCreatedAtDesc(dataset.getId()).stream()
+            .map(this::toUploadAudit)
+            .toList(),
         new DataAssetProofResponse(
             valueOrEmpty(proof == null ? null : proof.getChainProvider()),
             valueOrEmpty(proof == null ? null : proof.getChainGroup()),
@@ -455,6 +492,8 @@ public class DatasetCatalogService {
             valueOrEmpty(proof == null ? null : proof.getAccessPolicy()),
             valueOrEmpty(proof == null ? null : proof.getAuditState())
         ),
+        chainBusinessRecordService.listByDataset(dataset.getId()),
+        dataset.getDestroyedAt(),
         dataset.getUpdatedAt()
     );
   }
@@ -472,7 +511,9 @@ public class DatasetCatalogService {
       double durationSeconds,
       int samplingRate,
       List<String> normalizedTags,
-      Instant uploadedAt
+      Instant uploadedAt,
+      String proofFingerprint,
+      String traceId
   ) {
     DatasetEntity dataset = new DatasetEntity();
     dataset.setId(datasetId);
@@ -488,13 +529,18 @@ public class DatasetCatalogService {
     dataset.setUploadStatus("received");
     dataset.setProofStatus("pending-storage");
     dataset.setTrainingReadiness("review-required");
+    dataset.setDestructionStatus("active");
     dataset.setChannelCount(channelCount);
     dataset.setSampleCount(sampleCount);
     dataset.setDurationSeconds(durationSeconds);
     dataset.setSamplingRate(samplingRate);
     dataset.setTags(normalizedTags);
+    dataset.setProofFingerprint(proofFingerprint);
+    dataset.setLastUploadTraceId(traceId);
     dataset.setCreatedAt(uploadedAt);
     dataset.setUpdatedAt(uploadedAt);
+    dataset.setDestroyedAt(null);
+    dataset.setDestroyedBy(null);
 
     DataAssetProofEntity proof = new DataAssetProofEntity();
     proof.setAuditState("pending-proof");
@@ -505,14 +551,17 @@ public class DatasetCatalogService {
   private void applyStorageReceipt(
       DatasetEntity dataset,
       StoragePersistReceipt storageReceipt,
-      Instant updatedAt
+      String traceId
   ) {
+    Instant updatedAt = Instant.now();
     dataset.setStorageProvider(storageReceipt.provider());
     dataset.setStorageKey(storageReceipt.storageKey());
     dataset.setStorageUri(storageReceipt.storageUri());
     dataset.setUploadStatus("uploaded");
     dataset.setProofStatus("storage-persisted");
     dataset.setUpdatedAt(updatedAt);
+    dataset.setLastUploadTraceId(traceId);
+    dataset.setLastErrorMessage(null);
 
     DataAssetProofEntity proof = dataset.getProof();
     proof.setOffChainReference(storageReceipt.offChainReference());
@@ -522,12 +571,15 @@ public class DatasetCatalogService {
   private void applyChainReceipt(
       DatasetEntity dataset,
       ChainRegistrationReceipt chainReceipt,
-      Instant updatedAt
+      String traceId
   ) {
+    Instant updatedAt = Instant.now();
     dataset.setUploadStatus("uploaded");
     dataset.setProofStatus("notarized");
     dataset.setTrainingReadiness("review-required");
     dataset.setUpdatedAt(updatedAt);
+    dataset.setLastUploadTraceId(traceId);
+    dataset.setLastErrorMessage(null);
 
     DataAssetProofEntity proof = dataset.getProof();
     proof.setChainProvider(chainReceipt.chainProvider());
@@ -562,22 +614,22 @@ public class DatasetCatalogService {
 
   private void applyResolvedMetadata(
       DatasetEntity dataset,
-      String sourceUri,
+      Optional<EegDatasetMetadataResponse> metadata,
       String traceId
   ) {
-    eegMetadataGateway.getMetadata(sourceUri).ifPresentOrElse(metadata -> {
-      dataset.setFormat(metadata.format());
-      dataset.setSamplingRate(metadata.samplingRate());
-      dataset.setChannelCount(metadata.channelCount());
-      dataset.setSampleCount(metadata.sampleCount());
-      dataset.setDurationSeconds(metadata.durationSeconds());
+    metadata.ifPresentOrElse(resolved -> {
+      dataset.setFormat(resolved.format());
+      dataset.setSamplingRate(resolved.samplingRate());
+      dataset.setChannelCount(resolved.channelCount());
+      dataset.setSampleCount(resolved.sampleCount());
+      dataset.setDurationSeconds(resolved.durationSeconds());
       dataset.setUpdatedAt(Instant.now());
       recordAudit(
           dataset,
           "EEG_METADATA_PARSED",
           "success",
           "Resolved metadata via EEG service: %d channels @ %dHz."
-              .formatted(metadata.channelCount(), metadata.samplingRate()),
+              .formatted(resolved.channelCount(), resolved.samplingRate()),
           traceId
       );
     }, () -> recordAudit(
@@ -609,6 +661,7 @@ public class DatasetCatalogService {
       String storageProvider,
       String storageKey,
       String storageUri,
+      String proofFingerprint,
       String chainProvider,
       String chainGroup,
       String contractName,
@@ -634,6 +687,7 @@ public class DatasetCatalogService {
     dataset.setUploadStatus(uploadStatus);
     dataset.setProofStatus(proofStatus);
     dataset.setTrainingReadiness(trainingReadiness);
+    dataset.setDestructionStatus("active");
     dataset.setChannelCount(channelCount);
     dataset.setSampleCount(sampleCount);
     dataset.setDurationSeconds(durationSeconds);
@@ -642,8 +696,11 @@ public class DatasetCatalogService {
     dataset.setStorageProvider(storageProvider);
     dataset.setStorageKey(storageKey);
     dataset.setStorageUri(storageUri);
+    dataset.setProofFingerprint(proofFingerprint);
     dataset.setCreatedAt(updatedAt);
     dataset.setUpdatedAt(updatedAt);
+    dataset.setDestroyedAt(null);
+    dataset.setDestroyedBy(null);
 
     DataAssetProofEntity proof = new DataAssetProofEntity();
     proof.setChainProvider(chainProvider);
@@ -679,6 +736,225 @@ public class DatasetCatalogService {
 
   private String valueOrEmpty(String value) {
     return value == null ? "" : value;
+  }
+
+  private UploadAuditResponse toUploadAudit(UploadAuditEntity audit) {
+    return new UploadAuditResponse(
+        audit.getAction(),
+        audit.getStatus(),
+        audit.getMessage(),
+        audit.getTraceId(),
+        audit.getCreatedAt()
+    );
+  }
+
+  private void savePendingUpload(
+      String datasetId,
+      String subjectCode,
+      String title,
+      String description,
+      String ownerOrganization,
+      MultipartFile file,
+      String normalizedFormat,
+      int channelCount,
+      int sampleCount,
+      double durationSeconds,
+      int samplingRate,
+      List<String> normalizedTags,
+      Instant uploadedAt,
+      String proofFingerprint,
+      String traceId
+  ) {
+    transactionTemplate.executeWithoutResult(status -> {
+      DatasetEntity uploadedDataset = createPendingDataset(
+          datasetId,
+          subjectCode,
+          title,
+          description,
+          ownerOrganization,
+          file,
+          normalizedFormat,
+          channelCount,
+          sampleCount,
+          durationSeconds,
+          samplingRate,
+          normalizedTags,
+          uploadedAt,
+          proofFingerprint,
+          traceId
+      );
+      datasetRepository.save(uploadedDataset);
+      recordAudit(uploadedDataset, "UPLOAD_ACCEPTED", "accepted", "EEG upload accepted for processing.", traceId);
+    });
+  }
+
+  private void applyStorageStage(
+      String datasetId,
+      StoragePersistReceipt storageReceipt,
+      Optional<EegDatasetMetadataResponse> metadata,
+      String traceId
+  ) {
+    transactionTemplate.executeWithoutResult(status -> {
+      DatasetEntity dataset = requireDataset(datasetId);
+      applyStorageReceipt(dataset, storageReceipt, traceId);
+      recordAudit(dataset, "STORAGE_PERSISTED", "success", storageReceipt.storageUri(), traceId);
+      applyResolvedMetadata(dataset, metadata, traceId);
+    });
+  }
+
+  private void applyRetryMetadata(String datasetId, Optional<EegDatasetMetadataResponse> metadata, String traceId) {
+    transactionTemplate.executeWithoutResult(status -> {
+      DatasetEntity dataset = requireDataset(datasetId);
+      applyResolvedMetadata(dataset, metadata, traceId);
+    });
+  }
+
+  private void applyChainStage(
+      String datasetId,
+      ChainRegistrationReceipt chainReceipt,
+      String traceId,
+      boolean retry
+  ) {
+    transactionTemplate.executeWithoutResult(status -> {
+      DatasetEntity dataset = requireDataset(datasetId);
+      applyChainReceipt(dataset, chainReceipt, traceId);
+      recordAudit(
+          dataset,
+          retry ? "FINALIZATION_RETRY_COMPLETED" : "CHAIN_REGISTERED",
+          "success",
+          chainReceipt.chainTxHash(),
+          traceId
+      );
+    });
+  }
+
+  private void touchRetryRequest(String datasetId, String traceId) {
+    transactionTemplate.executeWithoutResult(status -> {
+      DatasetEntity dataset = requireDataset(datasetId);
+      dataset.setLastUploadTraceId(traceId);
+      dataset.setLastErrorMessage(null);
+      dataset.setUpdatedAt(Instant.now());
+      recordAudit(dataset, "FINALIZATION_RETRY_REQUESTED", "accepted", "Replay metadata + chain finalization.", traceId);
+    });
+  }
+
+  private void markUploadFailure(String datasetId, String traceId, RuntimeException exception) {
+    transactionTemplate.executeWithoutResult(status -> {
+      DatasetEntity dataset = requireDataset(datasetId);
+      DataAssetProofEntity proof = dataset.getProof();
+      boolean storageReady = hasText(dataset.getStorageUri()) || (proof != null && hasText(proof.getOffChainReference()));
+
+      dataset.setTrainingReadiness("blocked");
+      dataset.setUpdatedAt(Instant.now());
+      dataset.setLastUploadTraceId(traceId);
+      dataset.setLastErrorMessage(exception.getMessage());
+
+      if (storageReady) {
+        dataset.setUploadStatus("uploaded");
+        dataset.setProofStatus("finalization-failed");
+        if (proof != null) {
+          proof.setAuditState("retry-required");
+        }
+        recordAudit(dataset, "FINALIZATION_FAILED", "failed", exception.getMessage(), traceId);
+        return;
+      }
+
+      dataset.setUploadStatus("failed");
+      dataset.setProofStatus("failed");
+      if (proof != null && (proof.getAuditState() == null || proof.getAuditState().isBlank())) {
+        proof.setAuditState("upload-failed");
+      }
+      recordAudit(dataset, "UPLOAD_FAILED", "failed", exception.getMessage(), traceId);
+    });
+  }
+
+  private void validateRetryAccess(String datasetId, ActorContext actor) {
+    transactionTemplate.executeWithoutResult(status -> {
+      DatasetEntity dataset = requireDataset(datasetId);
+      if (actor.hasRole("admin")) {
+        ensureRetryAllowed(dataset);
+        return;
+      }
+
+      boolean canRetry = (actor.hasRole("owner") || actor.hasRole("approver"))
+          && actor.belongsTo(dataset.getOwnerOrganization());
+      if (!canRetry) {
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Actor is not allowed to retry dataset finalization.");
+      }
+      ensureRetryAllowed(dataset);
+    });
+  }
+
+  private void ensureRetryAllowed(DatasetEntity dataset) {
+    if (!isRetryAllowed(dataset)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dataset is not eligible for finalization retry.");
+    }
+  }
+
+  private boolean isRetryAllowed(DatasetEntity dataset) {
+    if ("notarized".equalsIgnoreCase(dataset.getProofStatus())) {
+      return false;
+    }
+    if (!hasText(dataset.getProofFingerprint())) {
+      return false;
+    }
+    DataAssetProofEntity proof = dataset.getProof();
+    return proof != null && hasText(proof.getOffChainReference());
+  }
+
+  private ChainRegistrationCommand loadChainCommand(String datasetId) {
+    return transactionTemplate.execute(status -> {
+      DatasetEntity dataset = requireDataset(datasetId);
+      DataAssetProofEntity proof = dataset.getProof();
+      if (proof == null || !hasText(proof.getOffChainReference()) || !hasText(dataset.getProofFingerprint())) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dataset is missing persisted storage context for retry.");
+      }
+
+      return new ChainRegistrationCommand(
+          dataset.getId(),
+          dataset.getSubjectCode(),
+          dataset.getTitle(),
+          dataset.getOwnerOrganization(),
+          dataset.getFormat(),
+          dataset.getProofFingerprint(),
+          proof.getOffChainReference(),
+          List.copyOf(dataset.getTags()),
+          dataset.getCreatedAt()
+      );
+    });
+  }
+
+  private ChainRegistrationReceipt registerChain(ChainRegistrationCommand command) {
+    try {
+      return chainGateway.registerDataAsset(command);
+    } catch (RuntimeException exception) {
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to register dataset on chain.", exception);
+    }
+  }
+
+  private ResponseStatusException wrapFinalizationFailure(RuntimeException exception) {
+    if (exception instanceof ResponseStatusException responseStatusException) {
+      return responseStatusException;
+    }
+    return new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Dataset upload finalization failed.", exception);
+  }
+
+  private String resolveSourceUri(String offChainReference) {
+    return offChainReference == null ? "" : offChainReference;
+  }
+
+  private Optional<DatasetDetailResponse> loadDatasetDetailById(String datasetId) {
+    return transactionTemplate.execute(status -> datasetRepository.findById(datasetId)
+        .map(this::toDetail));
+  }
+
+  private DatasetEntity requireDataset(String datasetId) {
+    return datasetRepository.findById(datasetId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dataset %s was not found.".formatted(datasetId)));
+  }
+
+  private boolean hasText(String value) {
+    return value != null && !value.isBlank();
   }
 
   private String resolveDemoSampleSource(String relativePath) {

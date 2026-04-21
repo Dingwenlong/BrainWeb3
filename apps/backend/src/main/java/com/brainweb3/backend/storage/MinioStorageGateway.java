@@ -5,6 +5,7 @@ import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import java.io.ByteArrayInputStream;
 
 public class MinioStorageGateway implements StorageGateway {
@@ -57,6 +58,26 @@ public class MinioStorageGateway implements StorageGateway {
       );
     } catch (Exception exception) {
       throw new IllegalStateException("Failed to persist uploaded dataset file to MinIO.", exception);
+    }
+  }
+
+  @Override
+  public void delete(StorageDeleteCommand command) {
+    String storageKey = normalize(command.storageKey());
+    if (storageKey.isBlank()) {
+      throw new IllegalStateException("Missing storage key for MinIO deletion.");
+    }
+
+    try {
+      ensureBucketReady();
+      minioClient.removeObject(
+          RemoveObjectArgs.builder()
+              .bucket(normalizedBucket())
+              .object(storageKey)
+              .build()
+      );
+    } catch (Exception exception) {
+      throw new IllegalStateException("Failed to delete dataset file from MinIO.", exception);
     }
   }
 

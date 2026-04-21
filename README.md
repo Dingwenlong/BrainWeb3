@@ -30,6 +30,49 @@
 7. 下载一个真实 PhysioNet 演示样本。
    `.\scripts\bootstrap\fetch-physionet-sample.ps1`
 
+## 一键启动
+如果你想一次性拉起基础设施、前端、后端和 EEG 服务，可以直接在仓库根目录执行：
+
+```powershell
+.\scripts\bootstrap\start-all.ps1
+```
+
+首轮启动如果本地还没装依赖，推荐：
+
+```powershell
+.\scripts\bootstrap\start-all.ps1 -InstallDeps
+```
+
+如果还想一并打开联邦服务占位进程：
+
+```powershell
+.\scripts\bootstrap\start-all.ps1 -InstallDeps -IncludeFederatedService
+```
+
+也可以用 npm 入口：
+
+```powershell
+npm run dev:all
+```
+
+对应的一键停止命令：
+
+```powershell
+.\scripts\bootstrap\stop-all.ps1
+```
+
+如果只想关前端、后端和 EEG 服务窗口，保留 Docker 基础设施：
+
+```powershell
+.\scripts\bootstrap\stop-all.ps1 -KeepInfrastructure
+```
+
+也可以用 npm：
+
+```powershell
+npm run dev:stop
+```
+
 下载完成后，默认 `ds-101` 会优先读取 `.brainweb3-samples\physionet\S001\S001R04.edf`。
 如果样本不存在，系统仍会回退到当前的 bootstrap 占位路径。
 

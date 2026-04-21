@@ -87,6 +87,14 @@ public class DatasetController {
         ));
   }
 
+  @PostMapping("/{datasetId}/retry-finalization")
+  public DatasetDetailResponse retryFinalization(@PathVariable String datasetId, HttpServletRequest request) {
+    return datasetCatalogService.retryFinalization(
+        datasetId,
+        actorContextResolver.resolveRequired(request)
+    );
+  }
+
   @GetMapping("/{datasetId}/brain-activity")
   public BrainActivityResponse getBrainActivity(
       @PathVariable String datasetId,

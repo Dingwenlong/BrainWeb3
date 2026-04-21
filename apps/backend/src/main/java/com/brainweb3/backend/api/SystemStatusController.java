@@ -32,7 +32,7 @@ public class SystemStatusController {
             "chain", chainStatus.provider() + "-" + chainStatus.mode(),
             "frontend", "scaffolded",
             "eeg-service", "scaffolded",
-            "federated-service", "scaffolded",
+            "federated-service", "mock-active",
             "contracts", "scaffolded"
         )
     );

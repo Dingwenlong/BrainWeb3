@@ -54,6 +54,9 @@ public class DatasetEntity {
   @Column(name = "training_readiness", nullable = false, length = 60)
   private String trainingReadiness;
 
+  @Column(name = "destruction_status", nullable = false, length = 40)
+  private String destructionStatus;
+
   @Column(name = "channel_count", nullable = false)
   private int channelCount;
 
@@ -81,11 +84,26 @@ public class DatasetEntity {
   @Column(name = "storage_uri", length = 1000)
   private String storageUri;
 
+  @Column(name = "proof_fingerprint", length = 128)
+  private String proofFingerprint;
+
+  @Column(name = "last_upload_trace_id", length = 80)
+  private String lastUploadTraceId;
+
+  @Column(name = "last_error_message", length = 1000)
+  private String lastErrorMessage;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
   @Column(name = "updated_at", nullable = false)
   private Instant updatedAt;
+
+  @Column(name = "destroyed_at")
+  private Instant destroyedAt;
+
+  @Column(name = "destroyed_by", length = 80)
+  private String destroyedBy;
 
   @OneToOne(
       mappedBy = "dataset",
@@ -186,6 +204,14 @@ public class DatasetEntity {
     this.trainingReadiness = trainingReadiness;
   }
 
+  public String getDestructionStatus() {
+    return destructionStatus;
+  }
+
+  public void setDestructionStatus(String destructionStatus) {
+    this.destructionStatus = destructionStatus;
+  }
+
   public int getChannelCount() {
     return channelCount;
   }
@@ -250,6 +276,30 @@ public class DatasetEntity {
     this.storageUri = storageUri;
   }
 
+  public String getProofFingerprint() {
+    return proofFingerprint;
+  }
+
+  public void setProofFingerprint(String proofFingerprint) {
+    this.proofFingerprint = proofFingerprint;
+  }
+
+  public String getLastUploadTraceId() {
+    return lastUploadTraceId;
+  }
+
+  public void setLastUploadTraceId(String lastUploadTraceId) {
+    this.lastUploadTraceId = lastUploadTraceId;
+  }
+
+  public String getLastErrorMessage() {
+    return lastErrorMessage;
+  }
+
+  public void setLastErrorMessage(String lastErrorMessage) {
+    this.lastErrorMessage = lastErrorMessage;
+  }
+
   public Instant getCreatedAt() {
     return createdAt;
   }
@@ -264,6 +314,22 @@ public class DatasetEntity {
 
   public void setUpdatedAt(Instant updatedAt) {
     this.updatedAt = updatedAt;
+  }
+
+  public Instant getDestroyedAt() {
+    return destroyedAt;
+  }
+
+  public void setDestroyedAt(Instant destroyedAt) {
+    this.destroyedAt = destroyedAt;
+  }
+
+  public String getDestroyedBy() {
+    return destroyedBy;
+  }
+
+  public void setDestroyedBy(String destroyedBy) {
+    this.destroyedBy = destroyedBy;
   }
 
   public DataAssetProofEntity getProof() {
