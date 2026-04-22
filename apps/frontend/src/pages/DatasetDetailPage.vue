@@ -66,6 +66,8 @@ const ownerCredentialVerification = ref<CredentialVerificationResult | null>(nul
 const accessRequests = ref<AccessRequest[]>([])
 const audits = ref<AuditEvent[]>([])
 const hoveredRegionCode = ref<string | null>(null)
+const cortexOpacity = ref(0.94)
+const heatContrast = ref(1)
 const isPrivilegedActor = computed(() =>
   ['owner', 'approver', 'admin'].includes(actorProfile.value.actorRole.toLowerCase()),
 )
@@ -167,6 +169,27 @@ function formatTime(value: string | null) {
     return '暂无'
   }
   return new Date(value).toLocaleString()
+}
+
+function formatOpacityPercent(value: number) {
+  return `${Math.round(value * 100)}%`
+}
+
+function formatContrastPercent(value: number) {
+  return `${Math.round(value * 100)}%`
+}
+
+function resetCortexOpacity() {
+  cortexOpacity.value = 0.94
+}
+
+function resetHeatContrast() {
+  heatContrast.value = 1
+}
+
+function resetBrainVisuals() {
+  resetCortexOpacity()
+  resetHeatContrast()
 }
 
 function formatHistoryTransition(previousStatus: string | null, nextStatus: string) {
@@ -353,6 +376,19 @@ onMounted(loadAll)
                 <p class="section-kicker">活跃度视图</p>
                 <h2 class="section-title">脑区热力图</h2>
               </div>
+              <div class="brain-visual-control">
+                <label class="brain-visual-control__field">
+                  <span>模型透明度</span>
+                  <input v-model.number="cortexOpacity" type="range" min="0.88" max="0.98" step="0.01" />
+                </label>
+                <strong class="brain-visual-control__value">{{ formatOpacityPercent(cortexOpacity) }}</strong>
+                <label class="brain-visual-control__field">
+                  <span>热力对比度</span>
+                  <input v-model.number="heatContrast" type="range" min="0.78" max="1.4" step="0.02" />
+                </label>
+                <strong class="brain-visual-control__value">{{ formatContrastPercent(heatContrast) }}</strong>
+                <button type="button" class="brain-visual-control__reset" @click="resetBrainVisuals">重置</button>
+              </div>
             </div>
 
             <Brain3DHeatmap
@@ -360,6 +396,8 @@ onMounted(loadAll)
               :frame="currentFrame"
               :band="selectedBand"
               :timestamp="currentTimestamp"
+              :surface-opacity="cortexOpacity"
+              :heat-contrast="heatContrast"
               @hover-region="hoveredRegionCode = $event"
             />
           </article>
@@ -902,6 +940,58 @@ onMounted(loadAll)
   margin-bottom: 16px;
 }
 
+.brain-visual-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-subpanel);
+  background: var(--panel-soft-gradient);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.brain-visual-control__field {
+  display: grid;
+  gap: 6px;
+  min-width: 168px;
+  flex: 1 1 168px;
+}
+
+.brain-visual-control__field span {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.brain-visual-control__field input {
+  width: 100%;
+  accent-color: color-mix(in srgb, var(--accent) 78%, #f2ba63 22%);
+}
+
+.brain-visual-control__value {
+  min-width: 3.8rem;
+  color: var(--text-strong);
+  text-align: right;
+  font-size: 0.9rem;
+}
+
+.brain-visual-control__reset {
+  min-height: var(--control-height);
+  padding: var(--space-button);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--button-soft-gradient);
+  color: var(--text-main);
+  font-family: var(--body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .detail-list,
 .proof-list {
   display: grid;
@@ -1276,6 +1366,20 @@ onMounted(loadAll)
   .content-layout,
   .info-grid {
     grid-template-columns: 1fr;
+  }
+
+  .brain-visual-control {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .brain-visual-control__field {
+    min-width: 100%;
+    flex-basis: 100%;
+  }
+
+  .brain-visual-control__value {
+    min-width: auto;
   }
 }
 

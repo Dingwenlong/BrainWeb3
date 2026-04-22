@@ -46,6 +46,8 @@ const props = defineProps<{
   frame: ActivityFrame | null
   band: string
   timestamp?: number
+  surfaceOpacity?: number
+  heatContrast?: number
 }>()
 
 const emit = defineEmits<{
@@ -65,6 +67,7 @@ interface HeatShaderUniformSet {
   uHeatCool: { value: Color }
   uHeatWarm: { value: Color }
   uHeatHot: { value: Color }
+  uHeatContrast: { value: number }
 }
 
 interface ViewerRuntime {
@@ -294,6 +297,9 @@ function createHeatShaderUniforms(): HeatShaderUniformSet {
     uHeatHot: {
       value: new Color('#f46f5c'),
     },
+    uHeatContrast: {
+      value: 1,
+    },
   }
 }
 
@@ -306,9 +312,13 @@ function buildCortexMaterial(uniforms: HeatShaderUniformSet) {
     clearcoatRoughness: 0.84,
     sheen: 0.04,
     sheenRoughness: 0.84,
-    transmission: 0,
-    thickness: 0,
+    transparent: true,
+    opacity: 0.94,
+    transmission: 0.08,
+    thickness: 0.26,
     ior: 1.18,
+    attenuationDistance: 7.5,
+    attenuationColor: '#f0d8c5',
     emissive: '#1c1410',
     emissiveIntensity: 0.028,
   })
@@ -344,6 +354,7 @@ function buildCortexMaterial(uniforms: HeatShaderUniformSet) {
       uniform vec3 uHeatCool;
       uniform vec3 uHeatWarm;
       uniform vec3 uHeatHot;
+      uniform float uHeatContrast;
 
       float brainHeatField() {
         float field = 0.0;
@@ -361,9 +372,12 @@ function buildCortexMaterial(uniforms: HeatShaderUniformSet) {
       '#include <color_fragment>',
       `
       #include <color_fragment>
-      float heatField = brainHeatField();
-      float warmMix = smoothstep(0.08, 0.56, heatField);
-      float hotMix = smoothstep(0.58, 0.96, heatField);
+      float rawHeatField = brainHeatField();
+      float contrastBias = clamp((uHeatContrast - 0.78) / 0.62, 0.0, 1.0);
+      float heatField = pow(rawHeatField, mix(1.48, 0.72, contrastBias));
+      float coolBand = smoothstep(0.02, 0.18, heatField) * (1.0 - smoothstep(0.34, 0.58, heatField));
+      float warmMix = smoothstep(0.09, 0.44, heatField);
+      float hotMix = smoothstep(0.5, 0.9, heatField);
       vec3 heatColor = mix(uHeatCool, uHeatWarm, warmMix);
       heatColor = mix(heatColor, uHeatHot, hotMix);
       vec3 sculptLightDirection = normalize(vec3(0.26, 0.94, 0.34));
@@ -377,19 +391,54 @@ function buildCortexMaterial(uniforms: HeatShaderUniformSet) {
       float sulcusShadow = smoothstep(0.28, 0.94, sulcusPattern) * (0.03 + (1.0 - sculptLight) * 0.05);
       float crownHighlight = smoothstep(0.3, 1.08, vHeatPosition.y + sculptLight * 0.22) * 0.08;
       float rim = pow(1.0 - abs(vHeatNormal.z), 2.0) * 0.1;
+      float deepScatter = smoothstep(0.05, 0.74, heatField) * (0.08 + (1.0 - sculptLight) * 0.18);
+      float softHalo = smoothstep(0.08, 0.78, heatField) * (0.04 + rim * 0.12);
+      vec3 scatterColor = mix(uHeatWarm, uHeatHot, smoothstep(0.32, 0.94, heatField));
       float hoverGlow = exp(-pow(distance(vHeatPosition, uHoverAnchor) / 0.65, 2.0)) * uHoverStrength;
       diffuseColor.rgb *= 0.84 + sculptLight * 0.24;
       diffuseColor.rgb *= 1.0 - fissureShadow - ventralShadow - temporalPocket - sulcusShadow;
       diffuseColor.rgb += vec3(0.07, 0.055, 0.04) * crownHighlight;
-      diffuseColor.rgb = mix(diffuseColor.rgb, heatColor, heatField * 0.7);
-      diffuseColor.rgb += heatColor * rim * 0.08;
+      diffuseColor.rgb += uHeatCool * coolBand * 0.04;
+      diffuseColor.rgb = mix(diffuseColor.rgb, heatColor, heatField * 0.76);
+      diffuseColor.rgb += scatterColor * softHalo;
+      diffuseColor.rgb += heatColor * rim * (0.05 + hotMix * 0.05);
       totalEmissiveRadiance += heatColor * (heatField * 0.12 + hoverGlow * 0.18);
+      totalEmissiveRadiance += scatterColor * deepScatter * 0.28;
     `,
     )
   }
 
-  material.customProgramCacheKey = () => 'brain-cortex-heat-v2'
+  material.customProgramCacheKey = () => 'brain-cortex-heat-v3'
   return material
+}
+
+function normalizeSurfaceOpacity(value: number | undefined) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 0.94
+  }
+  return Math.max(0.88, Math.min(0.98, value))
+}
+
+function normalizeHeatContrast(value: number | undefined) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 1
+  }
+  return Math.max(0.78, Math.min(1.4, value))
+}
+
+function applySurfaceAppearance(material: MeshPhysicalMaterial, surfaceOpacity: number | undefined) {
+  const opacity = normalizeSurfaceOpacity(surfaceOpacity)
+  const openness = 1 - opacity
+  material.opacity = opacity
+  material.transmission = 0.02 + openness * 0.55
+  material.thickness = 0.12 + openness * 1.5
+  material.attenuationDistance = 8.4 - openness * 5
+  material.emissiveIntensity = 0.02 + openness * 0.09
+  material.needsUpdate = true
+}
+
+function applyHeatContrast(uniforms: HeatShaderUniformSet, heatContrast: number | undefined) {
+  uniforms.uHeatContrast.value = normalizeHeatContrast(heatContrast)
 }
 
 async function loadCortexMesh(): Promise<Mesh> {
@@ -579,7 +628,9 @@ async function createViewerRuntime() {
   scene.add(backPlate)
 
   const shaderUniforms = createHeatShaderUniforms()
+  applyHeatContrast(shaderUniforms, props.heatContrast)
   const cortexMaterial = buildCortexMaterial(shaderUniforms)
+  applySurfaceAppearance(cortexMaterial, props.surfaceOpacity)
   const cortexMesh = await loadCortexMesh()
   cortexMesh.material = cortexMaterial
   frameCortexMesh(cortexMesh)
@@ -707,6 +758,24 @@ function destroyViewerRuntime() {
 
 watch(heatStates, applyHeatState, { deep: true })
 watch(hoveredRegionCode, applyHeatState)
+watch(
+  () => props.surfaceOpacity,
+  (value) => {
+    if (!runtime.value) {
+      return
+    }
+    applySurfaceAppearance(runtime.value.cortexMaterial, value)
+  },
+)
+watch(
+  () => props.heatContrast,
+  (value) => {
+    if (!runtime.value) {
+      return
+    }
+    applyHeatContrast(runtime.value.shaderUniforms, value)
+  },
+)
 
 onMounted(async () => {
   try {
