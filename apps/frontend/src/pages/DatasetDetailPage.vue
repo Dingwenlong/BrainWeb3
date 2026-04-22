@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import {
-  ApiError,
-  createAccessRequest,
   getAccessRequests,
   getAudits,
-  getBrainActivity,
   getDataset,
   getOrganizationIdentity,
   retryDatasetFinalization,
@@ -15,12 +12,14 @@ import {
 } from '../api/client'
 import ActivityTimeline from '../components/ActivityTimeline.vue'
 import RegionMetricsPanel from '../components/RegionMetricsPanel.vue'
+import { useDatasetAccessWorkflow } from '../composables/useDatasetAccessWorkflow'
+import { useDatasetActivity } from '../composables/useDatasetActivity'
+import { toErrorMessage, useAsyncView } from '../composables/useAsyncView'
 import { useActorProfile } from '../composables/useActorProfile'
 import { useToast } from '../composables/useToast'
 import type {
   AccessRequest,
   AuditEvent,
-  BrainActivityResponse,
   BrainBand,
   CredentialVerificationResult,
   DatasetDetail,
@@ -53,57 +52,68 @@ const { pushToast } = useToast()
 
 const bands: BrainBand[] = ['delta', 'theta', 'alpha', 'beta', 'gamma']
 
-const loading = ref(true)
-const activityLoading = ref(true)
-const sideLoading = ref(true)
-const error = ref<string | null>(null)
-const accessError = ref<string | null>(null)
-const requestSubmitting = ref(false)
+const { loading, error, run: runMainLoad, setErrorMessage: setPageError } = useAsyncView({
+  initialLoading: true,
+})
+const { loading: sideLoading, error: sideError, run: runSideLoad } = useAsyncView({
+  initialLoading: true,
+})
 const retrySubmitting = ref(false)
 const dataset = ref<DatasetDetail | null>(null)
-const activity = ref<BrainActivityResponse | null>(null)
 const systemStatus = ref<SystemStatus | null>(null)
 const ownerIdentity = ref<OrganizationIdentity | null>(null)
 const ownerCredentialVerification = ref<CredentialVerificationResult | null>(null)
 const accessRequests = ref<AccessRequest[]>([])
 const audits = ref<AuditEvent[]>([])
-const selectedBand = ref<BrainBand>('alpha')
-const frameIndex = ref(0)
-const playing = ref(false)
-const accessState = ref<'granted' | 'pending' | 'denied' | 'idle'>('idle')
 const hoveredRegionCode = ref<string | null>(null)
-
-const activityRequest = reactive({
-  windowSize: 2,
-  stepSize: 0.5,
-  timeStart: 0,
-  timeEnd: 30,
-})
-
-const accessForm = reactive({
-  purpose: '脑区分析',
-  requestedDurationHours: 24,
-  reason: '需要先查看阿尔法和贝塔频段的脑区活跃情况，再决定是否进入训练预览。',
-})
-
-let playbackTimer: number | null = null
-
-const currentFrame = computed(() => activity.value?.frames[frameIndex.value] ?? null)
-const frameCount = computed(() => activity.value?.frames.length ?? 0)
-const currentTimestamp = computed(() => currentFrame.value?.timestamp ?? activityRequest.timeStart)
-const recentAccessRequests = computed(() => accessRequests.value.slice(0, 3))
 const isPrivilegedActor = computed(() =>
   ['owner', 'approver', 'admin'].includes(actorProfile.value.actorRole.toLowerCase()),
 )
-const latestAccessRequest = computed(() => {
-  const rows = accessRequests.value.filter(
-    (row) => row.actorId === actorProfile.value.actorId || isPrivilegedActor.value,
-  )
-  return rows[0] ?? null
+const {
+  accessForm,
+  accessState,
+  latestAccessRequest,
+  recentAccessRequests,
+  requestSubmitting,
+  requestError,
+  refreshAccessStateFromRequests,
+  submitAccessRequest,
+} = useDatasetAccessWorkflow({
+  datasetId: props.datasetId,
+  actorProfile,
+  isPrivilegedActor,
+  accessRequests,
+  reloadSidePanels: loadSidePanels,
+  pushToast,
 })
-const loadedRangeLabel = computed(
-  () => `已载入 ${formatSecondsLabel(activityRequest.timeStart)} - ${formatSecondsLabel(activityRequest.timeEnd)}`,
-)
+const {
+  activity,
+  activityError,
+  activityLoading,
+  activityRequest,
+  applyActivityRange,
+  currentFrame,
+  currentTimestamp,
+  frameCount,
+  frameIndex,
+  handleBandUpdate,
+  loadedRangeLabel,
+  loadActivity,
+  playing,
+  resetDefaultRange,
+  seekFrame,
+  selectedBand,
+  togglePlayback,
+} = useDatasetActivity({
+  datasetId: props.datasetId,
+  actorProfile,
+  latestAccessRequest,
+  getDurationSeconds: () => dataset.value?.durationSeconds ?? 0,
+  onAccessStateChange: (state) => {
+    accessState.value = state
+  },
+})
+const timelineError = computed(() => activityError.value)
 const canRetryUploadFinalization = computed(() => {
   if (!dataset.value?.retryAllowed) {
     return false
@@ -138,34 +148,6 @@ const trainingLink = computed(() => ({
   },
 }))
 
-function stopPlayback() {
-  if (playbackTimer !== null) {
-    window.clearInterval(playbackTimer)
-    playbackTimer = null
-  }
-  playing.value = false
-}
-
-function togglePlayback() {
-  if (!activity.value?.frames.length) {
-    return
-  }
-
-  if (playing.value) {
-    stopPlayback()
-    return
-  }
-
-  playing.value = true
-  playbackTimer = window.setInterval(() => {
-    if (!activity.value?.frames.length) {
-      return
-    }
-
-    frameIndex.value = (frameIndex.value + 1) % activity.value.frames.length
-  }, 900)
-}
-
 function formatSeconds(value: number) {
   return formatSecondsLabel(value)
 }
@@ -194,77 +176,48 @@ function formatHistoryTransition(previousStatus: string | null, nextStatus: stri
   return `${formatIdentityStatusLabel(previousStatus)} -> ${formatIdentityStatusLabel(nextStatus)}`
 }
 
-function normalizeRequestedRange() {
-  const duration = dataset.value?.durationSeconds ?? 0
-  if (!duration) {
-    activityRequest.timeStart = 0
-    activityRequest.timeEnd = 30
-    return
-  }
-
-  const minSpan = Math.max(activityRequest.stepSize, 0.5)
-  let start = Math.max(0, Math.min(activityRequest.timeStart, duration))
-  let end = Math.max(0, Math.min(activityRequest.timeEnd, duration))
-
-  if (end <= start) {
-    end = Math.min(duration, start + minSpan)
-  }
-  if (end - start < minSpan) {
-    end = Math.min(duration, start + minSpan)
-  }
-  if (end > duration) {
-    end = duration
-    start = Math.max(0, end - minSpan)
-  }
-
-  activityRequest.timeStart = Number(start.toFixed(1))
-  activityRequest.timeEnd = Number(end.toFixed(1))
-}
-
-function resetDefaultRange() {
-  const duration = dataset.value?.durationSeconds ?? 30
-  activityRequest.timeStart = 0
-  activityRequest.timeEnd = Number(Math.min(duration, 30).toFixed(1))
-  normalizeRequestedRange()
-}
-
 async function loadDataset() {
-  loading.value = true
-  error.value = null
-
-  try {
+  const payload = await runMainLoad(async () => {
     const [datasetDetail, currentSystemStatus] = await Promise.all([
       getDataset(props.datasetId),
       getSystemStatus(),
     ])
-    dataset.value = datasetDetail
-    systemStatus.value = currentSystemStatus
-    ownerIdentity.value = await getOrganizationIdentity(datasetDetail.ownerOrganization)
-    ownerCredentialVerification.value = await verifyCredential({
-      id: ownerIdentity.value.credential.id,
-      type: ownerIdentity.value.credential.type,
-      issuerDid: ownerIdentity.value.credential.issuerDid,
-      holderDid: ownerIdentity.value.credential.holderDid,
-      subjectDid: ownerIdentity.value.credential.subjectDid,
-      subjectType: ownerIdentity.value.credential.subjectType,
-      issuedAt: ownerIdentity.value.credential.issuedAt,
-      expiresAt: ownerIdentity.value.credential.expiresAt,
-      proof: ownerIdentity.value.credential.proof,
-      credentialStatus: ownerIdentity.value.credential.credentialStatus,
-      claims: ownerIdentity.value.credential.claims,
+    const organizationIdentity = await getOrganizationIdentity(datasetDetail.ownerOrganization)
+    const organizationVerification = await verifyCredential({
+      id: organizationIdentity.credential.id,
+      type: organizationIdentity.credential.type,
+      issuerDid: organizationIdentity.credential.issuerDid,
+      holderDid: organizationIdentity.credential.holderDid,
+      subjectDid: organizationIdentity.credential.subjectDid,
+      subjectType: organizationIdentity.credential.subjectType,
+      issuedAt: organizationIdentity.credential.issuedAt,
+      expiresAt: organizationIdentity.credential.expiresAt,
+      proof: organizationIdentity.credential.proof,
+      credentialStatus: organizationIdentity.credential.credentialStatus,
+      claims: organizationIdentity.credential.claims,
     })
-    resetDefaultRange()
-  } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : '加载数据集详情失败。'
-  } finally {
-    loading.value = false
+
+    return {
+      datasetDetail,
+      currentSystemStatus,
+      organizationIdentity,
+      organizationVerification,
+    }
+  }, '加载数据集详情失败。')
+
+  if (!payload) {
+    return
   }
+
+  dataset.value = payload.datasetDetail
+  systemStatus.value = payload.currentSystemStatus
+  ownerIdentity.value = payload.organizationIdentity
+  ownerCredentialVerification.value = payload.organizationVerification
+  resetDefaultRange()
 }
 
 async function loadSidePanels() {
-  sideLoading.value = true
-
-  try {
+  const payload = await runSideLoad(async () => {
     const [requestRows, auditRows] = await Promise.all([
       getAccessRequests(actorProfile.value, {
         datasetId: props.datasetId,
@@ -275,61 +228,19 @@ async function loadSidePanels() {
         actorId: isPrivilegedActor.value ? undefined : actorProfile.value.actorId,
       }),
     ])
-    accessRequests.value = requestRows
-    audits.value = auditRows
-  } catch (sideError) {
-    accessError.value =
-      sideError instanceof Error ? sideError.message : '加载访问状态失败。'
-  } finally {
-    sideLoading.value = false
-  }
-}
 
-function refreshAccessStateFromRequests() {
-  const latest = latestAccessRequest.value
-  if (!latest) {
-    accessState.value = 'idle'
-    return
-  }
-
-  if (latest.status === 'approved') {
-    accessState.value = 'granted'
-    return
-  }
-  if (latest.status === 'pending') {
-    accessState.value = 'pending'
-    return
-  }
-  accessState.value = 'denied'
-}
-
-async function loadActivity() {
-  activityLoading.value = true
-  accessError.value = null
-  stopPlayback()
-  normalizeRequestedRange()
-
-  try {
-    activity.value = await getBrainActivity(props.datasetId, selectedBand.value, actorProfile.value, {
-      windowSize: activityRequest.windowSize,
-      stepSize: activityRequest.stepSize,
-      timeStart: activityRequest.timeStart,
-      timeEnd: activityRequest.timeEnd,
-    })
-    frameIndex.value = 0
-    accessState.value = 'granted'
-  } catch (loadError) {
-    activity.value = null
-    if (loadError instanceof ApiError && loadError.status === 403) {
-      accessState.value = latestAccessRequest.value?.status === 'pending' ? 'pending' : 'denied'
-      accessError.value = '当前操作者尚未获批，神经活跃度数据已被门禁拦截。'
-    } else {
-      accessError.value =
-        loadError instanceof Error ? loadError.message : '加载脑区活跃度失败。'
+    return {
+      requestRows,
+      auditRows,
     }
-  } finally {
-    activityLoading.value = false
+  }, '加载访问状态失败。')
+
+  if (!payload) {
+    return
   }
+
+  accessRequests.value = payload.requestRows
+  audits.value = payload.auditRows
 }
 
 async function loadAll() {
@@ -339,50 +250,13 @@ async function loadAll() {
   await loadActivity()
 }
 
-async function applyActivityRange() {
-  if (!dataset.value) {
-    return
-  }
-  await loadActivity()
-}
-
-function handleBandUpdate(band: BrainBand) {
-  selectedBand.value = band
-}
-
-async function submitAccessRequest() {
-  requestSubmitting.value = true
-  accessError.value = null
-
-  try {
-    await createAccessRequest(actorProfile.value, {
-      datasetId: props.datasetId,
-      purpose: accessForm.purpose,
-      requestedDurationHours: accessForm.requestedDurationHours,
-      reason: accessForm.reason,
-    })
-    await loadSidePanels()
-    refreshAccessStateFromRequests()
-    pushToast({
-      title: '申请已提交',
-      message: '访问申请已进入审批队列，可切到审批台或归属方视角继续处理。',
-      tone: 'success',
-    })
-  } catch (submitError) {
-    accessError.value =
-      submitError instanceof Error ? submitError.message : '创建访问申请失败。'
-  } finally {
-    requestSubmitting.value = false
-  }
-}
-
 async function retryUploadFinalization() {
   if (!dataset.value) {
     return
   }
 
   retrySubmitting.value = true
-  error.value = null
+  setPageError(null)
 
   try {
     dataset.value = await retryDatasetFinalization(dataset.value.id)
@@ -394,7 +268,7 @@ async function retryUploadFinalization() {
       tone: 'success',
     })
   } catch (retryError) {
-    error.value = retryError instanceof Error ? retryError.message : '重新收口失败。'
+    setPageError(toErrorMessage(retryError, '重新收口失败。'))
   } finally {
     retrySubmitting.value = false
   }
@@ -417,10 +291,6 @@ watch(
 )
 
 onMounted(loadAll)
-
-onBeforeUnmount(() => {
-  stopPlayback()
-})
 </script>
 
 <template>
@@ -471,7 +341,7 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <div v-if="loading" class="loading-state">正在加载数据舱...</div>
+    <div v-if="loading" class="loading-state">正在加载数据详情...</div>
     <div v-else-if="error" class="error-state">{{ error }}</div>
 
     <template v-else-if="dataset">
@@ -480,8 +350,8 @@ onBeforeUnmount(() => {
           <article class="workspace-card glass-panel">
             <div class="workspace-card__header">
               <div>
-                <p class="section-kicker">主视图</p>
-                <h2 class="section-title">脑模型与热力回放</h2>
+                <p class="section-kicker">活跃度视图</p>
+                <h2 class="section-title">脑区热力图</h2>
               </div>
             </div>
 
@@ -511,7 +381,7 @@ onBeforeUnmount(() => {
               :time-end="activityRequest.timeEnd"
               :playing="playing"
               :loading="activityLoading"
-              :error="accessError"
+              :error="timelineError"
               :frame-index="frameIndex"
               :frame-count="frameCount"
               :current-timestamp="currentTimestamp"
@@ -523,7 +393,7 @@ onBeforeUnmount(() => {
               @update:time-start="activityRequest.timeStart = $event"
               @update:time-end="activityRequest.timeEnd = $event"
               @toggle-play="togglePlayback"
-              @seek-frame="frameIndex = $event"
+              @seek-frame="seekFrame($event)"
               @apply-range="applyActivityRange"
             />
           </article>
@@ -533,8 +403,8 @@ onBeforeUnmount(() => {
           <article class="workspace-card glass-panel">
             <div class="workspace-card__header">
               <div>
-                <p class="section-kicker">即时读数</p>
-                <h2 class="section-title">当前脑区指标</h2>
+                <p class="section-kicker">当前读数</p>
+                <h2 class="section-title">脑区指标</h2>
               </div>
             </div>
 
@@ -579,7 +449,7 @@ onBeforeUnmount(() => {
           <article class="workspace-card glass-panel">
             <div class="workspace-card__header">
               <div>
-                <p class="section-kicker">上传编排</p>
+                <p class="section-kicker">上传处理</p>
                 <h2 class="section-title">持久化与补偿</h2>
               </div>
               <button
@@ -660,6 +530,8 @@ onBeforeUnmount(() => {
             </button>
           </form>
 
+          <div v-if="requestError" class="error-state access-note">{{ requestError }}</div>
+
           <div v-if="latestAccessRequest" class="access-note">
             最新记录：{{ latestAccessRequest.id }} · {{ formatRequestStatusLabel(latestAccessRequest.status) }}
             <br />
@@ -667,22 +539,22 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="access-actions">
-            <RouterLink class="access-link" to="/access-requests">前往审批台</RouterLink>
+            <RouterLink class="access-link" to="/access-requests">前往访问申请</RouterLink>
             <RouterLink
               class="access-link"
               :to="{ path: '/destruction-requests', query: { source: 'dataset-detail', datasetId: props.datasetId } }"
             >
-              打开销毁台
+              打开销毁流程
             </RouterLink>
             <RouterLink
               v-if="isPrivilegedActor"
               class="access-link"
               :to="{ path: '/chain-records', query: { datasetId: props.datasetId } }"
             >
-              查看链轨迹
+              查看链记录
             </RouterLink>
             <RouterLink v-if="canLaunchTraining" class="access-link access-link--warm" :to="trainingLink">
-              带入训练页
+              带入训练任务
             </RouterLink>
           </div>
 
@@ -708,8 +580,8 @@ onBeforeUnmount(() => {
         <article v-if="ownerIdentity" class="workspace-card glass-panel">
           <div class="workspace-card__header">
             <div>
-              <p class="section-kicker">Identity Link</p>
-              <h2 class="section-title">归属机构 DID / VC</h2>
+              <p class="section-kicker">身份信息</p>
+              <h2 class="section-title">归属机构身份凭证</h2>
             </div>
           </div>
           <dl class="proof-list">
@@ -718,15 +590,15 @@ onBeforeUnmount(() => {
               <dd>{{ ownerIdentity.organizationName }}</dd>
             </div>
             <div>
-              <dt>Org DID</dt>
+              <dt>机构 DID</dt>
               <dd>{{ ownerIdentity.organizationDid }}</dd>
             </div>
             <div>
-              <dt>VC 类型</dt>
+              <dt>凭证类型</dt>
               <dd>{{ ownerIdentity.credential.type }}</dd>
             </div>
             <div>
-              <dt>VC 状态</dt>
+              <dt>凭证状态</dt>
               <dd>{{ formatIdentityStatusLabel(ownerIdentity.credential.credentialStatus) }}</dd>
             </div>
             <div>
@@ -738,7 +610,7 @@ onBeforeUnmount(() => {
               <dd>{{ formatIdentityStatusSourceLabel(ownerIdentity.statusSnapshot.source) }}</dd>
             </div>
             <div>
-              <dt>数据 Holder</dt>
+              <dt>数据持有方</dt>
               <dd>{{ dataset.proof.didHolder }}</dd>
             </div>
             <div>
@@ -747,7 +619,7 @@ onBeforeUnmount(() => {
             </div>
           </dl>
           <p class="compensation-note">
-            {{ ownerIdentity.statusSnapshot.reason || '当前机构 VC 状态暂无额外说明。' }}
+            {{ ownerIdentity.statusSnapshot.reason || '当前机构凭证状态暂无额外说明。' }}
           </p>
           <div class="upload-flow" v-if="ownerIdentity.credentialHistory.length">
             <div
@@ -826,7 +698,7 @@ onBeforeUnmount(() => {
               <dd>{{ dataset.proof.contractAddress }}</dd>
             </div>
             <div>
-              <dt>SM3 Hash</dt>
+              <dt>SM3 哈希</dt>
               <dd>{{ dataset.proof.sm3Hash }}</dd>
             </div>
             <div>
@@ -842,7 +714,7 @@ onBeforeUnmount(() => {
               <dd>{{ dataset.proof.chainTxHash }}</dd>
             </div>
             <div>
-              <dt>DID Holder</dt>
+              <dt>DID 持有方</dt>
               <dd>{{ dataset.proof.didHolder }}</dd>
             </div>
             <div>
@@ -918,6 +790,7 @@ onBeforeUnmount(() => {
           </div>
 
           <div v-if="sideLoading" class="loading-state">正在加载访问台账...</div>
+          <div v-else-if="sideError" class="error-state">{{ sideError }}</div>
           <template v-else>
             <div class="audit-timeline" v-if="audits.length">
               <div v-for="event in audits.slice(0, 6)" :key="event.id" class="audit-timeline__item">
@@ -953,19 +826,26 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
   gap: 18px;
   align-items: end;
-  padding: 22px 24px;
-  border-radius: 22px;
+  padding: var(--space-panel);
+  border-radius: var(--radius-panel);
 }
 
 .page-header__back {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 12px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--button-soft-gradient);
   color: var(--text-muted);
   text-decoration: none;
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.8rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .page-header h1 {
@@ -1011,7 +891,7 @@ onBeforeUnmount(() => {
 
 .workspace-card {
   padding: 20px;
-  border-radius: 20px;
+  border-radius: var(--radius-panel);
 }
 
 .workspace-card__header {
@@ -1030,10 +910,10 @@ onBeforeUnmount(() => {
 
 .detail-list div,
 .proof-list div {
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--bg-panel-soft);
+  background: var(--panel-soft-gradient);
 }
 
 .detail-list dt,
@@ -1053,25 +933,27 @@ onBeforeUnmount(() => {
 
 .access-form__submit {
   border: 1px solid var(--line-warm);
-  border-radius: 999px;
-  min-height: 42px;
-  padding: 0 16px;
-  background: linear-gradient(180deg, rgba(235, 178, 102, 0.2), rgba(235, 178, 102, 0.12));
-  color: var(--text-main);
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  border-radius: var(--radius-pill);
+  min-height: var(--control-height);
+  padding: var(--space-button);
+  background: var(--button-warm-gradient);
+  color: var(--text-strong);
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .retry-button {
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
   border: 1px solid var(--line-warm);
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(235, 178, 102, 0.2), rgba(235, 178, 102, 0.12));
-  color: var(--text-main);
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  border-radius: var(--radius-pill);
+  background: var(--button-warm-gradient);
+  color: var(--text-strong);
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -1090,15 +972,15 @@ onBeforeUnmount(() => {
 
 .upload-flow {
   display: grid;
-  gap: 10px;
+  gap: var(--space-list-tight);
   margin-top: 16px;
 }
 
 .upload-flow__item {
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--bg-panel-soft);
+  background: var(--panel-soft-gradient);
 }
 
 .upload-flow__headline {
@@ -1142,23 +1024,24 @@ onBeforeUnmount(() => {
 .access-form textarea {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px 12px;
-  background: rgba(8, 18, 25, 0.94);
+  border-radius: var(--radius-control);
+  min-height: var(--field-height);
+  padding: var(--space-field-x);
+  background: var(--bg-panel);
   color: var(--text-main);
 }
 
 .access-stage {
-  padding: 16px 18px;
-  border-radius: 14px;
+  padding: var(--space-card);
+  border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--bg-panel-soft);
+  background: var(--panel-soft-gradient);
 }
 
 .access-stage strong {
-  font-family: var(--display);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-family: var(--body);
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .access-stage p,
@@ -1169,11 +1052,19 @@ onBeforeUnmount(() => {
 
 .access-link {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-top: 14px;
-  color: var(--accent);
+  min-height: var(--control-height);
+  padding: var(--space-button);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--button-soft-gradient);
+  color: var(--text-main);
   text-decoration: none;
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   font-size: 0.8rem;
 }
@@ -1185,12 +1076,14 @@ onBeforeUnmount(() => {
 }
 
 .access-link--warm {
-  color: var(--amber);
+  border-color: var(--line-warm);
+  background: var(--button-warm-gradient);
+  color: var(--text-strong);
 }
 
 .request-preview {
   display: grid;
-  gap: 10px;
+  gap: var(--space-list-tight);
   margin-top: 18px;
 }
 
@@ -1199,14 +1092,15 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: var(--bg-panel-soft);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  background: var(--panel-soft-gradient);
   border: 1px solid var(--line);
 }
 
 .request-preview__item strong {
-  font-family: var(--display);
+  font-family: var(--body);
+  font-weight: 700;
 }
 
 .request-preview__item p {
@@ -1229,20 +1123,20 @@ onBeforeUnmount(() => {
 
 .audit-timeline {
   display: grid;
-  gap: 12px;
+  gap: var(--space-list-tight);
 }
 
 .chain-records,
 .chain-record__meta {
   display: grid;
-  gap: 12px;
+  gap: var(--space-list-tight);
 }
 
 .chain-record {
-  padding: 14px 16px;
-  border-radius: 14px;
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--bg-panel-soft);
+  background: var(--panel-soft-gradient);
 }
 
 .chain-record__headline {
@@ -1253,7 +1147,8 @@ onBeforeUnmount(() => {
 }
 
 .chain-record__headline strong {
-  font-family: var(--display);
+  font-family: var(--body);
+  font-weight: 700;
 }
 
 .chain-record__headline p,
@@ -1270,10 +1165,10 @@ onBeforeUnmount(() => {
 }
 
 .chain-record__meta div {
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: rgba(8, 18, 25, 0.6);
+  background: var(--bg-panel);
 }
 
 .chain-record__meta dt {
@@ -1317,7 +1212,7 @@ onBeforeUnmount(() => {
   top: 8px;
   bottom: -18px;
   width: 1px;
-  background: linear-gradient(180deg, rgba(119, 235, 237, 0.36), transparent);
+  background: linear-gradient(180deg, rgba(49, 87, 102, 0.24), transparent);
 }
 
 .audit-timeline__item:last-child .audit-timeline__rail::after {
@@ -1330,15 +1225,15 @@ onBeforeUnmount(() => {
   margin-top: 6px;
   border-radius: 999px;
   background: radial-gradient(circle, var(--amber), var(--accent));
-  box-shadow: 0 0 14px rgba(119, 235, 237, 0.42);
+  box-shadow: 0 0 10px rgba(49, 87, 102, 0.18);
 }
 
 .audit-timeline__card {
   display: grid;
   gap: 0;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: var(--bg-panel-soft);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  background: var(--panel-soft-gradient);
   border: 1px solid var(--line);
 }
 
@@ -1351,14 +1246,16 @@ onBeforeUnmount(() => {
 
 .audit-timeline__headline span {
   color: var(--amber);
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.78rem;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .audit-timeline__card strong {
-  font-family: var(--display);
+  font-family: var(--body);
+  font-weight: 700;
 }
 
 .audit-timeline__card p {

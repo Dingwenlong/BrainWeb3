@@ -198,6 +198,8 @@ class AuthControllerTests {
             ))
         .andExpect(status().isAccepted())
         .andExpect(jsonPath("$.resetToken").isString())
+        .andExpect(jsonPath("$.deliveryMode").value("inline-demo"))
+        .andExpect(jsonPath("$.tokenVisible").value(true))
         .andReturn()
         .getResponse()
         .getContentAsString();

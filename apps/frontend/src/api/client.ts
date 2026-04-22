@@ -83,11 +83,15 @@ export function getSystemStatus() {
 }
 
 export function getDatasets() {
-  return request<DatasetSummary[]>('/datasets')
+  return request<DatasetSummary[]>('/datasets', {
+    headers: buildActorHeaders(null),
+  })
 }
 
 export function getDataset(datasetId: string) {
-  return request<DatasetDetail>(`/datasets/${datasetId}`)
+  return request<DatasetDetail>(`/datasets/${datasetId}`, {
+    headers: buildActorHeaders(null),
+  })
 }
 
 export function retryDatasetFinalization(datasetId: string) {

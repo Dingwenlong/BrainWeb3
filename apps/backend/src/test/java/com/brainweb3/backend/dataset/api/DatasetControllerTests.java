@@ -1,6 +1,8 @@
 package com.brainweb3.backend.dataset.api;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.http.HttpMethod.GET;
@@ -13,9 +15,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.brainweb3.backend.dataset.persistence.DatasetEntity;
+import com.brainweb3.backend.dataset.persistence.DatasetRepository;
+import com.brainweb3.backend.dataset.persistence.UploadAuditEntity;
+import com.brainweb3.backend.dataset.persistence.UploadAuditRepository;
 import com.brainweb3.backend.dataset.service.DatasetCatalogService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +46,12 @@ class DatasetControllerTests {
 
   @Autowired
   private DatasetCatalogService datasetCatalogService;
+
+  @Autowired
+  private DatasetRepository datasetRepository;
+
+  @Autowired
+  private UploadAuditRepository uploadAuditRepository;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -69,6 +82,34 @@ class DatasetControllerTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.proof.ipfsCid").value("bafybeif6d4brainweb3demo101"))
         .andExpect(jsonPath("$.channelCount").value(64));
+  }
+
+  @Test
+  void redactsSensitiveFailureDetailsInDatasetResponses() throws Exception {
+    DatasetEntity dataset = datasetRepository.findById("ds-101").orElseThrow();
+    dataset.setLastErrorMessage(
+        "Finalization failed: resetToken=reset-raw-123 Authorization=Bearer eyJhbGciOiJIUzI1NiJ9.payload.signature"
+    );
+    datasetRepository.save(dataset);
+
+    UploadAuditEntity uploadAudit = new UploadAuditEntity();
+    uploadAudit.setDataset(dataset);
+    uploadAudit.setAction("STORAGE_PERSISTED");
+    uploadAudit.setStatus("success");
+    uploadAudit.setMessage("https://storage.example/upload?token=url-secret-456");
+    uploadAudit.setTraceId("trace-sensitive-01");
+    uploadAudit.setCreatedAt(Instant.parse("2026-04-22T02:00:00Z"));
+    uploadAuditRepository.save(uploadAudit);
+
+    mockMvc.perform(get("/api/v1/datasets/ds-101")
+            .header("Authorization", bearer(ownerToken)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.lastErrorMessage", containsString("resetToken=[REDACTED]")))
+        .andExpect(jsonPath("$.lastErrorMessage", containsString("Authorization=[REDACTED]")))
+        .andExpect(jsonPath("$.lastErrorMessage", not(containsString("reset-raw-123"))))
+        .andExpect(jsonPath("$.lastErrorMessage", not(containsString("eyJhbGciOiJIUzI1NiJ9"))))
+        .andExpect(jsonPath("$.uploadAudits[0].message", containsString("?token=[REDACTED]")))
+        .andExpect(jsonPath("$.uploadAudits[0].message", not(containsString("url-secret-456"))));
   }
 
   @Test

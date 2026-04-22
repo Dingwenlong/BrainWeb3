@@ -10,6 +10,7 @@ import {
   purgeDestructionStorage,
   rejectDestructionRequest,
 } from '../api/client'
+import { toErrorMessage, useAsyncView } from '../composables/useAsyncView'
 import { useActorProfile } from '../composables/useActorProfile'
 import { useToast } from '../composables/useToast'
 import type { DatasetSummary, DestructionRequest } from '../types/api'
@@ -25,8 +26,9 @@ const route = useRoute()
 const { actorProfile } = useActorProfile()
 const { pushToast } = useToast()
 
-const loading = ref(true)
-const error = ref<string | null>(null)
+const { loading, error, run: runPageLoad, setErrorMessage } = useAsyncView({
+  initialLoading: true,
+})
 const actionLoadingId = ref<string | null>(null)
 const requestRows = ref<DestructionRequest[]>([])
 const datasetRows = ref<DatasetSummary[]>([])
@@ -60,12 +62,12 @@ const roleGuide = computed(() => {
   if (isPrivilegedActor.value) {
     return {
       note: '这里负责销毁申请、审批和执行三个阶段。管理员可看全局，归属方与审批人主要处理本机构数据集的销毁闭环。',
-      emptyState: '当前还没有销毁申请。可以先从数据详情页带入一个数据集，或在这里直接提交第一条申请。',
+      emptyState: '当前没有销毁申请。可以从数据详情页带入数据集，或在这里直接提交第一条申请。',
     }
   }
   return {
     note: '这里主要用于提交销毁申请和回看自己的申请状态。审批与执行动作会由归属方或管理员完成。',
-    emptyState: '当前还没有你的销毁申请。先选择一个已获授权的数据集发起申请，再回来追踪状态。',
+    emptyState: '当前没有你的销毁申请。先选择一个已获授权的数据集发起申请，再回来追踪状态。',
   }
 })
 
@@ -115,10 +117,7 @@ function canManage(row: DestructionRequest) {
 }
 
 async function loadPage() {
-  loading.value = true
-  error.value = null
-
-  try {
+  const payload = await runPageLoad(async () => {
     const [datasets, requests] = await Promise.all([
       getDatasets(),
       getDestructionRequests(actorProfile.value, {
@@ -127,17 +126,23 @@ async function loadPage() {
         status: filters.status || undefined,
       }),
     ])
-    datasetRows.value = datasets
-    requestRows.value = requests
-    if (!createForm.datasetId && filters.datasetId) {
-      createForm.datasetId = filters.datasetId
+
+    return {
+      datasets,
+      requests,
     }
-    syncDecisionForms(requestRows.value)
-  } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : '加载销毁工作区失败。'
-  } finally {
-    loading.value = false
+  }, '加载销毁工作区失败。')
+
+  if (!payload) {
+    return
   }
+
+  datasetRows.value = payload.datasets
+  requestRows.value = payload.requests
+  if (!createForm.datasetId && filters.datasetId) {
+    createForm.datasetId = filters.datasetId
+  }
+  syncDecisionForms(requestRows.value)
 }
 
 async function submitCreateRequest() {
@@ -154,7 +159,7 @@ async function submitCreateRequest() {
     })
     await loadPage()
   } catch (submitError) {
-    error.value = submitError instanceof Error ? submitError.message : '提交销毁申请失败。'
+    setErrorMessage(toErrorMessage(submitError, '提交销毁申请失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -173,7 +178,7 @@ async function approveRequest(row: DestructionRequest) {
     })
     await loadPage()
   } catch (submitError) {
-    error.value = submitError instanceof Error ? submitError.message : '批准销毁申请失败。'
+    setErrorMessage(toErrorMessage(submitError, '批准销毁申请失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -192,7 +197,7 @@ async function rejectRequest(row: DestructionRequest) {
     })
     await loadPage()
   } catch (submitError) {
-    error.value = submitError instanceof Error ? submitError.message : '拒绝销毁申请失败。'
+    setErrorMessage(toErrorMessage(submitError, '拒绝销毁申请失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -209,7 +214,7 @@ async function executeRequest(row: DestructionRequest) {
     })
     await loadPage()
   } catch (submitError) {
-    error.value = submitError instanceof Error ? submitError.message : '执行销毁失败。'
+    setErrorMessage(toErrorMessage(submitError, '执行销毁失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -229,7 +234,7 @@ async function purgeStorage(row: DestructionRequest) {
     })
     await loadPage()
   } catch (submitError) {
-    error.value = submitError instanceof Error ? submitError.message : '执行物理清理失败。'
+    setErrorMessage(toErrorMessage(submitError, '执行物理清理失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -275,7 +280,7 @@ watch(
         </div>
         <p v-if="intakeHint" class="hero-panel__hint">{{ intakeHint }}</p>
         <div class="hero-panel__guide">
-          <span>Role Guidance</span>
+          <span>当前提示</span>
           <strong>{{ roleGuide.note }}</strong>
         </div>
 
@@ -524,17 +529,16 @@ watch(
 .destruction-page {
   display: grid;
   gap: 18px;
+  padding-bottom: 8px;
 }
 
 .hero-panel {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   gap: 20px;
-  padding: 26px;
-  border-radius: 30px;
-  background:
-    linear-gradient(135deg, rgba(7, 19, 26, 0.96), rgba(6, 13, 18, 0.84)),
-    radial-gradient(circle at top left, rgba(116, 210, 220, 0.14), transparent 36%);
+  padding: var(--space-hero);
+  border-radius: var(--radius-hero);
+  background: var(--panel-gradient);
 }
 
 .hero-panel__copy,
@@ -545,7 +549,7 @@ watch(
 .destruction-layout__main,
 .request-list {
   display: grid;
-  gap: 18px;
+  gap: var(--space-list);
 }
 
 .hero-panel h1,
@@ -573,14 +577,15 @@ watch(
 .request-card__evidence {
   display: grid;
   gap: 8px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.12);
-  background: rgba(8, 18, 25, 0.76);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-muted);
 }
 
 .request-card__evidence strong {
-  font-family: var(--display);
+  font-family: var(--body);
+  font-weight: 700;
 }
 
 .hero-panel__actions,
@@ -601,15 +606,16 @@ watch(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
-  padding: 0 16px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(12, 24, 32, 0.92);
+  border-radius: var(--radius-pill);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
   text-decoration: none;
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -619,12 +625,10 @@ watch(
 .workspace-card,
 .hero-spotlight,
 .summary-strip__card {
-  padding: 18px;
-  border-radius: 24px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background:
-    linear-gradient(180deg, rgba(4, 15, 21, 0.94), rgba(8, 17, 23, 0.78)),
-    radial-gradient(circle at top right, rgba(116, 210, 220, 0.08), transparent 30%);
+  padding: var(--space-card);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background: var(--panel-gradient);
 }
 
 .hero-panel__guide {
@@ -652,7 +656,7 @@ watch(
 .hero-spotlight__meta strong,
 .request-card strong {
   display: block;
-  font-family: var(--display);
+  font-family: var(--body);
 }
 
 .summary-strip {
@@ -668,6 +672,7 @@ watch(
 .workspace-card {
   display: grid;
   gap: 14px;
+  background: var(--panel-gradient);
 }
 
 .hero-spotlight__context,
@@ -689,10 +694,10 @@ watch(
 
 .hero-spotlight__meta div,
 .request-card__details div {
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.1);
-  background: rgba(8, 18, 25, 0.76);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .destruction-layout {
@@ -710,24 +715,25 @@ watch(
 .form-grid textarea,
 .decision-form input {
   width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
+  min-height: var(--field-height);
+  padding: var(--space-field-x);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(8, 18, 25, 0.94);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
   color: var(--text-main);
 }
 
 .form-grid__submit,
 .decision-form__actions button {
-  min-height: 42px;
-  padding: 0 16px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
   border: 1px solid var(--line-warm);
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(235, 178, 102, 0.24), rgba(235, 178, 102, 0.12));
+  border-radius: var(--radius-pill);
+  background: var(--button-warm-gradient);
   color: var(--text-main);
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -747,7 +753,7 @@ watch(
   gap: 12px;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(108, 166, 186, 0.12);
+  border-top: 1px solid var(--line);
 }
 
 .decision-form__danger {

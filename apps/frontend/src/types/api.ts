@@ -7,6 +7,7 @@ export interface ChainStatus {
   contractAddress: string
   rpcPeers: string[]
   transportSecurity: string
+  detailsRedacted: boolean
 }
 
 export interface SystemStatus {
@@ -222,8 +223,10 @@ export interface AuthSession {
 
 export interface PasswordResetTicket {
   actorId: string
-  resetToken: string
+  resetToken: string | null
   expiresAt: string
+  deliveryMode: string
+  tokenVisible: boolean
 }
 
 export interface AccountUser {

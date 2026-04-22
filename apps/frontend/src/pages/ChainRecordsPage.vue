@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { getChainPolicy, getChainRecords, retryChainRecord, updateModelGovernance } from '../api/client'
+import { toErrorMessage, useAsyncView } from '../composables/useAsyncView'
 import { useActorProfile } from '../composables/useActorProfile'
 import { useToast } from '../composables/useToast'
 import type { ChainBusinessRecord, ChainPolicyRule } from '../types/api'
@@ -19,8 +20,9 @@ const route = useRoute()
 const { actorProfile } = useActorProfile()
 const { pushToast } = useToast()
 
-const loading = ref(true)
-const error = ref<string | null>(null)
+const { loading, error, run: runRecordLoad, setErrorMessage } = useAsyncView({
+  initialLoading: true,
+})
 const records = ref<ChainBusinessRecord[]>([])
 const policies = ref<ChainPolicyRule[]>([])
 const retryingRecordId = ref<number | null>(null)
@@ -50,13 +52,13 @@ const roleGuide = computed(() => {
     return {
       scope: '全局链监管视图',
       note: '这里汇总的是访问授权、撤销、训练结果和模型治理等链业务记录，适合从监管侧核对哪些关键动作已经上链。',
-      empty: '当前还没有链业务记录。先批准一条访问申请或完成一条训练任务，再回来查看上链轨迹。',
+      empty: '当前没有链业务记录。先批准一条访问申请，或完成一条训练任务。',
     }
   }
   return {
     scope: `机构链轨迹 · ${formatOrganizationLabel(actorProfile.value.actorOrg)}`,
     note: '这里展示的是你所属机构可见的数据集链轨迹，重点关注授权变化、训练结果和模型治理是否已经写入链业务记录。',
-    empty: '当前机构范围内还没有链业务记录。先在审批台批准访问，或完成一条训练任务后再回来查看。',
+    empty: '当前机构范围内没有链业务记录。先批准访问，或完成一条训练任务。',
   }
 })
 
@@ -159,7 +161,7 @@ async function governModel(record: ChainBusinessRecord, status: 'active' | 'arch
 
   governingModelId.value = record.referenceId
   actionMessage.value = null
-  error.value = null
+  setErrorMessage(null)
 
   try {
     const updated = await updateModelGovernance(record.referenceId, actorProfile.value, {
@@ -173,12 +175,12 @@ async function governModel(record: ChainBusinessRecord, status: 'active' | 'arch
     pushToast({
       tone: 'success',
       title: '模型治理已更新',
-      message: `${updated.id} 已在链轨迹页完成治理动作。`,
+      message: `${updated.id} 已在链记录页完成治理动作。`,
     })
     await loadRecords()
   } catch (governError) {
-    const message = governError instanceof Error ? governError.message : '模型治理失败。'
-    error.value = message
+    const message = toErrorMessage(governError, '模型治理失败。')
+    setErrorMessage(message)
     pushToast({
       tone: 'warning',
       title: '模型治理失败',
@@ -190,22 +192,23 @@ async function governModel(record: ChainBusinessRecord, status: 'active' | 'arch
 }
 
 async function loadRecords() {
-  loading.value = true
-  error.value = null
-
-  try {
-    records.value = await getChainRecords(actorProfile.value, {
+  const rows = await runRecordLoad(
+    () =>
+      getChainRecords(actorProfile.value, {
       datasetId: filters.datasetId.trim() || undefined,
       eventType: filters.eventType || undefined,
       anchorStatus: filters.anchorStatus || undefined,
       businessStatus: filters.businessStatus || undefined,
       chainTxHash: filters.chainTxHash.trim() || undefined,
-    })
-  } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : '加载链轨迹失败。'
-  } finally {
-    loading.value = false
+      }),
+    '加载链轨迹失败。',
+  )
+
+  if (!rows) {
+    return
   }
+
+  records.value = rows
 }
 
 async function loadPolicy() {
@@ -232,14 +235,14 @@ function applyRouteFilters() {
 async function handleRetry(record: ChainBusinessRecord) {
   retryingRecordId.value = record.id
   actionMessage.value = null
-  error.value = null
+  setErrorMessage(null)
 
   try {
     const refreshed = await retryChainRecord(record.id, actorProfile.value)
     actionMessage.value = `链记录 ${refreshed.referenceId} 已重新提交，当前状态为 ${formatRequestStatusLabel(refreshed.anchorStatus)}。`
     await loadRecords()
   } catch (retryError) {
-    error.value = retryError instanceof Error ? retryError.message : '重试上链失败。'
+    setErrorMessage(toErrorMessage(retryError, '重试上链失败。'))
   } finally {
     retryingRecordId.value = null
   }
@@ -264,8 +267,8 @@ watch(
   <div class="chain-page">
     <section class="hero-panel glass-panel">
       <div class="hero-panel__copy">
-        <p class="section-kicker">Chain Control</p>
-        <h1>把授权与训练结果汇成一条独立可查的链轨迹。</h1>
+        <p class="section-kicker">链记录</p>
+        <h1>把授权、训练和模型动作汇成可查询的链记录。</h1>
         <p class="hero-panel__lede">
           当前身份是 {{ actorProfile.actorId }} / {{ formatRoleLabel(actorProfile.actorRole) }} /
           {{ formatOrganizationLabel(actorProfile.actorOrg) }}。这个页面负责把关键业务动作是否已写链单独拉出来，不再只依赖数据详情页局部查看。
@@ -278,7 +281,7 @@ watch(
 
         <p v-if="intakeHint" class="hero-panel__hint">{{ intakeHint }}</p>
         <div class="hero-panel__guide">
-          <span>Role Guidance</span>
+          <span>当前提示</span>
           <strong>{{ roleGuide.note }}</strong>
         </div>
 
@@ -330,7 +333,7 @@ watch(
         <article class="hero-lane">
           <div class="hero-lane__header">
             <div>
-              <p class="section-kicker">Policy Mix</p>
+              <p class="section-kicker">策略概览</p>
               <h2 class="section-title">上链策略</h2>
             </div>
           </div>
@@ -354,7 +357,7 @@ watch(
           <article class="workspace-card glass-panel">
             <div class="workspace-card__header">
               <div>
-                <p class="section-kicker">Policy Guide</p>
+                <p class="section-kicker">上链规则</p>
                 <h2 class="section-title">上链边界</h2>
                 <p class="workspace-card__lede">这块用来明确哪些动作必须上链，哪些动作当前只保留审计记录。</p>
               </div>
@@ -392,7 +395,7 @@ watch(
 
             <form class="form-grid" @submit.prevent="loadRecords">
               <label>
-                <span>Dataset ID</span>
+                <span>数据集 ID</span>
                 <input v-model="filters.datasetId" type="text" />
               </label>
               <label>
@@ -447,7 +450,7 @@ watch(
           <article class="workspace-card glass-panel">
             <div class="workspace-card__header">
               <div>
-                <p class="section-kicker">Chain Stream</p>
+                <p class="section-kicker">记录列表</p>
                 <h2 class="section-title">链业务记录</h2>
               </div>
               <span class="status-chip">{{ records.length }} 条记录</span>
@@ -517,20 +520,20 @@ watch(
 
                 <div class="chain-card__actions">
                   <RouterLink class="chain-card__link" :to="`/datasets/${record.datasetId}`">打开数据详情</RouterLink>
-                  <RouterLink class="chain-card__link" :to="auditLinkFor(record)">打开审计流</RouterLink>
+                  <RouterLink class="chain-card__link" :to="auditLinkFor(record)">打开审计记录</RouterLink>
                   <RouterLink
                     v-if="record.eventType.startsWith('ACCESS_')"
                     class="chain-card__link"
                     :to="requestLinkFor(record)"
                   >
-                    打开审批台
+                    打开访问申请
                   </RouterLink>
                   <RouterLink
                     v-if="record.eventType.startsWith('TRAINING_')"
                     class="chain-card__link"
                     :to="{ path: '/training-jobs', query: { source: 'chain-record', datasetId: record.datasetId } }"
                   >
-                    打开训练页
+                    打开训练任务
                   </RouterLink>
                   <RouterLink
                     v-if="record.eventType.startsWith('MODEL_')"
@@ -589,11 +592,9 @@ watch(
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   gap: 20px;
-  padding: 26px;
-  border-radius: 30px;
-  background:
-    linear-gradient(135deg, rgba(7, 19, 26, 0.96), rgba(6, 13, 18, 0.84)),
-    radial-gradient(circle at top left, rgba(116, 210, 220, 0.14), transparent 36%);
+  padding: var(--space-hero);
+  border-radius: var(--radius-hero);
+  background: var(--panel-gradient);
 }
 
 .hero-panel__copy,
@@ -606,7 +607,7 @@ watch(
 .policy-list,
 .hero-lane__steps {
   display: grid;
-  gap: 18px;
+  gap: var(--space-list);
 }
 
 .hero-panel h1,
@@ -629,18 +630,18 @@ watch(
 
 .workspace-card__flash {
   margin: 0 0 14px;
-  padding: 12px 14px;
-  border: 1px solid rgba(116, 210, 220, 0.18);
-  border-radius: 16px;
-  background: rgba(8, 18, 25, 0.72);
+  padding: var(--space-subpanel);
+  border: 1px solid rgba(49, 87, 102, 0.16);
+  border-radius: var(--radius-subpanel);
+  background: var(--panel-soft-gradient);
 }
 
 .hero-panel__hint {
   margin: 0;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background: rgba(6, 18, 24, 0.72);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
   line-height: 1.7;
 }
 
@@ -662,15 +663,16 @@ watch(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
-  padding: 0 16px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(12, 24, 32, 0.92);
+  border-radius: var(--radius-pill);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
   text-decoration: none;
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
 }
@@ -684,10 +686,10 @@ watch(
   display: grid;
   gap: 8px;
   max-width: 720px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(235, 178, 102, 0.18);
-  background: rgba(17, 24, 16, 0.42);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line-warm);
+  background: var(--panel-soft-gradient);
 }
 
 .hero-panel__guide span,
@@ -709,7 +711,7 @@ watch(
 .chain-card strong,
 .hero-lane__step strong {
   display: block;
-  font-family: var(--display);
+  font-family: var(--body);
 }
 
 .hero-panel__guide strong {
@@ -726,17 +728,15 @@ watch(
 .hero-lane,
 .policy-card,
 .chain-card {
-  padding: 18px;
-  border-radius: 24px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background:
-    linear-gradient(180deg, rgba(4, 15, 21, 0.94), rgba(8, 17, 23, 0.78)),
-    radial-gradient(circle at top right, rgba(116, 210, 220, 0.08), transparent 30%);
+  padding: var(--space-card);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background: var(--panel-gradient);
 }
 
 .chain-card--focus {
-  border-color: rgba(235, 178, 102, 0.28);
-  box-shadow: inset 0 0 0 1px rgba(235, 178, 102, 0.08);
+  border-color: rgba(156, 107, 54, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(156, 107, 54, 0.08);
 }
 
 .summary-strip__card strong {
@@ -783,7 +783,7 @@ watch(
 .form-grid,
 .policy-list {
   display: grid;
-  gap: 12px;
+  gap: var(--space-list-tight);
 }
 
 .hero-spotlight__meta {
@@ -793,10 +793,10 @@ watch(
 .hero-spotlight__meta div,
 .chain-card__details div,
 .hero-lane__step {
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.1);
-  background: rgba(8, 18, 25, 0.76);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .chain-layout {
@@ -805,7 +805,7 @@ watch(
 
 .workspace-card {
   padding: 20px;
-  border-radius: 24px;
+  border-radius: var(--radius-panel);
 }
 
 .form-grid label {
@@ -823,23 +823,24 @@ watch(
 .form-grid input,
 .form-grid select {
   width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
+  min-height: var(--field-height);
+  padding: var(--space-field-x);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(8, 18, 25, 0.94);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
   color: var(--text-main);
 }
 
 .form-grid__submit {
-  min-height: 42px;
-  padding: 0 16px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
   border: 1px solid var(--line-warm);
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(235, 178, 102, 0.24), rgba(235, 178, 102, 0.12));
+  border-radius: var(--radius-pill);
+  background: var(--button-warm-gradient);
   color: var(--text-main);
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 

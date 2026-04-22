@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import PageHero from '../components/PageHero.vue'
+import SurfaceCard from '../components/SurfaceCard.vue'
 import { getAudits, updateModelGovernance } from '../api/client'
+import { useAsyncView } from '../composables/useAsyncView'
 import { useActorProfile } from '../composables/useActorProfile'
 import { useToast } from '../composables/useToast'
 import type { AuditEvent } from '../types/api'
@@ -16,8 +19,9 @@ const { actorProfile } = useActorProfile()
 const route = useRoute()
 const { pushToast } = useToast()
 
-const loading = ref(true)
-const error = ref<string | null>(null)
+const { loading, error, run: runAuditLoad } = useAsyncView({
+  initialLoading: true,
+})
 const auditRows = ref<AuditEvent[]>([])
 const governingModelId = ref('')
 const focusModelId = computed(() =>
@@ -53,21 +57,21 @@ const roleGuide = computed(() => {
   if (role === 'admin') {
     return {
       note: '优先关注登录、账户治理和训练失败事件，监管视角下可以直接回跳训练页、数据详情或链轨迹继续排查。',
-      emptyStream: '当前全局还没有审计事件。先执行一次登录、建号、审批或训练动作，再回来查看第一批监管记录。',
-      emptyTraining: '当前筛选范围内还没有训练类事件。创建或刷新一条训练任务后，这里会出现对应的编排轨迹。',
+      emptyStream: '当前没有审计事件。先执行一次登录、建号、审批或训练动作。',
+      emptyTraining: '当前没有训练类事件。创建或刷新一条训练任务后，这里会出现对应轨迹。',
     }
   }
   if (role === 'owner' || role === 'approver') {
     return {
       note: '这里会先收敛本机构的审批、训练和账户动作，适合从机构侧回看治理闭环。',
-      emptyStream: '当前机构范围内还没有审计事件。下一次审批、训练或账户操作会自动出现在这里。',
-      emptyTraining: '当前机构范围内还没有训练类事件。可先在审批台批准一条申请，再带入训练页触发任务。',
+      emptyStream: '当前机构范围内没有审计事件。下一次审批、训练或账户操作会自动出现在这里。',
+      emptyTraining: '当前机构范围内没有训练类事件。可先批准一条申请，再带入训练页触发任务。',
     }
   }
   return {
     note: '这里主要用来回看你自己的登录、申请、训练与读取轨迹，不会暴露其他角色的事件。',
-    emptyStream: '当前个人范围内还没有审计事件。登录、申请访问或发起训练后，会逐步累积你的个人轨迹。',
-    emptyTraining: '当前个人范围内还没有训练类事件。先从已批准的数据集发起训练，再回来追踪对应事件。',
+    emptyStream: '当前个人范围内没有审计事件。登录、申请访问或训练后会逐步累积记录。',
+    emptyTraining: '当前个人范围内没有训练类事件。先从已批准的数据集发起训练。',
   }
 })
 const intakeHint = computed(() => {
@@ -231,22 +235,23 @@ function applyRouteFilters() {
 }
 
 async function loadAudits() {
-  loading.value = true
-  error.value = null
-
-  try {
-    auditRows.value = await getAudits(actorProfile.value, {
+  const rows = await runAuditLoad(
+    () =>
+      getAudits(actorProfile.value, {
       datasetId: filters.datasetId.trim() || undefined,
       actorId: filters.actorId.trim() || undefined,
       action: filters.action || undefined,
       status: filters.status || undefined,
       actorOrg: filters.actorOrg.trim() || undefined,
-    })
-  } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : '加载审计事件失败。'
-  } finally {
-    loading.value = false
+      }),
+    '加载审计事件失败。',
+  )
+
+  if (!rows) {
+    return
   }
+
+  auditRows.value = rows
 }
 
 onMounted(() => {
@@ -265,34 +270,31 @@ watch(
 
 <template>
   <div class="audits-page">
-    <section class="hero-panel glass-panel">
-      <div class="hero-panel__copy">
-        <p class="section-kicker">Audit Control</p>
-        <h1>把登录、审批、回放和账户动作汇成一条可追溯时间线。</h1>
-        <p class="hero-panel__lede">
-          当前身份是 {{ actorProfile.actorId }} / {{ formatRoleLabel(actorProfile.actorRole) }} /
-          {{ formatOrganizationLabel(actorProfile.actorOrg) }}。这个页面是独立审计中心，不再依附单个数据详情页。
-        </p>
+    <PageHero
+      kicker="审计中心"
+      title="把关键操作收进一条可追溯时间线。"
+      :lede="`当前身份是 ${actorProfile.actorId} / ${formatRoleLabel(actorProfile.actorRole)} / ${formatOrganizationLabel(actorProfile.actorOrg)}。这个页面是独立审计中心，不再依附单个数据详情页。`"
+      layout="balanced"
+    >
+      <template #actions>
+        <span class="status-chip">{{ scopeLabel }}</span>
+        <RouterLink class="hero-panel__secondary" to="/">返回总览</RouterLink>
+      </template>
 
-        <div class="hero-panel__actions">
-          <span class="status-chip">{{ scopeLabel }}</span>
-          <RouterLink class="hero-panel__secondary" to="/">返回总览</RouterLink>
-        </div>
-        <p v-if="intakeHint" class="hero-panel__hint">{{ intakeHint }}</p>
-        <div class="hero-panel__guide">
-          <span>Role Guidance</span>
-          <strong>{{ roleGuide.note }}</strong>
-        </div>
-
-        <div class="summary-strip">
-          <article v-for="stat in auditStats" :key="stat.label" class="summary-strip__card">
-            <span>{{ stat.label }}</span>
-            <strong>{{ stat.value }}</strong>
-          </article>
-        </div>
+      <p v-if="intakeHint" class="hero-panel__hint">{{ intakeHint }}</p>
+      <div class="hero-panel__guide">
+        <span>当前提示</span>
+        <strong>{{ roleGuide.note }}</strong>
       </div>
 
-      <div class="hero-panel__rail">
+      <div class="summary-strip">
+        <article v-for="stat in auditStats" :key="stat.label" class="summary-strip__card">
+          <span>{{ stat.label }}</span>
+          <strong>{{ stat.value }}</strong>
+        </article>
+      </div>
+
+      <template #rail>
         <article class="hero-spotlight">
           <p class="hero-spotlight__kicker">{{ focusedModelAudit ? '模型治理焦点' : '最新事件' }}</p>
           <template v-if="focusedModelAudit || spotlightEvent">
@@ -329,7 +331,7 @@ watch(
         <article class="hero-lane">
           <div class="hero-lane__header">
             <div>
-              <p class="section-kicker">Event Mix</p>
+              <p class="section-kicker">事件分布</p>
               <h2 class="section-title">高频动作</h2>
             </div>
           </div>
@@ -341,8 +343,8 @@ watch(
             <p v-if="!actionPreview.length" class="hero-lane__empty">暂无高频动作可展示。</p>
           </div>
         </article>
-      </div>
-    </section>
+      </template>
+    </PageHero>
 
     <div v-if="loading" class="loading-state">正在加载审计中心...</div>
     <div v-else-if="error" class="error-state">{{ error }}</div>
@@ -350,22 +352,19 @@ watch(
     <template v-else>
       <section class="audits-layout">
         <aside class="audits-layout__side">
-          <article class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">检索条件</p>
-                <h2 class="section-title">过滤器</h2>
-                <p class="workspace-card__lede">后端会先按你的角色限制可见范围，再应用这些筛选项。</p>
-              </div>
-            </div>
+          <SurfaceCard
+            kicker="检索条件"
+            title="过滤器"
+            lede="后端会先按你的角色限制可见范围，再应用这些筛选项。"
+          >
 
             <form class="form-grid" @submit.prevent="loadAudits">
               <label>
-                <span>Dataset ID</span>
+                <span>数据集 ID</span>
                 <input v-model="filters.datasetId" type="text" />
               </label>
               <label>
-                <span>Actor ID</span>
+                <span>用户 ID</span>
                 <input v-model="filters.actorId" type="text" />
               </label>
               <label>
@@ -411,16 +410,13 @@ watch(
                 <button type="button" class="form-grid__secondary" @click="resetFilters">清空条件</button>
               </div>
             </form>
-          </article>
+          </SurfaceCard>
 
-          <article class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">Training Lens</p>
-                <h2 class="section-title">训练事件</h2>
-                <p class="workspace-card__lede">快速切到训练相关审计，再一键跳回训练编排页继续追踪任务。</p>
-              </div>
-            </div>
+          <SurfaceCard
+            kicker="训练筛选"
+            title="训练事件"
+            lede="快速切到训练相关审计，再一键跳回训练编排页继续追踪任务。"
+          >
 
             <div class="quick-actions">
               <button type="button" class="quick-action" @click="setActionFilter('TRAINING_RUN_CREATED')">只看创建</button>
@@ -455,18 +451,14 @@ watch(
                 <small>{{ event.detail || '打开模型库继续查看。' }}</small>
               </RouterLink>
             </div>
-          </article>
+          </SurfaceCard>
         </aside>
 
         <div class="audits-layout__main">
-          <article class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">Audit Stream</p>
-                <h2 class="section-title">审计事件流</h2>
-              </div>
+          <SurfaceCard kicker="审计列表" title="审计事件流">
+            <template #meta>
               <span class="status-chip">{{ auditRows.length }} 条记录</span>
-            </div>
+            </template>
 
             <div v-if="auditRows.length" class="audit-list">
               <article
@@ -508,7 +500,7 @@ watch(
 
                 <div v-if="event.action.startsWith('TRAINING_')" class="audit-card__actions">
                   <RouterLink class="audit-card__link" :to="trainingLinkFor(event)">
-                    打开训练页
+                    打开训练任务
                   </RouterLink>
                   <RouterLink v-if="event.datasetId" class="audit-card__link" :to="`/datasets/${event.datasetId}`">
                     打开数据详情
@@ -544,7 +536,7 @@ watch(
             </div>
 
             <div v-else class="empty-state">{{ roleGuide.emptyStream }}</div>
-          </article>
+          </SurfaceCard>
         </div>
       </section>
     </template>
@@ -557,18 +549,6 @@ watch(
   gap: 18px;
 }
 
-.hero-panel {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
-  gap: 20px;
-  padding: 26px;
-  border-radius: 30px;
-  background:
-    linear-gradient(135deg, rgba(7, 19, 26, 0.96), rgba(6, 13, 18, 0.84)),
-    radial-gradient(circle at top left, rgba(116, 210, 220, 0.14), transparent 36%);
-}
-
-.hero-panel__copy,
 .hero-panel__rail,
 .summary-strip,
 .audits-layout,
@@ -577,41 +557,30 @@ watch(
 .audit-list,
 .hero-lane__steps {
   display: grid;
-  gap: 18px;
+  gap: var(--space-list);
 }
 
-.hero-panel h1,
 .section-title {
   margin: 0;
   font-family: var(--display);
-}
-
-.hero-panel h1 {
-  font-size: clamp(2.5rem, 5vw, 4rem);
-  line-height: 0.96;
-}
-
-.hero-panel__lede,
-.workspace-card__lede {
-  color: var(--text-muted);
 }
 
 .hero-panel__guide {
   display: grid;
   gap: 8px;
   max-width: 720px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(235, 178, 102, 0.18);
-  background: rgba(17, 24, 16, 0.42);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line-warm);
+  background: var(--panel-soft-gradient);
 }
 
 .hero-panel__hint {
   margin: 0;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background: rgba(6, 18, 24, 0.72);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
   color: var(--text-muted);
   line-height: 1.7;
 }
@@ -624,13 +593,11 @@ watch(
 }
 
 .hero-panel__guide strong {
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.94rem;
   line-height: 1.6;
 }
 
-.hero-panel__actions,
-.workspace-card__header,
 .audit-card__header,
 .form-grid__actions {
   display: flex;
@@ -644,15 +611,16 @@ watch(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
-  padding: 0 16px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(12, 24, 32, 0.92);
+  border-radius: var(--radius-pill);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
   text-decoration: none;
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -669,15 +637,16 @@ watch(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
-  padding: 0 16px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(12, 24, 32, 0.92);
+  border-radius: var(--radius-pill);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
   text-decoration: none;
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -693,17 +662,15 @@ watch(
 .hero-spotlight,
 .hero-lane,
 .audit-card {
-  padding: 18px;
-  border-radius: 24px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background:
-    linear-gradient(180deg, rgba(4, 15, 21, 0.94), rgba(8, 17, 23, 0.78)),
-    radial-gradient(circle at top right, rgba(116, 210, 220, 0.08), transparent 30%);
+  padding: var(--space-card);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background: var(--panel-gradient);
 }
 
 .audit-card--focus {
-  border-color: rgba(235, 178, 102, 0.28);
-  box-shadow: inset 0 0 0 1px rgba(235, 178, 102, 0.08);
+  border-color: rgba(156, 107, 54, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(156, 107, 54, 0.08);
 }
 
 .summary-strip__card span,
@@ -723,7 +690,7 @@ watch(
 .audit-card strong,
 .hero-lane__step strong {
   display: block;
-  font-family: var(--display);
+  font-family: var(--body);
 }
 
 .summary-strip__card strong {
@@ -766,19 +733,14 @@ watch(
 .hero-spotlight__meta div,
 .audit-card__details div,
 .hero-lane__step {
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.1);
-  background: rgba(8, 18, 25, 0.76);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .audits-layout {
   grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
-}
-
-.workspace-card {
-  padding: 20px;
-  border-radius: 24px;
 }
 
 .form-grid label {
@@ -796,23 +758,24 @@ watch(
 .form-grid input,
 .form-grid select {
   width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
+  min-height: var(--field-height);
+  padding: var(--space-field-x);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(8, 18, 25, 0.94);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
   color: var(--text-main);
 }
 
 .form-grid__submit {
-  min-height: 42px;
-  padding: 0 16px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
   border: 1px solid var(--line-warm);
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(235, 178, 102, 0.24), rgba(235, 178, 102, 0.12));
+  border-radius: var(--radius-pill);
+  background: var(--button-warm-gradient);
   color: var(--text-main);
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -837,8 +800,8 @@ watch(
   justify-content: flex-start;
   gap: 8px;
   min-height: unset;
-  padding: 14px 16px;
-  border-radius: 18px;
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
   text-transform: none;
 }
 
@@ -849,7 +812,7 @@ watch(
 }
 
 .training-preview__item strong {
-  font-family: var(--display);
+  font-family: var(--body);
   color: var(--text-main);
 }
 
@@ -859,7 +822,6 @@ watch(
 }
 
 @media (max-width: 1040px) {
-  .hero-panel,
   .audits-layout,
   .summary-strip,
   .hero-spotlight__meta,
@@ -867,8 +829,6 @@ watch(
     grid-template-columns: 1fr;
   }
 
-  .hero-panel__actions,
-  .workspace-card__header,
   .audit-card__header,
   .form-grid__actions {
     flex-direction: column;

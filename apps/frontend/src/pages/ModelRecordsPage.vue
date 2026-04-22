@@ -138,12 +138,12 @@ const recentlyGovernedRecords = computed(() =>
 )
 const registryGuide = computed(() => {
   if (!records.value.length) {
-    return '当前还没有模型记录，先完成一条训练任务后再回来查看治理分布。'
+    return '当前没有模型记录。先完成一条训练任务，再回来查看治理分布。'
   }
   const activeCount = records.value.filter((record) => record.governanceStatus === 'active').length
   const candidateCount = records.value.filter((record) => record.governanceStatus === 'candidate').length
   if (!activeCount) {
-    return '当前模型池里还没有已激活模型，建议先从候选模型里挑一条进入治理主线。'
+    return '当前模型池里没有已激活模型，建议先从候选模型里挑一条进入治理主线。'
   }
   if (candidateCount > activeCount) {
     return '候选模型仍多于已激活模型，适合优先处理最近完成训练但还未收口的版本。'
@@ -430,6 +430,7 @@ watch(
             </button>
           </div>
           <div v-else class="empty-state">当前还没有治理完成的模型，第一次激活或归档后这里会出现最近动作。</div>
+          
         </article>
       </div>
     </section>
@@ -511,7 +512,7 @@ watch(
 
           <div v-if="timelineLoading" class="empty-state">治理主线正在加载...</div>
           <div v-else-if="!governanceAudits.length" class="empty-state">
-            当前模型还没有独立治理审计事件。完成一次激活或归档后，这里会出现对应轨迹。
+            当前模型没有独立治理审计事件。完成一次激活或归档后，这里会出现对应轨迹。
           </div>
           <div v-else class="governance-lane__events">
             <article v-for="event in governanceAudits" :key="event.id" class="governance-event">
@@ -538,7 +539,7 @@ watch(
             当前身份没有独立链轨迹查看权限，可从模型状态和治理审计继续回看这条主线。
           </div>
           <div v-else-if="!governanceChains.length" class="empty-state">
-            当前模型还没有独立链证明。模型登记或治理上链后，这里会自动形成对应锚点。
+            当前模型没有独立链证明。模型登记或治理上链后，这里会自动形成对应锚点。
           </div>
           <div v-else class="governance-lane__events">
             <article v-for="record in governanceChains" :key="record.id" class="governance-event">
@@ -562,7 +563,7 @@ watch(
 
           <div v-if="timelineLoading" class="empty-state">治理主线正在加载...</div>
           <div v-else-if="!relatedModels.length" class="empty-state">
-            当前数据集下还没有其他版本记录。下一次训练产出新模型后，这里会出现同池版本对照。
+            当前数据集下没有其他版本记录。下一次训练产出新模型后，这里会出现同池版本对照。
           </div>
           <div v-else class="governance-lane__events">
             <button
@@ -622,7 +623,7 @@ watch(
 
       <div v-if="loading" class="empty-state">模型记录正在加载...</div>
       <div v-else-if="!records.length" class="empty-state">
-        当前还没有模型记录。先完成一条训练任务，再回到这里查看自动登记的模型版本。
+        当前没有模型记录。先完成一条训练任务，再回到这里查看自动登记的模型版本。
       </div>
 
       <div v-else class="record-list">
@@ -752,12 +753,18 @@ watch(
 .governance-form,
 .filter-grid {
   display: grid;
-  gap: 18px;
+  gap: var(--space-list);
+}
+
+.model-page {
+  padding-bottom: 8px;
 }
 
 .model-hero,
 .model-panel {
-  padding: 22px 24px;
+  padding: var(--space-panel);
+  border-radius: var(--radius-panel);
+  background: var(--panel-gradient);
 }
 
 .model-hero {
@@ -785,10 +792,10 @@ watch(
 .model-hero__guide,
 .metric-card,
 .record-card {
-  padding: 14px 16px;
-  border-radius: 20px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background: rgba(6, 18, 24, 0.78);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-block);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .model-hero__hint {
@@ -816,7 +823,8 @@ watch(
 .metric-card strong {
   display: block;
   margin-top: 8px;
-  font-family: var(--display);
+  font-family: var(--body);
+  font-weight: 700;
   font-size: 1.9rem;
 }
 
@@ -855,10 +863,10 @@ watch(
 }
 
 .registry-overview__event {
-  padding: 14px 16px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  border-radius: 18px;
-  background: rgba(6, 18, 24, 0.72);
+  padding: var(--space-subpanel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-subpanel);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   text-align: left;
   cursor: pointer;
@@ -866,7 +874,8 @@ watch(
 
 .registry-overview__event strong {
   display: block;
-  font-family: var(--display);
+  font-family: var(--body);
+  font-weight: 700;
 }
 
 .governance-lane__grid {
@@ -885,10 +894,10 @@ watch(
 }
 
 .version-compare {
-  padding: 16px 18px;
-  border-radius: 18px;
-  border: 1px solid rgba(235, 178, 102, 0.16);
-  background: rgba(17, 24, 16, 0.34);
+  padding: var(--space-card);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line-warm);
+  background: var(--warm-panel-gradient);
 }
 
 .version-compare__stats {
@@ -904,17 +913,17 @@ watch(
 .filter-grid select,
 .governance-form select,
 .governance-form input {
-  min-height: 46px;
-  border-radius: 16px;
-  border: 1px solid rgba(108, 166, 186, 0.16);
-  background: rgba(5, 16, 21, 0.86);
+  min-height: var(--field-height);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
   color: var(--text-main);
-  padding: 0 14px;
+  padding: var(--space-field-x);
 }
 
 .record-card--focus {
-  border-color: rgba(235, 178, 102, 0.28);
-  box-shadow: inset 0 0 0 1px rgba(235, 178, 102, 0.08);
+  border-color: rgba(156, 107, 54, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(156, 107, 54, 0.1);
 }
 
 .record-card__meta {
@@ -928,10 +937,10 @@ watch(
 }
 
 .record-card__transition-guide {
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(235, 178, 102, 0.16);
-  background: rgba(17, 24, 16, 0.4);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line-warm);
+  background: var(--warm-panel-gradient);
 }
 
 .ghost-link,
@@ -941,11 +950,12 @@ watch(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
-  padding: 0 16px;
-  border-radius: 999px;
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  min-height: var(--control-height);
+  padding: var(--space-button);
+  border-radius: var(--radius-pill);
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   text-decoration: none;
 }
@@ -953,15 +963,15 @@ watch(
 .ghost-link,
 .ghost-button,
 .status-chip {
-  border: 1px solid rgba(108, 166, 186, 0.18);
-  background: rgba(6, 18, 24, 0.6);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
 }
 
 .primary-button {
-  border: 0;
-  color: #08151a;
-  background: linear-gradient(120deg, var(--amber), #f4d787);
+  border: 1px solid var(--line-warm);
+  color: var(--text-main);
+  background: var(--button-warm-gradient);
 }
 
 .governance-form {

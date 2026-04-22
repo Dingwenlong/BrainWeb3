@@ -1,18 +1,40 @@
-$ErrorActionPreference = "Stop"
-
-$commands = @(
-  @{ Name = "node"; Command = "node -v" },
-  @{ Name = "npm"; Command = "npm -v" },
-  @{ Name = "java"; Command = "java -version" },
-  @{ Name = "mvn"; Command = "mvn -v" },
-  @{ Name = "python"; Command = "python --version" },
-  @{ Name = "docker"; Command = "docker --version" }
+param(
+  [switch]$AllowPortableMaven
 )
 
-foreach ($item in $commands) {
-  Write-Host "Checking $($item.Name) ..." -ForegroundColor Cyan
-  Invoke-Expression $item.Command | Out-Host
+$ErrorActionPreference = "Stop"
+
+$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$workspaceRoot = (Resolve-Path (Join-Path $scriptRoot "..\..")).Path
+
+. (Join-Path $scriptRoot "_tooling.ps1")
+
+Write-Host "Checking node ..." -ForegroundColor Cyan
+node -v | Out-Host
+
+Write-Host "Checking npm ..." -ForegroundColor Cyan
+npm -v | Out-Host
+
+Write-Host "Checking java ..." -ForegroundColor Cyan
+java -version | Out-Host
+
+$mavenCommand = Get-MavenCommand -WorkspaceRoot $workspaceRoot
+if (-not $mavenCommand) {
+  if ($AllowPortableMaven) {
+    throw "Maven is not available yet. Run .\scripts\bootstrap\install-host-tools.ps1 or .\start-project.cmd first."
+  }
+
+  throw "Maven is not available in PATH."
 }
+
+Write-Host "Checking maven ..." -ForegroundColor Cyan
+& $mavenCommand -v | Out-Host
+
+Write-Host "Checking python ..." -ForegroundColor Cyan
+python --version | Out-Host
+
+Write-Host "Checking docker ..." -ForegroundColor Cyan
+docker --version | Out-Host
 
 Write-Host ""
 Write-Host "Environment check completed." -ForegroundColor Green

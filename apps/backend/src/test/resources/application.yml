@@ -17,10 +17,13 @@ spring:
           time_zone: UTC
 
 brainweb3:
+  stage: test
   auth:
     jwt-secret: test-brainweb3-demo-jwt-secret-2026-04-21
     token-ttl-hours: 12
     demo-password: brainweb3-demo
+    allow-demo-bootstrap: true
+    allow-demo-password-login: true
   demo:
     sample-root: .brainweb3-test-samples
   chain:

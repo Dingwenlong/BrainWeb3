@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import PageHero from '../components/PageHero.vue'
+import SurfaceCard from '../components/SurfaceCard.vue'
 import {
   changePassword,
   createAccount,
@@ -14,6 +16,7 @@ import {
   updateOrganizationCredentialStatus,
   verifyCredential,
 } from '../api/client'
+import { toErrorMessage, useAsyncView } from '../composables/useAsyncView'
 import { useActorProfile } from '../composables/useActorProfile'
 import { useToast } from '../composables/useToast'
 import type { AccountUser, ActorIdentity, CredentialVerificationResult, OrganizationIdentity } from '../types/api'
@@ -28,8 +31,9 @@ import {
 const { actorProfile, isAdmin } = useActorProfile()
 const { pushToast } = useToast()
 
-const loading = ref(true)
-const error = ref<string | null>(null)
+const { loading, error, run: runPageLoad, setErrorMessage } = useAsyncView({
+  initialLoading: true,
+})
 const account = ref<AccountUser | null>(null)
 const identity = ref<ActorIdentity | null>(null)
 const credentialVerification = ref<CredentialVerificationResult | null>(null)
@@ -67,18 +71,18 @@ const roleGuide = computed(() => {
   if (isAdmin.value) {
     return {
       note: '管理员可以在这里完成账户创建、状态切换和密码重置，同时保留自保护边界，避免误伤当前治理入口。',
-      credentialHint: 'VC 生命周期也集中在这里治理。签发会恢复可用状态，挂起适合临时冻结，吊销则代表明确撤销凭证。',
+      credentialHint: '凭证生命周期也集中在这里治理。签发会恢复可用状态，挂起适合临时冻结，吊销则代表明确撤销凭证。',
       passwordHint: '修改当前管理员密码会影响下次登录，代重置其他账户密码则会同步作废对方的刷新令牌。',
       directoryHint: '这里展示的是全局账户目录，适合从治理侧巡检角色分布、最近登录和状态切换。',
-      emptyDirectory: '当前还没有其他账户记录，先创建一个研究员或审批人账户，补齐多角色演示面。',
+      emptyDirectory: '当前没有其他账户记录。先创建一个研究员或审批人账户。',
     }
   }
   return {
     note: '非管理员只会看到自己的账户记录，重点是自助改密、确认最近登录以及回看个人身份信息。',
-    credentialHint: '你的 VC 状态会跟随账户和机构治理结果变化，这里主要用于查看，不提供自助变更。',
+    credentialHint: '你的凭证状态会跟随账户和机构治理结果变化，这里主要用于查看，不提供自助变更。',
     passwordHint: '修改密码后，下次登录会使用新密码；如忘记密码，可回到登录页走恢复票据流程。',
     directoryHint: '这里保留的是你的个人账户记录，不会暴露其他人的身份信息或治理动作。',
-    emptyDirectory: '当前还没有账户记录，请稍后刷新；系统至少会保留你当前登录的账户信息。',
+    emptyDirectory: '当前没有账户记录，请稍后刷新。',
   }
 })
 
@@ -125,17 +129,12 @@ function syncOrganizationCredentialForms(rows: OrganizationIdentity[]) {
 }
 
 async function loadPage() {
-  loading.value = true
-  error.value = null
-
-  try {
+  const payload = await runPageLoad(async () => {
     const [currentAccount, currentIdentity] = await Promise.all([
       getCurrentAccount(),
       getCurrentIdentity(),
     ])
-    account.value = currentAccount
-    identity.value = currentIdentity
-    credentialVerification.value = await verifyCredential({
+    const verification = await verifyCredential({
       id: currentIdentity.credential.id,
       type: currentIdentity.credential.type,
       issuerDid: currentIdentity.credential.issuerDid,
@@ -148,25 +147,43 @@ async function loadPage() {
       credentialStatus: currentIdentity.credential.credentialStatus,
       claims: currentIdentity.credential.claims,
     })
+
     if (isAdmin.value) {
-      accountRows.value = await getAccounts()
-      const organizationNames = [...new Set(accountRows.value.map((row) => row.actorOrg))]
-      organizationRows.value = await Promise.all(
+      const accounts = await getAccounts()
+      const organizationNames = [...new Set(accounts.map((row) => row.actorOrg))]
+      const organizations = await Promise.all(
         organizationNames.map((name) => getOrganizationIdentity(name)),
       )
+      return {
+        currentAccount,
+        currentIdentity,
+        verification,
+        accounts,
+        organizations,
+      }
     } else {
-      accountRows.value = account.value ? [account.value] : []
-      organizationRows.value = identity.value
-        ? [await getOrganizationIdentity(identity.value.actorOrg)]
-        : []
+      const organizations = [await getOrganizationIdentity(currentIdentity.actorOrg)]
+      return {
+        currentAccount,
+        currentIdentity,
+        verification,
+        accounts: [currentAccount],
+        organizations,
+      }
     }
-    syncCredentialForms(accountRows.value)
-    syncOrganizationCredentialForms(organizationRows.value)
-  } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : '加载账户页失败。'
-  } finally {
-    loading.value = false
+  }, '加载账户页失败。')
+
+  if (!payload) {
+    return
   }
+
+  account.value = payload.currentAccount
+  identity.value = payload.currentIdentity
+  credentialVerification.value = payload.verification
+  accountRows.value = payload.accounts
+  organizationRows.value = payload.organizations
+  syncCredentialForms(accountRows.value)
+  syncOrganizationCredentialForms(organizationRows.value)
 }
 
 async function submitPasswordChange() {
@@ -179,7 +196,7 @@ async function submitPasswordChange() {
     })
     await loadPage()
   } catch (changeError) {
-    error.value = changeError instanceof Error ? changeError.message : '修改密码失败。'
+    setErrorMessage(toErrorMessage(changeError, '修改密码失败。'))
   }
 }
 
@@ -199,7 +216,7 @@ async function submitCreateAccount() {
     createForm.password = 'brainweb3-demo'
     await loadPage()
   } catch (createError) {
-    error.value = createError instanceof Error ? createError.message : '创建账户失败。'
+    setErrorMessage(toErrorMessage(createError, '创建账户失败。'))
   }
 }
 
@@ -211,7 +228,7 @@ async function toggleStatus(row: AccountUser) {
     })
     await loadPage()
   } catch (updateError) {
-    error.value = updateError instanceof Error ? updateError.message : '更新账户状态失败。'
+    setErrorMessage(toErrorMessage(updateError, '更新账户状态失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -225,7 +242,7 @@ async function promoteToApprover(row: AccountUser) {
     })
     await loadPage()
   } catch (updateError) {
-    error.value = updateError instanceof Error ? updateError.message : '更新账户角色失败。'
+    setErrorMessage(toErrorMessage(updateError, '更新账户角色失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -244,7 +261,7 @@ async function resetPassword(row: AccountUser) {
     })
     await loadPage()
   } catch (resetError) {
-    error.value = resetError instanceof Error ? resetError.message : '重置密码失败。'
+    setErrorMessage(toErrorMessage(resetError, '重置密码失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -259,13 +276,13 @@ async function submitCredentialStatus(row: AccountUser) {
       reason: draft.reason,
     })
     pushToast({
-      title: 'VC 状态已更新',
-      message: `${row.actorId} 的 VC 状态已切换为 ${formatIdentityStatusLabel(draft.status)}。`,
+      title: '凭证状态已更新',
+      message: `${row.actorId} 的凭证状态已切换为 ${formatIdentityStatusLabel(draft.status)}。`,
       tone: draft.status === 'revoked' ? 'warning' : 'success',
     })
     await loadPage()
   } catch (updateError) {
-    error.value = updateError instanceof Error ? updateError.message : '更新 VC 状态失败。'
+    setErrorMessage(toErrorMessage(updateError, '更新凭证状态失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -281,13 +298,13 @@ async function submitOrganizationCredentialStatus(row: OrganizationIdentity) {
       reason: draft.reason,
     })
     pushToast({
-      title: '机构 VC 状态已更新',
-      message: `${formatOrganizationLabel(row.organizationName)} 的 VC 状态已切换为 ${formatIdentityStatusLabel(draft.status)}。`,
+      title: '机构凭证状态已更新',
+      message: `${formatOrganizationLabel(row.organizationName)} 的凭证状态已切换为 ${formatIdentityStatusLabel(draft.status)}。`,
       tone: draft.status === 'revoked' ? 'warning' : 'success',
     })
     await loadPage()
   } catch (updateError) {
-    error.value = updateError instanceof Error ? updateError.message : '更新机构 VC 状态失败。'
+    setErrorMessage(toErrorMessage(updateError, '更新机构凭证状态失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -298,32 +315,33 @@ onMounted(loadPage)
 
 <template>
   <div class="accounts-page">
-    <section class="hero-panel glass-panel">
-      <div class="hero-panel__copy">
-        <p class="section-kicker">Account Mesh</p>
-        <h1>把演示账号升级成真正可管理的账户域。</h1>
-        <p class="hero-panel__lede">
-          当前身份是 {{ actorProfile.actorId }} / {{ formatRoleLabel(actorProfile.actorRole) }} /
-          {{ formatOrganizationLabel(actorProfile.actorOrg) }}。这一页负责把注册、自助改密和管理员账户维护集中到一处。
-        </p>
-        <div class="hero-panel__guide">
-          <span>Role Guidance</span>
-          <strong>{{ roleGuide.note }}</strong>
-        </div>
-
-        <div class="summary-strip">
-          <article v-for="stat in accountStats" :key="stat.label" class="summary-strip__card">
-            <span>{{ stat.label }}</span>
-            <strong>{{ stat.value }}</strong>
-          </article>
-          <article v-for="stat in organizationStats" :key="stat.label" class="summary-strip__card summary-strip__card--secondary">
-            <span>{{ stat.label }}</span>
-            <strong>{{ stat.value }}</strong>
-          </article>
-        </div>
+    <PageHero
+      kicker="账户管理"
+      title="把账户、密码和凭证状态放进一个清晰的管理页。"
+      :lede="`当前身份是 ${actorProfile.actorId} / ${formatRoleLabel(actorProfile.actorRole)} / ${formatOrganizationLabel(actorProfile.actorOrg)}。这一页负责处理账户创建、密码维护和凭证状态查看。`"
+      layout="balanced"
+    >
+      <div class="hero-panel__guide">
+        <span>当前提示</span>
+        <strong>{{ roleGuide.note }}</strong>
       </div>
 
-      <div class="hero-panel__rail">
+      <div class="summary-strip">
+        <article v-for="stat in accountStats" :key="stat.label" class="summary-strip__card">
+          <span>{{ stat.label }}</span>
+          <strong>{{ stat.value }}</strong>
+        </article>
+        <article
+          v-for="stat in organizationStats"
+          :key="stat.label"
+          class="summary-strip__card summary-strip__card--secondary"
+        >
+          <span>{{ stat.label }}</span>
+          <strong>{{ stat.value }}</strong>
+        </article>
+      </div>
+
+      <template #rail>
         <article class="hero-spotlight">
           <p class="hero-spotlight__kicker">当前账户</p>
           <template v-if="account">
@@ -350,23 +368,19 @@ onMounted(loadPage)
             </div>
           </template>
         </article>
-      </div>
-    </section>
+      </template>
+    </PageHero>
 
-    <div v-if="loading" class="loading-state">正在加载账户域...</div>
+    <div v-if="loading" class="loading-state">正在加载账户信息...</div>
     <div v-else-if="error" class="error-state">{{ error }}</div>
 
     <template v-else>
       <section class="accounts-layout">
         <aside class="accounts-layout__side">
-          <article class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">安全设置</p>
-                <h2 class="section-title">修改密码</h2>
-              </div>
-              <RouterLink class="workspace-card__link" to="/">返回总览</RouterLink>
-            </div>
+          <SurfaceCard kicker="安全设置" title="修改密码">
+            <template #meta>
+              <RouterLink class="panel-link" to="/">返回总览</RouterLink>
+            </template>
 
             <form class="form-grid" @submit.prevent="submitPasswordChange">
               <label>
@@ -380,33 +394,29 @@ onMounted(loadPage)
               <button type="submit" class="form-grid__submit">更新当前密码</button>
             </form>
 
-            <p class="workspace-card__note">{{ roleGuide.passwordHint }}</p>
-          </article>
+            <template #note>{{ roleGuide.passwordHint }}</template>
+          </SurfaceCard>
 
-          <article v-if="identity" class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">Identity Card</p>
-                <h2 class="section-title">我的 DID / VC</h2>
-              </div>
-              <RouterLink class="workspace-card__link" to="/identity-center">打开身份中心</RouterLink>
-            </div>
+          <SurfaceCard v-if="identity" kicker="身份凭证" title="我的 DID 与凭证">
+            <template #meta>
+              <RouterLink class="panel-link" to="/identity-center">打开身份中心</RouterLink>
+            </template>
 
             <dl class="account-card__details">
               <div>
-                <dt>Actor DID</dt>
+                <dt>个人 DID</dt>
                 <dd>{{ identity.actorDid }}</dd>
               </div>
               <div>
-                <dt>Org DID</dt>
+                <dt>机构 DID</dt>
                 <dd>{{ identity.organizationDid }}</dd>
               </div>
               <div>
-                <dt>VC 类型</dt>
+                <dt>凭证类型</dt>
                 <dd>{{ identity.credential.type }}</dd>
               </div>
               <div>
-                <dt>VC 状态</dt>
+                <dt>凭证状态</dt>
                 <dd>{{ formatIdentityStatusLabel(identity.credential.credentialStatus) }}</dd>
               </div>
               <div>
@@ -423,25 +433,17 @@ onMounted(loadPage)
               </div>
             </dl>
 
-            <p class="workspace-card__note">
-              {{ credentialVerification?.reason ?? '当前身份 VC 已通过平台内置校验。' }}
-            </p>
-            <p class="workspace-card__note">
-              {{ roleGuide.credentialHint }}
-            </p>
-          </article>
+            <template #note>
+              <p class="panel-note">{{ credentialVerification?.reason ?? '当前身份凭证已通过平台内置校验。' }}</p>
+              <p class="panel-note">{{ roleGuide.credentialHint }}</p>
+            </template>
+          </SurfaceCard>
 
-          <article v-if="isAdmin" class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">Admin Create</p>
-                <h2 class="section-title">创建账户</h2>
-              </div>
-            </div>
+          <SurfaceCard v-if="isAdmin" kicker="新建账户" title="创建账户">
 
             <form class="form-grid" @submit.prevent="submitCreateAccount">
               <label>
-                <span>Actor ID</span>
+                <span>账户 ID</span>
                 <input v-model="createForm.actorId" type="text" />
               </label>
               <label>
@@ -474,19 +476,18 @@ onMounted(loadPage)
               </label>
               <button type="submit" class="form-grid__submit">创建账户</button>
             </form>
-          </article>
+          </SurfaceCard>
         </aside>
 
         <div class="accounts-layout__main">
-          <article class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">Account Directory</p>
-                <h2 class="section-title">{{ isAdmin ? '账户管理台' : '我的账户记录' }}</h2>
-                <p class="workspace-card__note workspace-card__note--inline">{{ roleGuide.directoryHint }}</p>
-              </div>
+          <SurfaceCard
+            kicker="账户目录"
+            :title="isAdmin ? '账户管理台' : '我的账户记录'"
+            :lede="roleGuide.directoryHint"
+          >
+            <template #meta>
               <span class="status-chip">{{ accountRows.length }} 条记录</span>
-            </div>
+            </template>
 
             <div v-if="accountRows.length" class="account-list">
               <article v-for="row in accountRows" :key="row.actorId" class="account-card">
@@ -518,7 +519,7 @@ onMounted(loadPage)
                     <dd>{{ formatTime(row.passwordChangedAt) }}</dd>
                   </div>
                   <div>
-                    <dt>VC 状态</dt>
+                    <dt>凭证状态</dt>
                     <dd>{{ formatIdentityStatusLabel(row.credentialStatus.effectiveStatus) }}</dd>
                   </div>
                   <div>
@@ -528,7 +529,7 @@ onMounted(loadPage)
                 </dl>
 
                 <p class="account-card__hint">
-                  {{ row.credentialStatus.reason || '当前 VC 状态暂无额外说明。' }}
+                  {{ row.credentialStatus.reason || '当前凭证状态暂无额外说明。' }}
                 </p>
 
                 <div class="history-timeline">
@@ -557,7 +558,7 @@ onMounted(loadPage)
                 </div>
                 <div v-if="isAdmin" class="credential-form">
                   <label>
-                    <span>VC 状态</span>
+                    <span>凭证状态</span>
                     <select v-model="credentialForms[row.actorId].status" :disabled="!canManageRow(row) || actionLoadingId === row.actorId">
                       <option value="issued">issued</option>
                       <option value="suspended">suspended</option>
@@ -579,24 +580,24 @@ onMounted(loadPage)
                     @click="submitCredentialStatus(row)"
                     :disabled="!canManageRow(row) || actionLoadingId === row.actorId"
                   >
-                    更新 VC 状态
+                    更新凭证状态
                   </button>
                 </div>
                 <p v-if="isAdmin && !canManageRow(row)" class="account-card__hint">当前登录的管理员账户受保护，停用、降权和管理员代重置都会被拦截。</p>
               </article>
             </div>
             <div v-else class="empty-state">{{ roleGuide.emptyDirectory }}</div>
-          </article>
+          </SurfaceCard>
 
-          <article v-if="organizationRows.length" class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">Organization VC</p>
-                <h2 class="section-title">机构凭证治理</h2>
-                <p class="workspace-card__note workspace-card__note--inline">机构级 DID / VC 会直接影响机构可信状态和数据详情页的身份说明。</p>
-              </div>
+          <SurfaceCard
+            v-if="organizationRows.length"
+            kicker="机构凭证"
+            title="机构凭证治理"
+            lede="机构级 DID 与凭证会直接影响机构可信状态和数据详情页里的身份说明。"
+          >
+            <template #meta>
               <span class="status-chip">{{ organizationRows.length }} 个机构</span>
-            </div>
+            </template>
 
             <div class="account-list">
               <article v-for="row in organizationRows" :key="row.organizationName" class="account-card">
@@ -612,7 +613,7 @@ onMounted(loadPage)
 
                 <dl class="account-card__details">
                   <div>
-                    <dt>VC 类型</dt>
+                    <dt>凭证类型</dt>
                     <dd>{{ row.credential.type }}</dd>
                   </div>
                   <div>
@@ -630,7 +631,7 @@ onMounted(loadPage)
                 </dl>
 
                 <p class="account-card__hint">
-                  {{ row.statusSnapshot.reason || '当前机构 VC 状态暂无额外说明。' }}
+                  {{ row.statusSnapshot.reason || '当前机构凭证状态暂无额外说明。' }}
                 </p>
 
                 <div class="history-timeline">
@@ -643,7 +644,7 @@ onMounted(loadPage)
 
                 <div v-if="isAdmin" class="credential-form">
                   <label>
-                    <span>机构 VC 状态</span>
+                    <span>机构凭证状态</span>
                     <select
                       v-model="organizationCredentialForms[row.organizationName].status"
                       :disabled="actionLoadingId === `org:${row.organizationName}`"
@@ -668,12 +669,12 @@ onMounted(loadPage)
                     @click="submitOrganizationCredentialStatus(row)"
                     :disabled="actionLoadingId === `org:${row.organizationName}`"
                   >
-                    更新机构 VC 状态
+                    更新机构凭证状态
                   </button>
                 </div>
               </article>
             </div>
-          </article>
+          </SurfaceCard>
         </div>
       </section>
     </template>
@@ -686,18 +687,6 @@ onMounted(loadPage)
   gap: 18px;
 }
 
-.hero-panel {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
-  gap: 20px;
-  padding: 26px;
-  border-radius: 30px;
-  background:
-    linear-gradient(135deg, rgba(7, 19, 26, 0.96), rgba(6, 13, 18, 0.84)),
-    radial-gradient(circle at top left, rgba(116, 210, 220, 0.14), transparent 36%);
-}
-
-.hero-panel__copy,
 .hero-panel__rail,
 .summary-strip,
 .accounts-layout,
@@ -705,29 +694,17 @@ onMounted(loadPage)
 .accounts-layout__main,
 .account-list {
   display: grid;
-  gap: 18px;
-}
-
-.hero-panel h1 {
-  margin: 0;
-  font-family: var(--display);
-  font-size: clamp(2.5rem, 5vw, 4rem);
-  line-height: 0.96;
-}
-
-.hero-panel__lede,
-.workspace-card__link {
-  color: var(--text-muted);
+  gap: var(--space-list);
 }
 
 .hero-panel__guide {
   display: grid;
   gap: 8px;
   max-width: 720px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(235, 178, 102, 0.18);
-  background: rgba(17, 24, 16, 0.42);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line-warm);
+  background: var(--panel-soft-gradient);
 }
 
 .hero-panel__guide span {
@@ -738,7 +715,7 @@ onMounted(loadPage)
 }
 
 .hero-panel__guide strong {
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.94rem;
   line-height: 1.6;
 }
@@ -750,12 +727,10 @@ onMounted(loadPage)
 .summary-strip__card,
 .hero-spotlight,
 .account-card {
-  padding: 18px;
-  border-radius: 24px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background:
-    linear-gradient(180deg, rgba(4, 15, 21, 0.94), rgba(8, 17, 23, 0.78)),
-    radial-gradient(circle at top right, rgba(116, 210, 220, 0.08), transparent 30%);
+  padding: var(--space-card);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background: var(--panel-gradient);
 }
 
 .summary-strip__card span,
@@ -774,7 +749,7 @@ onMounted(loadPage)
 .hero-spotlight__meta strong,
 .account-card strong {
   display: block;
-  font-family: var(--display);
+  font-family: var(--body);
 }
 
 .summary-strip__card strong {
@@ -788,7 +763,6 @@ onMounted(loadPage)
 }
 
 .hero-spotlight__headline,
-.workspace-card__header,
 .account-card__header,
 .account-card__actions {
   display: flex;
@@ -810,37 +784,30 @@ onMounted(loadPage)
 
 .hero-spotlight__meta div,
 .account-card__details div {
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.1);
-  background: rgba(8, 18, 25, 0.76);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .accounts-layout {
   grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
 }
 
-.workspace-card {
-  padding: 20px;
-  border-radius: 24px;
-}
-
-.workspace-card__link {
+.panel-link {
   text-decoration: none;
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.8rem;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: var(--text-muted);
 }
 
-.workspace-card__note {
-  margin: 14px 0 0;
+.panel-note {
+  margin: 0;
   color: var(--text-muted);
   line-height: 1.7;
-}
-
-.workspace-card__note--inline {
-  margin-top: 10px;
 }
 
 .form-grid label {
@@ -858,30 +825,31 @@ onMounted(loadPage)
 .form-grid input,
 .form-grid select {
   width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
+  min-height: var(--field-height);
+  padding: var(--space-field-x);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(8, 18, 25, 0.94);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
   color: var(--text-main);
 }
 
 .form-grid__submit,
 .account-card__actions button {
-  min-height: 42px;
-  padding: 0 16px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(12, 24, 32, 0.92);
+  border-radius: var(--radius-pill);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .form-grid__submit {
   border-color: var(--line-warm);
-  background: linear-gradient(180deg, rgba(235, 178, 102, 0.24), rgba(235, 178, 102, 0.12));
+  background: var(--button-warm-gradient);
 }
 
 .account-card__header p,
@@ -903,19 +871,20 @@ onMounted(loadPage)
 
 .history-timeline {
   display: grid;
-  gap: 10px;
+  gap: var(--space-list-tight);
   margin-top: 14px;
 }
 
 .history-timeline__item {
   padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(108, 166, 186, 0.1);
-  background: rgba(8, 18, 25, 0.64);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .history-timeline__item strong {
-  font-family: var(--display);
+  font-family: var(--body);
+  font-weight: 700;
 }
 
 .history-timeline__item p,
@@ -929,10 +898,10 @@ onMounted(loadPage)
   display: grid;
   gap: 10px;
   margin-top: 14px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.1);
-  background: rgba(8, 18, 25, 0.76);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .credential-form label {
@@ -951,18 +920,21 @@ onMounted(loadPage)
 .credential-form select,
 .credential-form__submit {
   width: 100%;
-  min-height: 42px;
-  padding: 10px 12px;
+  min-height: var(--field-height);
+  padding: var(--space-field-x);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(8, 18, 25, 0.94);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
   color: var(--text-main);
 }
 
 .credential-form__submit {
-  border-color: rgba(116, 210, 220, 0.22);
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  min-height: var(--control-height);
+  border-color: var(--line-warm);
+  background: var(--button-warm-gradient);
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -972,7 +944,6 @@ onMounted(loadPage)
 }
 
 @media (max-width: 1040px) {
-  .hero-panel,
   .accounts-layout,
   .summary-strip,
   .hero-spotlight__meta,

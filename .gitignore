@@ -34,3 +34,6 @@ Thumbs.db
 # Coverage
 coverage/
 dist/
+
+# Build artifacts
+artifacts/

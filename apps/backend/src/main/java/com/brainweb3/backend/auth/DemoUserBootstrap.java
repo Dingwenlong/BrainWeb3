@@ -35,6 +35,10 @@ public class DemoUserBootstrap implements ApplicationRunner {
   @Override
   @Transactional
   public void run(ApplicationArguments args) {
+    if (!authProperties.isAllowDemoBootstrap()) {
+      return;
+    }
+
     Instant now = Instant.now();
     for (SeedUser seedUser : DEMO_USERS) {
       if (appUserRepository.existsById(seedUser.actorId())) {

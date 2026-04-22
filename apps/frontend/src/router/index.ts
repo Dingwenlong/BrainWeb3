@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import OverviewPage from '../pages/OverviewPage.vue'
 import { ensureAuthSessionLoaded, useActorProfile } from '../composables/useActorProfile'
 
 const router = createRouter({
@@ -16,7 +15,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'overview',
-      component: OverviewPage,
+      component: () => import('../pages/OverviewPage.vue'),
       meta: {
         requiresAuth: true,
       },

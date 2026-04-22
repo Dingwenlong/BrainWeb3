@@ -1,6 +1,7 @@
 package com.brainweb3.backend.audit;
 
 import com.brainweb3.backend.access.ActorContext;
+import com.brainweb3.backend.config.SensitiveTextSanitizer;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -10,9 +11,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuditService {
 
   private final AuditEventRepository auditEventRepository;
+  private final SensitiveTextSanitizer sensitiveTextSanitizer;
 
-  public AuditService(AuditEventRepository auditEventRepository) {
+  public AuditService(
+      AuditEventRepository auditEventRepository,
+      SensitiveTextSanitizer sensitiveTextSanitizer
+  ) {
     this.auditEventRepository = auditEventRepository;
+    this.sensitiveTextSanitizer = sensitiveTextSanitizer;
   }
 
   @Transactional
@@ -30,7 +36,7 @@ public class AuditService {
     event.setActorOrg(actor.actorOrg());
     event.setAction(action);
     event.setStatus(status);
-    event.setDetail(detail);
+    event.setDetail(sensitiveTextSanitizer.sanitize(detail));
     event.setCreatedAt(Instant.now());
     auditEventRepository.save(event);
   }
@@ -78,7 +84,7 @@ public class AuditService {
         entity.getActorOrg(),
         entity.getAction(),
         entity.getStatus(),
-        entity.getDetail(),
+        sensitiveTextSanitizer.sanitize(entity.getDetail()),
         entity.getCreatedAt()
     );
   }

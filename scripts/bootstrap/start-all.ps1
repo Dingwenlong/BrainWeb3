@@ -1,18 +1,9 @@
-$ErrorActionPreference = "Stop"
-
 param(
   [switch]$InstallDeps,
   [switch]$IncludeFederatedService
 )
 
-function Write-Step {
-  param(
-    [string]$Message
-  )
-
-  Write-Host ""
-  Write-Host "==> $Message" -ForegroundColor Cyan
-}
+$ErrorActionPreference = "Stop"
 
 function Ensure-FileFromTemplate {
   param(
@@ -172,6 +163,8 @@ $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $workspaceRoot = (Resolve-Path (Join-Path $scriptRoot "..\..")).Path
 $runtimeStatePath = Get-RuntimeStatePath -WorkspaceRoot $workspaceRoot
 
+. (Join-Path $scriptRoot "_tooling.ps1")
+
 Write-Step "Preparing workspace"
 Push-Location $workspaceRoot
 try {
@@ -179,7 +172,14 @@ try {
   Stop-TrackedServices -StatePath $runtimeStatePath
 
   Write-Step "Checking local toolchain"
-  & (Join-Path $scriptRoot "check-env.ps1")
+  & (Join-Path $scriptRoot "check-env.ps1") -AllowPortableMaven
+
+  $mavenCommand = Get-MavenCommand -WorkspaceRoot $workspaceRoot
+  if (-not $mavenCommand) {
+    throw "Maven is unavailable. Run .\scripts\bootstrap\install-host-tools.ps1 or .\start-project.cmd first."
+  }
+
+  $escapedMavenCommand = $mavenCommand.Replace("'", "''")
 
   Write-Step "Starting local infrastructure"
   & (Join-Path $scriptRoot "dev-up.ps1")
@@ -194,7 +194,7 @@ try {
   Write-Step "Launching application services"
   $serviceEntries = @()
   $serviceEntries += Open-ServiceWindow -Name "frontend" -WorkingDirectory $workspaceRoot -Command "npm run dev:frontend"
-  $serviceEntries += Open-ServiceWindow -Name "backend" -WorkingDirectory $workspaceRoot -Command "mvn -pl apps/backend spring-boot:run"
+  $serviceEntries += Open-ServiceWindow -Name "backend" -WorkingDirectory $workspaceRoot -Command "& '$escapedMavenCommand' -pl apps/backend spring-boot:run"
   $serviceEntries += Open-ServiceWindow -Name "eeg-service" -WorkingDirectory (Join-Path $workspaceRoot "services\eeg-service") -Command "python .\app.py"
 
   if ($IncludeFederatedService) {

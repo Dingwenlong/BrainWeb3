@@ -172,13 +172,15 @@ function applyRange() {
 
 .timeline-panel__button,
 .range-grid__button {
-  border: 1px solid rgba(255, 187, 112, 0.24);
-  border-radius: 999px;
-  padding: 10px 16px;
-  background: var(--amber-soft);
+  min-height: var(--control-height);
+  border: 1px solid var(--line-warm);
+  border-radius: var(--radius-pill);
+  padding: var(--space-button);
+  background: var(--button-warm-gradient);
   color: var(--text-main);
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -189,18 +191,19 @@ function applyRange() {
 }
 
 .band-switch__item {
-  padding: 9px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(119, 235, 237, 0.18);
-  background: rgba(4, 18, 24, 0.82);
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(49, 87, 102, 0.16);
+  background: var(--button-soft-gradient);
   color: var(--text-muted);
   text-transform: capitalize;
 }
 
 .band-switch__item--active {
   color: var(--text-main);
-  border-color: rgba(119, 235, 237, 0.44);
-  box-shadow: inset 0 0 18px rgba(119, 235, 237, 0.12);
+  border-color: rgba(49, 87, 102, 0.24);
+  box-shadow: inset 0 0 18px rgba(49, 87, 102, 0.08);
 }
 
 .parameter-grid,
@@ -238,10 +241,11 @@ function applyRange() {
 .parameter-grid input,
 .range-grid input {
   width: 100%;
-  border: 1px solid rgba(119, 235, 237, 0.14);
-  border-radius: 14px;
-  padding: 12px 14px;
-  background: rgba(4, 17, 24, 0.88);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  min-height: var(--field-height);
+  padding: var(--space-field-x);
+  background: var(--bg-panel);
   color: var(--text-main);
 }
 
@@ -262,10 +266,11 @@ function applyRange() {
 }
 
 .frame-ribbon__item {
-  padding: 8px 10px;
-  border-radius: 14px;
-  border: 1px solid rgba(119, 235, 237, 0.1);
-  background: rgba(4, 16, 23, 0.9);
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid rgba(49, 87, 102, 0.12);
+  background: var(--panel-soft-gradient);
   color: var(--text-muted);
 }
 

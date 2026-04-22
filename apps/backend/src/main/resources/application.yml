@@ -27,13 +27,15 @@ management:
         include: health,info
 
 brainweb3:
-  stage: bootstrap
+  stage: ${APP_STAGE:bootstrap}
   auth:
     jwt-secret: ${AUTH_JWT_SECRET:brainweb3-demo-jwt-secret-2026-04-21-neural-trust-console}
     token-ttl-hours: ${AUTH_TOKEN_TTL_HOURS:12}
     refresh-token-ttl-days: ${AUTH_REFRESH_TOKEN_TTL_DAYS:14}
     password-reset-ttl-minutes: ${AUTH_PASSWORD_RESET_TTL_MINUTES:30}
     demo-password: ${AUTH_DEMO_PASSWORD:brainweb3-demo}
+    allow-demo-bootstrap: ${AUTH_ALLOW_DEMO_BOOTSTRAP:true}
+    allow-demo-password-login: ${AUTH_ALLOW_DEMO_PASSWORD_LOGIN:true}
   identity:
     issuer-did: ${IDENTITY_ISSUER_DID:did:brainweb3:issuer:platform}
     credential-ttl-days: ${IDENTITY_CREDENTIAL_TTL_DAYS:365}

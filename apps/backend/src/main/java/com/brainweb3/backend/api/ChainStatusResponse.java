@@ -10,6 +10,7 @@ public record ChainStatusResponse(
     String contractName,
     String contractAddress,
     List<String> rpcPeers,
-    String transportSecurity
+    String transportSecurity,
+    boolean detailsRedacted
 ) {
 }

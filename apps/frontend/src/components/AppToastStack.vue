@@ -39,23 +39,22 @@ const { toasts, removeToast } = useToast()
   gap: 16px;
   padding: 16px 18px;
   border-radius: 20px;
-  background: rgba(6, 22, 29, 0.92);
+  background: rgba(255, 252, 247, 0.96);
 }
 
 .toast-card--success {
-  border-color: rgba(119, 235, 237, 0.26);
+  border-color: rgba(49, 87, 102, 0.2);
 }
 
 .toast-card--warning {
-  border-color: rgba(255, 187, 112, 0.3);
+  border-color: rgba(156, 107, 54, 0.22);
 }
 
 .toast-card__title {
   margin: 0;
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.92rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 700;
 }
 
 .toast-card__message {
@@ -69,9 +68,9 @@ const { toasts, removeToast } = useToast()
   border: 0;
   background: transparent;
   color: var(--text-muted);
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.74rem;
-  letter-spacing: 0.1em;
+  font-weight: 600;
   text-transform: uppercase;
 }
 </style>

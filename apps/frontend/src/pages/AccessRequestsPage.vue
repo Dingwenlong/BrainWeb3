@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import PageHero from '../components/PageHero.vue'
+import SurfaceCard from '../components/SurfaceCard.vue'
 import {
   approveAccessRequest,
   getAccessRequests,
   rejectAccessRequest,
   revokeAccessRequest,
 } from '../api/client'
+import { toErrorMessage, useAsyncView } from '../composables/useAsyncView'
 import { useActorProfile } from '../composables/useActorProfile'
 import { useToast } from '../composables/useToast'
 import type { AccessRequest } from '../types/api'
@@ -16,9 +19,10 @@ const { actorProfile } = useActorProfile()
 const { pushToast } = useToast()
 const route = useRoute()
 
-const loading = ref(true)
+const { loading, error, run: runRequestLoad, setErrorMessage } = useAsyncView({
+  initialLoading: true,
+})
 const actionLoadingId = ref<string | null>(null)
-const error = ref<string | null>(null)
 const requestRows = ref<AccessRequest[]>([])
 const approvalPolicy = ref('仅限科研分析，默认开放 24 小时。')
 const rejectionPolicy = ref('拒绝原因：业务说明不足，请补充用途与合规依据。')
@@ -32,26 +36,26 @@ const roleGuide = computed(() => {
   if (role === 'admin') {
     return {
       note: '你现在处于全局监管辅助视角，可以巡检申请流转、抽查审批说明，并把已批准记录带入训练页验证闭环。',
-      emptySpotlight: '当前没有访问申请进入审批台。可以先从研究员视角发起一条申请，随后回到这里验证审批轨迹。',
+      emptySpotlight: '当前没有访问申请。先从研究员视角提交一条申请，再回来查看审批轨迹。',
       emptyQueue: '当前没有待审批记录，审批队列处于空闲状态。',
-      emptyList: '当前没有访问申请记录。先创建一条访问申请，才能验证审批、训练与审计的串联效果。',
+      emptyList: '当前没有访问申请记录。先创建一条申请，再继续审批和训练串联验证。',
       policyHint: '管理员可用这里的说明文案做演示，但真正的授权边界仍以后端规则为准。',
     }
   }
   if (role === 'owner' || role === 'approver') {
     return {
       note: '优先处理待审批记录，再把已批准数据带入训练页，确认机构内授权到训练的接力顺畅。',
-      emptySpotlight: '当前没有访问申请进入审批台，机构工作区暂时空闲。',
+      emptySpotlight: '当前没有访问申请，机构审批区暂时空闲。',
       emptyQueue: '当前没有待审批记录，下一条待决申请会优先出现在这里。',
-      emptyList: '当前没有访问申请记录。等研究员发起访问后，这里会出现完整的审批轨迹。',
+      emptyList: '当前没有访问申请记录。研究员发起访问后，这里会出现完整轨迹。',
       policyHint: '这里填写的是本次动作回写到访问记录里的说明，用来解释你的审批决策。',
     }
   }
   return {
     note: '这里会优先展示你自己的申请记录；获批后可以直接把数据带入训练页，不用来回切页面。',
-    emptySpotlight: '你还没有提交访问申请。先选一份数据发起申请，后续就能从这里继续追踪审批结果。',
+    emptySpotlight: '你还没有提交访问申请。先选一份数据发起申请，再回来追踪结果。',
     emptyQueue: '当前没有待审批记录，因为你的角色只读申请流，不参与审批。',
-    emptyList: '你还没有访问申请记录。先提交一条申请，获批后就能直接发起训练。',
+    emptyList: '你还没有访问申请记录。先提交一条申请，获批后可直接发起训练。',
     policyHint: '你现在看到的是审批说明样板，真正执行批准或拒绝的是机构侧审批人。',
   }
 })
@@ -120,19 +124,20 @@ function trainingLinkFor(row: AccessRequest) {
 }
 
 async function loadRequests() {
-  loading.value = true
-  error.value = null
-
-  try {
-    requestRows.value = await getAccessRequests(actorProfile.value, {
+  const rows = await runRequestLoad(
+    () =>
+      getAccessRequests(actorProfile.value, {
       datasetId: typeof route.query.datasetId === 'string' ? route.query.datasetId : undefined,
       status: typeof route.query.status === 'string' ? route.query.status : undefined,
-    })
-  } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : '加载访问申请失败。'
-  } finally {
-    loading.value = false
+      }),
+    '加载访问申请失败。',
+  )
+
+  if (!rows) {
+    return
   }
+
+  requestRows.value = rows
 }
 
 async function approve(row: AccessRequest) {
@@ -149,7 +154,7 @@ async function approve(row: AccessRequest) {
       tone: 'success',
     })
   } catch (actionError) {
-    error.value = actionError instanceof Error ? actionError.message : '批准访问申请失败。'
+    setErrorMessage(toErrorMessage(actionError, '批准访问申请失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -168,7 +173,7 @@ async function reject(row: AccessRequest) {
       tone: 'warning',
     })
   } catch (actionError) {
-    error.value = actionError instanceof Error ? actionError.message : '拒绝访问申请失败。'
+    setErrorMessage(toErrorMessage(actionError, '拒绝访问申请失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -185,7 +190,7 @@ async function revoke(row: AccessRequest) {
       tone: 'warning',
     })
   } catch (actionError) {
-    error.value = actionError instanceof Error ? actionError.message : '撤销访问申请失败。'
+    setErrorMessage(toErrorMessage(actionError, '撤销访问申请失败。'))
   } finally {
     actionLoadingId.value = null
   }
@@ -203,34 +208,31 @@ watch(
 
 <template>
   <div class="requests-page">
-    <section class="hero-panel glass-panel">
-      <div class="hero-panel__copy">
-        <p class="section-kicker">Approval Command</p>
-        <h1>把访问申请处理成一条清晰、可追踪的决策流。</h1>
-        <p class="hero-panel__lede">
-          当前身份是 {{ actorProfile.actorId }} / {{ formatRoleLabel(actorProfile.actorRole) }} /
-          {{ formatOrganizationLabel(actorProfile.actorOrg) }}。这个页面不再只是读一串记录，而是先把待决事项拉到前台，再把策略说明和处置动作放到同一块视野里。
-        </p>
+    <PageHero
+      kicker="访问治理"
+      title="把访问申请处理成一条清晰、可追踪的业务流程。"
+      :lede="`当前身份是 ${actorProfile.actorId} / ${formatRoleLabel(actorProfile.actorRole)} / ${formatOrganizationLabel(actorProfile.actorOrg)}。这个页面不再只是读一串记录，而是先把待决事项拉到前台，再把策略说明和处置动作放到同一块视野里。`"
+      layout="balanced"
+    >
+      <template #actions>
+        <span class="status-chip">{{ isPrivilegedActor ? '审批模式' : '只读模式' }}</span>
+        <RouterLink class="hero-panel__secondary" to="/">返回总览</RouterLink>
+      </template>
 
-        <div class="hero-panel__actions">
-          <span class="status-chip">{{ isPrivilegedActor ? '审批模式' : '只读模式' }}</span>
-          <RouterLink class="hero-panel__secondary" to="/">返回总览</RouterLink>
-        </div>
-        <p v-if="intakeHint" class="hero-panel__hint">{{ intakeHint }}</p>
-        <div class="hero-panel__guide">
-          <span>Role Guidance</span>
-          <strong>{{ roleGuide.note }}</strong>
-        </div>
-
-        <div class="summary-strip">
-          <article v-for="stat in requestStats" :key="stat.label" class="summary-strip__card">
-            <span>{{ stat.label }}</span>
-            <strong>{{ stat.value }}</strong>
-          </article>
-        </div>
+      <p v-if="intakeHint" class="hero-panel__hint">{{ intakeHint }}</p>
+      <div class="hero-panel__guide">
+        <span>当前提示</span>
+        <strong>{{ roleGuide.note }}</strong>
       </div>
 
-      <div class="hero-panel__rail">
+      <div class="summary-strip">
+        <article v-for="stat in requestStats" :key="stat.label" class="summary-strip__card">
+          <span>{{ stat.label }}</span>
+          <strong>{{ stat.value }}</strong>
+        </article>
+      </div>
+
+      <template #rail>
         <article class="hero-spotlight">
           <p class="hero-spotlight__kicker">优先事项</p>
           <template v-if="spotlightRequest">
@@ -273,27 +275,27 @@ watch(
         <article class="hero-lane">
           <div class="hero-lane__header">
             <div>
-              <p class="section-kicker">Moderation Lane</p>
-              <h2 class="section-title">决策节奏</h2>
+              <p class="section-kicker">处理步骤</p>
+              <h2 class="section-title">决策流程</h2>
             </div>
           </div>
           <div class="hero-lane__steps">
             <div class="hero-lane__step">
-              <strong>Scan</strong>
-              <p>先识别待审批记录和申请背景。</p>
+              <strong>查看申请</strong>
+              <p>先识别待处理记录和申请背景。</p>
             </div>
             <div class="hero-lane__step">
-              <strong>Policy</strong>
+              <strong>确认说明</strong>
               <p>确认批准或拒绝说明是否足够清楚。</p>
             </div>
             <div class="hero-lane__step">
-              <strong>Resolve</strong>
+              <strong>完成处理</strong>
               <p>直接批准、拒绝或撤销，并留下可回看的记录。</p>
             </div>
           </div>
         </article>
-      </div>
-    </section>
+      </template>
+    </PageHero>
 
     <div v-if="loading" class="loading-state">正在加载审批台...</div>
     <div v-else-if="error" class="error-state">{{ error }}</div>
@@ -301,14 +303,11 @@ watch(
     <template v-else>
       <section class="requests-layout">
         <aside class="requests-layout__side">
-          <article class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">审批策略</p>
-                <h2 class="section-title">策略编辑台</h2>
-                <p class="workspace-card__lede">{{ roleGuide.policyHint }}</p>
-              </div>
-            </div>
+          <SurfaceCard
+            kicker="审批策略"
+            title="策略编辑台"
+            :lede="roleGuide.policyHint"
+          >
 
             <div class="form-grid">
               <label>
@@ -321,26 +320,19 @@ watch(
               </label>
             </div>
 
-            <p class="workspace-card__note">
-              {{ roleGuide.policyHint }}
-            </p>
-
             <div class="policy-cards">
               <div v-for="card in policyCards" :key="card.label" class="policy-cards__item">
                 <span>{{ card.label }}</span>
                 <strong>{{ card.value }}</strong>
               </div>
             </div>
-          </article>
+            <template #note>{{ roleGuide.policyHint }}</template>
+          </SurfaceCard>
 
-          <article class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">待决队列</p>
-                <h2 class="section-title">优先处理视图</h2>
-              </div>
+          <SurfaceCard kicker="待决队列" title="优先处理视图">
+            <template #meta>
               <span class="status-chip status-chip--warn">{{ queuePreview.length }} 条待处理</span>
-            </div>
+            </template>
 
             <div v-if="queuePreview.length" class="queue-preview">
               <div v-for="row in queuePreview" :key="row.id" class="queue-preview__item">
@@ -352,19 +344,18 @@ watch(
               </div>
             </div>
             <div v-else class="empty-state">{{ roleGuide.emptyQueue }}</div>
-          </article>
+          </SurfaceCard>
         </aside>
 
         <div class="requests-layout__main">
-          <article class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">申请列表</p>
-                <h2 class="section-title">访问申请记录</h2>
-                <p class="workspace-card__lede">每条记录都保留申请背景、决策状态和跳转入口，便于在审批与数据页之间往返处理。</p>
-              </div>
+          <SurfaceCard
+            kicker="申请列表"
+            title="访问申请记录"
+            lede="每条记录都保留申请背景、决策状态和跳转入口，便于在审批与数据页之间往返处理。"
+          >
+            <template #meta>
               <span class="status-chip">{{ requestRows.length }} 条记录</span>
-            </div>
+            </template>
 
             <div class="request-list" v-if="requestRows.length">
               <article
@@ -464,7 +455,7 @@ watch(
               </article>
             </div>
             <div v-else class="empty-state">{{ roleGuide.emptyList }}</div>
-          </article>
+          </SurfaceCard>
         </div>
       </section>
     </template>
@@ -477,38 +468,6 @@ watch(
   gap: 18px;
 }
 
-.hero-panel {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.95fr);
-  gap: 20px;
-  padding: 26px;
-  border-radius: 30px;
-  background:
-    linear-gradient(135deg, rgba(7, 19, 26, 0.96), rgba(6, 13, 18, 0.84)),
-    radial-gradient(circle at top left, rgba(116, 210, 220, 0.14), transparent 36%);
-}
-
-.hero-panel__copy,
-.hero-panel__rail {
-  display: grid;
-  gap: 18px;
-}
-
-.hero-panel h1 {
-  margin: 0;
-  font-family: var(--display);
-  font-size: clamp(2.5rem, 5vw, 4rem);
-  line-height: 0.96;
-}
-
-.hero-panel__lede {
-  margin: 12px 0 0;
-  max-width: 70ch;
-  color: var(--text-muted);
-  line-height: 1.8;
-}
-
-.hero-panel__actions,
 .hero-spotlight__headline,
 .hero-lane__header {
   display: flex;
@@ -516,7 +475,6 @@ watch(
   align-items: center;
 }
 
-.hero-panel__actions,
 .hero-lane__header {
   flex-wrap: wrap;
 }
@@ -524,16 +482,17 @@ watch(
 .hero-panel__secondary {
   display: inline-flex;
   align-items: center;
-  min-height: 42px;
-  padding: 0 16px;
-  border-radius: 999px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
+  border-radius: var(--radius-pill);
   border: 1px solid var(--line);
-  background: rgba(12, 24, 32, 0.92);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
   text-decoration: none;
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.82rem;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -541,18 +500,18 @@ watch(
   display: grid;
   gap: 8px;
   max-width: 720px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(235, 178, 102, 0.18);
-  background: rgba(17, 24, 16, 0.42);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line-warm);
+  background: var(--panel-soft-gradient);
 }
 
 .hero-panel__hint {
   margin: 0;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background: rgba(6, 18, 24, 0.72);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
   color: var(--text-muted);
   line-height: 1.7;
 }
@@ -565,7 +524,7 @@ watch(
 }
 
 .hero-panel__guide strong {
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.94rem;
   line-height: 1.6;
 }
@@ -587,12 +546,10 @@ watch(
 .hero-lane,
 .policy-cards__item,
 .queue-preview__item {
-  padding: 16px 18px;
-  border-radius: 22px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background:
-    linear-gradient(180deg, rgba(4, 15, 21, 0.94), rgba(8, 17, 23, 0.78)),
-    radial-gradient(circle at top right, rgba(116, 210, 220, 0.08), transparent 30%);
+  padding: var(--space-card);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background: var(--panel-gradient);
 }
 
 .summary-strip__card span,
@@ -621,7 +578,7 @@ watch(
 .policy-cards__item strong,
 .queue-preview__item strong {
   display: block;
-  font-family: var(--display);
+  font-family: var(--body);
 }
 
 .summary-strip__card strong {
@@ -662,10 +619,10 @@ watch(
 
 .hero-spotlight__meta div,
 .hero-lane__step {
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.1);
-  background: rgba(8, 18, 25, 0.76);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .hero-spotlight__meta strong,
@@ -694,30 +651,6 @@ watch(
   display: grid;
   grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
   gap: 18px;
-}
-
-.workspace-card {
-  padding: 20px;
-  border-radius: 24px;
-}
-
-.workspace-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.workspace-card__lede {
-  margin: 10px 0 0;
-  color: var(--text-muted);
-  line-height: 1.7;
-  font-size: 0.9rem;
-}
-
-.workspace-card__note {
-  margin: 14px 0 0;
 }
 
 .policy-cards {
@@ -759,31 +692,29 @@ watch(
 
 .form-grid input {
   width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
+  min-height: var(--field-height);
+  padding: var(--space-field-x);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(8, 18, 25, 0.94);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
   color: var(--text-main);
 }
 
 .request-list {
   display: grid;
-  gap: 14px;
+  gap: var(--space-list);
 }
 
 .request-card {
-  padding: 18px;
-  border-radius: 20px;
+  padding: var(--space-card);
+  border-radius: var(--radius-block);
   border: 1px solid var(--line);
-  background:
-    linear-gradient(180deg, rgba(8, 18, 25, 0.92), rgba(11, 22, 29, 0.72)),
-    radial-gradient(circle at left center, rgba(116, 210, 220, 0.08), transparent 26%);
+  background: var(--panel-gradient);
 }
 
 .request-card--focus {
-  border-color: rgba(235, 178, 102, 0.28);
-  box-shadow: inset 0 0 0 1px rgba(235, 178, 102, 0.08);
+  border-color: rgba(156, 107, 54, 0.26);
+  box-shadow: inset 0 0 0 1px rgba(156, 107, 54, 0.08);
 }
 
 .request-card__header,
@@ -796,7 +727,7 @@ watch(
 
 .request-card__header strong {
   display: block;
-  font-family: var(--display);
+  font-family: var(--body);
 }
 
 .request-card__header p,
@@ -838,9 +769,10 @@ watch(
 .request-card__link {
   color: var(--accent);
   text-decoration: none;
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.82rem;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -851,15 +783,16 @@ watch(
 }
 
 .request-card__actions button {
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(12, 24, 32, 0.92);
+  border-radius: var(--radius-pill);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.8rem;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -869,7 +802,7 @@ watch(
 }
 
 @media (max-width: 1040px) {
-  .hero-panel,
+  .page-hero,
   .requests-layout {
     grid-template-columns: 1fr;
   }
@@ -881,14 +814,6 @@ watch(
 }
 
 @media (max-width: 760px) {
-  .hero-panel {
-    padding: 20px;
-  }
-
-  .hero-panel h1 {
-    font-size: 2.2rem;
-  }
-
   .hero-spotlight__headline,
   .hero-spotlight__meta,
   .request-card__details {

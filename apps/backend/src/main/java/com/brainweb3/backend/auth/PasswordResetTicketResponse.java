@@ -5,6 +5,8 @@ import java.time.Instant;
 public record PasswordResetTicketResponse(
     String actorId,
     String resetToken,
-    Instant expiresAt
+    Instant expiresAt,
+    String deliveryMode,
+    boolean tokenVisible
 ) {
 }

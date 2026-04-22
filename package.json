@@ -7,12 +7,24 @@
     "contracts/solidity"
   ],
   "scripts": {
+    "dev:new-machine": "powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\start-on-new-machine.ps1",
     "dev:all": "powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\start-all.ps1",
     "dev:stop": "powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\stop-all.ps1",
+    "check:prod-env": "powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\check-prod-env.ps1",
+    "smoke:backend": "powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\run-prod-smoke.ps1",
+    "report:acceptance": "powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\build-acceptance-report.ps1",
+    "seed:accounts": "powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\build-account-seed-sql.ps1",
+    "import:account-seed": "powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\import-account-seed.ps1",
+    "package:delivery": "powershell -ExecutionPolicy Bypass -File .\\scripts\\bootstrap\\build-delivery-package.ps1",
     "dev:frontend": "npm --workspace apps/frontend run dev -- --host 0.0.0.0",
     "build:frontend": "npm --workspace apps/frontend run build",
     "test:frontend": "npm --workspace apps/frontend run test",
+    "test:backend": "mvn -pl apps/backend test",
+    "test:eeg-service": "python -m pytest services/eeg-service/tests -q",
+    "test:federated-service": "python -m pytest services/federated-service/tests -q",
+    "test:python-services": "npm run test:eeg-service && npm run test:federated-service",
     "build:contracts": "npm --workspace contracts/solidity run compile",
-    "test:contracts": "npm --workspace contracts/solidity run test"
+    "test:contracts": "npm --workspace contracts/solidity run test",
+    "verify:ci": "npm run build:frontend && npm run test:frontend && npm run test:contracts"
   }
 }

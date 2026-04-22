@@ -1,6 +1,7 @@
 package com.brainweb3.backend.chain;
 
 import com.brainweb3.backend.access.ActorContext;
+import com.brainweb3.backend.config.SensitiveTextSanitizer;
 import com.brainweb3.backend.dataset.persistence.DatasetEntity;
 import com.brainweb3.backend.dataset.persistence.DatasetRepository;
 import java.time.Instant;
@@ -17,17 +18,20 @@ public class ChainBusinessRecordService {
   private final DatasetRepository datasetRepository;
   private final ChainGateway chainGateway;
   private final ChainPolicyService chainPolicyService;
+  private final SensitiveTextSanitizer sensitiveTextSanitizer;
 
   public ChainBusinessRecordService(
       ChainBusinessRecordRepository chainBusinessRecordRepository,
       DatasetRepository datasetRepository,
       ChainGateway chainGateway,
-      ChainPolicyService chainPolicyService
+      ChainPolicyService chainPolicyService,
+      SensitiveTextSanitizer sensitiveTextSanitizer
   ) {
     this.chainBusinessRecordRepository = chainBusinessRecordRepository;
     this.datasetRepository = datasetRepository;
     this.chainGateway = chainGateway;
     this.chainPolicyService = chainPolicyService;
+    this.sensitiveTextSanitizer = sensitiveTextSanitizer;
   }
 
   @Transactional
@@ -41,6 +45,7 @@ public class ChainBusinessRecordService {
   ) {
     DatasetEntity dataset = datasetRepository.findById(datasetId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dataset not found."));
+    String sanitizedDetail = sensitiveTextSanitizer.sanitize(detail);
 
     ChainBusinessRecordEntity entity = new ChainBusinessRecordEntity();
     entity.setDatasetId(dataset.getId());
@@ -50,7 +55,7 @@ public class ChainBusinessRecordService {
     entity.setActorId(actor.actorId());
     entity.setActorRole(actor.actorRole());
     entity.setActorOrg(actor.actorOrg());
-    entity.setDetail(detail);
+    entity.setDetail(sanitizedDetail);
     entity.setAnchoredAt(Instant.now());
 
     if (!chainPolicyService.shouldAnchor(eventType)) {
@@ -68,7 +73,7 @@ public class ChainBusinessRecordService {
                 actor.actorId(),
                 actor.actorRole(),
                 actor.actorOrg(),
-                detail,
+                sanitizedDetail,
                 Instant.now()
             )
         );
@@ -157,8 +162,8 @@ public class ChainBusinessRecordService {
         valueOrEmpty(entity.getContractAddress()),
         valueOrEmpty(entity.getEventHash()),
         valueOrEmpty(entity.getChainTxHash()),
-        valueOrEmpty(entity.getDetail()),
-        valueOrEmpty(entity.getAnchorError()),
+        valueOrEmpty(sensitiveTextSanitizer.sanitize(entity.getDetail())),
+        valueOrEmpty(sensitiveTextSanitizer.sanitize(entity.getAnchorError())),
         entity.getAnchoredAt()
     );
   }
@@ -200,7 +205,7 @@ public class ChainBusinessRecordService {
     entity.setContractAddress(runtimeStatus.contractAddress());
     entity.setEventHash(null);
     entity.setChainTxHash(null);
-    entity.setAnchorError(exception.getMessage());
+    entity.setAnchorError(sensitiveTextSanitizer.sanitize(exception.getMessage()));
     entity.setAnchoredAt(Instant.now());
   }
 

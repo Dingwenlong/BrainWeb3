@@ -61,7 +61,7 @@ const intensityBars = computed(() =>
   <section class="metrics">
     <div class="metrics__heading">
       <div>
-        <p class="section-kicker">神经读数</p>
+        <p class="section-kicker">活跃度读数</p>
         <h2 class="section-title">脑区指标</h2>
       </div>
       <div class="metrics__chips">
@@ -118,31 +118,32 @@ const intensityBars = computed(() =>
 .metrics__focus,
 .metrics__quality,
 .metrics__ladder {
-  border-radius: 22px;
-  padding: 16px;
-  background: rgba(3, 14, 20, 0.82);
-  border: 1px solid rgba(119, 235, 237, 0.08);
+  border-radius: var(--radius-block);
+  padding: var(--space-card);
+  background: var(--panel-soft-gradient);
+  border: 1px solid var(--line);
 }
 
 .metrics__focus-kicker {
   margin: 0;
   color: var(--amber);
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .metrics__focus h3 {
   margin: 10px 0 0;
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 1.4rem;
 }
 
 .metrics__focus strong {
   display: block;
   margin-top: 6px;
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 2.2rem;
   line-height: 1;
 }
@@ -157,7 +158,7 @@ const intensityBars = computed(() =>
   display: block;
   margin-top: 10px;
   color: var(--text-main);
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.92rem;
   line-height: 1.5;
 }
@@ -185,14 +186,14 @@ const intensityBars = computed(() =>
 }
 
 .metrics__copy strong {
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.88rem;
 }
 
 .metrics__track {
   height: 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(49, 87, 102, 0.08);
   overflow: hidden;
 }
 

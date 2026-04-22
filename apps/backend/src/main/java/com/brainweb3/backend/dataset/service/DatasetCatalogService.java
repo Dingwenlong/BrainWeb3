@@ -8,6 +8,7 @@ import com.brainweb3.backend.chain.ChainBusinessRecordService;
 import com.brainweb3.backend.chain.ChainGateway;
 import com.brainweb3.backend.chain.ChainRegistrationCommand;
 import com.brainweb3.backend.chain.ChainRegistrationReceipt;
+import com.brainweb3.backend.config.SensitiveTextSanitizer;
 import com.brainweb3.backend.dataset.api.DataAssetProofResponse;
 import com.brainweb3.backend.dataset.api.DatasetDetailResponse;
 import com.brainweb3.backend.dataset.api.DatasetSummaryResponse;
@@ -23,6 +24,7 @@ import com.brainweb3.backend.storage.StoragePersistCommand;
 import com.brainweb3.backend.storage.StoragePersistReceipt;
 import com.brainweb3.backend.training.TrainingJobRepository;
 import com.brainweb3.backend.training.ModelRecordRepository;
+import jakarta.persistence.EntityManager;
 import jakarta.annotation.PostConstruct;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,6 +70,8 @@ public class DatasetCatalogService {
   private final TrainingJobRepository trainingJobRepository;
   private final ModelRecordRepository modelRecordRepository;
   private final DestructionRequestRepository destructionRequestRepository;
+  private final SensitiveTextSanitizer sensitiveTextSanitizer;
+  private final EntityManager entityManager;
   private final Path demoSampleRoot;
   private final TransactionTemplate transactionTemplate;
 
@@ -84,6 +88,8 @@ public class DatasetCatalogService {
       TrainingJobRepository trainingJobRepository,
       ModelRecordRepository modelRecordRepository,
       DestructionRequestRepository destructionRequestRepository,
+      SensitiveTextSanitizer sensitiveTextSanitizer,
+      EntityManager entityManager,
       PlatformTransactionManager transactionManager,
       @Value("${brainweb3.demo.sample-root:.brainweb3-samples}") String demoSampleRoot
   ) {
@@ -99,6 +105,8 @@ public class DatasetCatalogService {
     this.trainingJobRepository = trainingJobRepository;
     this.modelRecordRepository = modelRecordRepository;
     this.destructionRequestRepository = destructionRequestRepository;
+    this.sensitiveTextSanitizer = sensitiveTextSanitizer;
+    this.entityManager = entityManager;
     this.demoSampleRoot = Path.of(demoSampleRoot);
     this.transactionTemplate = new TransactionTemplate(transactionManager);
   }
@@ -120,6 +128,8 @@ public class DatasetCatalogService {
     modelRecordRepository.deleteAll();
     destructionRequestRepository.deleteAll();
     datasetRepository.deleteAll();
+    entityManager.flush();
+    entityManager.clear();
     seedCatalog();
   }
 
@@ -474,7 +484,7 @@ public class DatasetCatalogService {
         dataset.getSamplingRate(),
         List.copyOf(dataset.getTags()),
         valueOrEmpty(dataset.getLastUploadTraceId()),
-        valueOrEmpty(dataset.getLastErrorMessage()),
+        valueOrEmpty(sensitiveTextSanitizer.sanitize(dataset.getLastErrorMessage())),
         isRetryAllowed(dataset),
         uploadAuditRepository.findAllByDataset_IdOrderByCreatedAtDesc(dataset.getId()).stream()
             .map(this::toUploadAudit)
@@ -606,7 +616,7 @@ public class DatasetCatalogService {
     audit.setDataset(dataset);
     audit.setAction(action);
     audit.setStatus(status);
-    audit.setMessage(message);
+    audit.setMessage(sensitiveTextSanitizer.sanitize(message));
     audit.setTraceId(traceId);
     audit.setCreatedAt(Instant.now());
     uploadAuditRepository.save(audit);
@@ -742,7 +752,7 @@ public class DatasetCatalogService {
     return new UploadAuditResponse(
         audit.getAction(),
         audit.getStatus(),
-        audit.getMessage(),
+        sensitiveTextSanitizer.sanitize(audit.getMessage()),
         audit.getTraceId(),
         audit.getCreatedAt()
     );
@@ -847,7 +857,7 @@ public class DatasetCatalogService {
       dataset.setTrainingReadiness("blocked");
       dataset.setUpdatedAt(Instant.now());
       dataset.setLastUploadTraceId(traceId);
-      dataset.setLastErrorMessage(exception.getMessage());
+      dataset.setLastErrorMessage(sensitiveTextSanitizer.sanitize(exception.getMessage()));
 
       if (storageReady) {
         dataset.setUploadStatus("uploaded");
@@ -855,7 +865,13 @@ public class DatasetCatalogService {
         if (proof != null) {
           proof.setAuditState("retry-required");
         }
-        recordAudit(dataset, "FINALIZATION_FAILED", "failed", exception.getMessage(), traceId);
+        recordAudit(
+            dataset,
+            "FINALIZATION_FAILED",
+            "failed",
+            sensitiveTextSanitizer.sanitize(exception.getMessage()),
+            traceId
+        );
         return;
       }
 
@@ -864,7 +880,13 @@ public class DatasetCatalogService {
       if (proof != null && (proof.getAuditState() == null || proof.getAuditState().isBlank())) {
         proof.setAuditState("upload-failed");
       }
-      recordAudit(dataset, "UPLOAD_FAILED", "failed", exception.getMessage(), traceId);
+      recordAudit(
+          dataset,
+          "UPLOAD_FAILED",
+          "failed",
+          sensitiveTextSanitizer.sanitize(exception.getMessage()),
+          traceId
+      );
     });
   }
 

@@ -1,27 +1,50 @@
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;600;700&display=swap');
 
 :root {
-  --bg-page: #071118;
-  --bg-page-alt: #0b1820;
-  --bg-surface: rgba(10, 20, 28, 0.88);
-  --bg-panel: rgba(12, 24, 32, 0.9);
-  --bg-panel-soft: rgba(13, 28, 37, 0.64);
-  --line: rgba(108, 166, 186, 0.18);
-  --line-strong: rgba(108, 166, 186, 0.34);
-  --line-warm: rgba(235, 178, 102, 0.3);
-  --text-main: #ecf6f8;
-  --text-strong: #ffffff;
-  --text-muted: rgba(214, 229, 234, 0.74);
-  --text-faint: rgba(184, 201, 209, 0.54);
-  --accent: #74d2dc;
-  --accent-strong: #28b4c3;
-  --accent-soft: rgba(116, 210, 220, 0.14);
-  --amber: #ebb266;
-  --amber-soft: rgba(235, 178, 102, 0.16);
-  --danger: #f27e7e;
-  --shadow-soft: 0 20px 50px rgba(0, 0, 0, 0.28);
-  --shadow-crisp: 0 10px 24px rgba(0, 0, 0, 0.18);
-  --display: 'Chakra Petch', sans-serif;
+  --bg-page: #f6f1e9;
+  --bg-page-alt: #efe8dc;
+  --bg-surface: rgba(247, 241, 233, 0.9);
+  --bg-panel: rgba(243, 236, 227, 0.88);
+  --bg-panel-soft: rgba(237, 229, 218, 0.82);
+  --bg-panel-muted: rgba(231, 222, 210, 0.68);
+  --surface-gradient: linear-gradient(180deg, rgba(248, 243, 236, 0.96), rgba(239, 231, 220, 0.92));
+  --panel-gradient: linear-gradient(180deg, rgba(244, 238, 230, 0.94), rgba(236, 228, 216, 0.9));
+  --panel-soft-gradient: linear-gradient(180deg, rgba(239, 231, 220, 0.9), rgba(231, 222, 210, 0.82));
+  --warm-panel-gradient: linear-gradient(180deg, rgba(242, 232, 217, 0.92), rgba(233, 222, 207, 0.88));
+  --button-soft-gradient: linear-gradient(180deg, rgba(241, 234, 224, 0.92), rgba(232, 223, 211, 0.84));
+  --button-warm-gradient: linear-gradient(180deg, rgba(167, 124, 78, 0.24), rgba(214, 191, 157, 0.44));
+  --radius-hero: 28px;
+  --radius-panel: 24px;
+  --radius-block: 20px;
+  --radius-subpanel: 18px;
+  --radius-control: 14px;
+  --radius-pill: 999px;
+  --space-hero: 26px;
+  --space-panel: 22px 24px;
+  --space-card: 18px;
+  --space-subpanel: 14px 16px;
+  --space-button: 0 18px;
+  --space-field-x: 0 14px;
+  --space-list: 14px;
+  --space-list-tight: 10px;
+  --control-height: 44px;
+  --field-height: 46px;
+  --line: rgba(53, 67, 75, 0.12);
+  --line-strong: rgba(53, 67, 75, 0.22);
+  --line-warm: rgba(166, 110, 57, 0.28);
+  --text-main: #2b3136;
+  --text-strong: #161b1f;
+  --text-muted: #667078;
+  --text-faint: #7e878b;
+  --accent: #315766;
+  --accent-strong: #234653;
+  --accent-soft: rgba(49, 87, 102, 0.1);
+  --amber: #9c6b36;
+  --amber-soft: rgba(156, 107, 54, 0.12);
+  --danger: #b2554c;
+  --shadow-soft: 0 22px 40px rgba(102, 84, 60, 0.08);
+  --shadow-crisp: 0 10px 20px rgba(102, 84, 60, 0.06);
+  --display: 'Noto Serif SC', serif;
   --body: 'Noto Sans SC', sans-serif;
 
   color: var(--text-main);
@@ -47,8 +70,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(116, 210, 220, 0.12), transparent 20%),
-    radial-gradient(circle at top right, rgba(235, 178, 102, 0.08), transparent 18%),
+    radial-gradient(circle at top left, rgba(49, 87, 102, 0.08), transparent 18%),
+    radial-gradient(circle at top right, rgba(156, 107, 54, 0.08), transparent 20%),
     linear-gradient(180deg, var(--bg-page), var(--bg-page-alt));
 }
 
@@ -57,12 +80,12 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 28px 28px;
+    linear-gradient(rgba(49, 87, 102, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(49, 87, 102, 0.03) 1px, transparent 1px);
+  background-size: 36px 36px;
   pointer-events: none;
-  opacity: 0.45;
-  mask-image: linear-gradient(180deg, black, transparent 85%);
+  opacity: 0.55;
+  mask-image: linear-gradient(180deg, black, transparent 90%);
 }
 
 button,
@@ -104,10 +127,10 @@ a {
 
 .glass-panel {
   position: relative;
-  background: var(--bg-surface);
+  background: var(--surface-gradient);
   border: 1px solid var(--line);
   box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(10px);
 }
 
 .glass-panel::before {
@@ -115,23 +138,25 @@ a {
   position: absolute;
   inset: 1px;
   border-radius: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.46);
   pointer-events: none;
 }
 
 .section-kicker {
   margin: 0 0 8px;
   color: var(--accent);
-  font-family: var(--display);
-  font-size: 0.78rem;
-  letter-spacing: 0.18em;
+  font-family: var(--body);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .section-title {
   margin: 0;
   font-family: var(--display);
-  letter-spacing: 0.03em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .status-chip {
@@ -142,11 +167,12 @@ a {
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid var(--line-strong);
-  background: rgba(12, 27, 35, 0.88);
+  background: rgba(242, 235, 226, 0.84);
   color: var(--accent);
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.76rem;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -180,7 +206,7 @@ a {
   padding: 14px 16px;
   border-radius: 14px;
   border: 1px solid var(--line);
-  background: var(--bg-panel-soft);
+  background: var(--panel-gradient);
 }
 
 .metric-card span {
@@ -193,25 +219,30 @@ a {
   display: block;
   margin-top: 8px;
   color: var(--text-strong);
-  font-family: var(--display);
-  font-size: 1.2rem;
+  font-family: var(--body);
+  font-size: 1.12rem;
+  font-weight: 700;
   line-height: 1.15;
 }
 
 .loading-state,
 .error-state,
 .empty-state {
-  padding: 24px;
-  border-radius: 16px;
+  padding: 20px;
+  border-radius: var(--radius-subpanel);
   border: 1px dashed var(--line-strong);
-  background: rgba(10, 20, 28, 0.72);
+  background: rgba(242, 234, 223, 0.82);
   color: var(--text-muted);
+  line-height: 1.7;
 }
 
 input,
 select,
 textarea {
   outline: none;
+  border: 1px solid var(--line);
+  background: rgba(246, 241, 234, 0.94);
+  color: var(--text-main);
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
@@ -221,6 +252,6 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: rgba(116, 210, 220, 0.42);
-  box-shadow: 0 0 0 3px rgba(116, 210, 220, 0.08);
+  border-color: rgba(49, 87, 102, 0.34);
+  box-shadow: 0 0 0 3px rgba(49, 87, 102, 0.08);
 }

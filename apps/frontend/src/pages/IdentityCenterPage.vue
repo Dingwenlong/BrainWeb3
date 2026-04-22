@@ -9,6 +9,7 @@ import {
   getOrganizationIdentity,
   verifyCredential,
 } from '../api/client'
+import { useAsyncView } from '../composables/useAsyncView'
 import { useActorProfile } from '../composables/useActorProfile'
 import type {
   AccountUser,
@@ -28,8 +29,9 @@ import {
 
 const { actorProfile, isAdmin } = useActorProfile()
 
-const loading = ref(true)
-const error = ref<string | null>(null)
+const { loading, error, run: runPageLoad } = useAsyncView({
+  initialLoading: true,
+})
 const account = ref<AccountUser | null>(null)
 const identity = ref<ActorIdentity | null>(null)
 const verification = ref<CredentialVerificationResult | null>(null)
@@ -47,18 +49,18 @@ const scopeLabel = computed(() => {
 const roleGuide = computed(() => {
   if (isAdmin.value) {
     return {
-      note: '这里用于集中查看账户 VC、机构 VC、治理时间线和身份相关审计，再决定是否回到账户治理台执行变更。',
-      accountEmpty: '当前还没有账户身份记录。先在账户页创建一批研究员或审批人，再回来查看身份分布。',
-      orgEmpty: '当前还没有机构身份记录。只要账户目录里出现机构归属，这里就会自动汇聚对应机构身份。',
-      auditEmpty: '当前还没有身份治理审计。登录、建号、改密、VC 状态更新后，这里会逐步形成时间线。',
+      note: '这里用于集中查看账户凭证、机构凭证、治理时间线和身份相关审计，再决定是否回到账户管理页执行变更。',
+      accountEmpty: '当前没有账户身份记录。先在账户页创建账户，再回来查看身份分布。',
+      orgEmpty: '当前没有机构身份记录。账户目录出现机构归属后，这里会自动汇聚。',
+      auditEmpty: '当前没有身份治理审计。登录、建号、改密或凭证更新后会逐步形成时间线。',
     }
   }
 
   return {
-    note: '这里集中展示你自己的 DID / VC、机构身份状态和最近身份审计，重点是回看可信身份而不是做治理操作。',
-    accountEmpty: '当前还没有可展示的个人账户身份记录，请稍后刷新。',
+    note: '这里集中展示你自己的 DID、凭证状态和最近身份审计，重点是回看可信身份而不是做治理操作。',
+    accountEmpty: '当前没有可展示的个人账户身份记录，请稍后刷新。',
     orgEmpty: '当前机构身份暂未返回，请稍后重试。',
-    auditEmpty: '当前还没有你的身份审计事件。登录、改密或恢复密码后，这里会逐步出现轨迹。',
+    auditEmpty: '当前没有你的身份审计事件。登录、改密或恢复密码后会逐步出现轨迹。',
   }
 })
 
@@ -72,11 +74,11 @@ const currentOrganization = computed(
 const identityStats = computed(() => [
   { label: '账户身份', value: String(accountRows.value.length) },
   {
-    label: '待治理账户 VC',
+    label: '待治理账户凭证',
     value: String(accountRows.value.filter((row) => row.credentialStatus.effectiveStatus !== 'issued').length),
   },
   {
-    label: '待治理机构 VC',
+    label: '待治理机构凭证',
     value: String(organizationRows.value.filter((row) => row.statusSnapshot.effectiveStatus !== 'issued').length),
   },
   { label: '身份审计事件', value: String(identityAuditRows.value.length) },
@@ -107,19 +109,14 @@ function isIdentityAudit(action: string) {
 }
 
 async function loadPage() {
-  loading.value = true
-  error.value = null
-
-  try {
+  const payload = await runPageLoad(async () => {
     const [currentAccount, currentIdentity, auditRows] = await Promise.all([
       getCurrentAccount(),
       getCurrentIdentity(),
       getAudits(actorProfile.value),
     ])
 
-    account.value = currentAccount
-    identity.value = currentIdentity
-    verification.value = await verifyCredential({
+    const credentialVerification = await verifyCredential({
       id: currentIdentity.credential.id,
       type: currentIdentity.credential.type,
       issuerDid: currentIdentity.credential.issuerDid,
@@ -132,21 +129,43 @@ async function loadPage() {
       credentialStatus: currentIdentity.credential.credentialStatus,
       claims: currentIdentity.credential.claims,
     })
-    identityAuditRows.value = auditRows.filter((row) => isIdentityAudit(row.action))
+    const identityAudits = auditRows.filter((row) => isIdentityAudit(row.action))
 
     if (isAdmin.value) {
-      accountRows.value = await getAccounts()
-      const organizationNames = [...new Set(accountRows.value.map((row) => row.actorOrg))]
-      organizationRows.value = await Promise.all(organizationNames.map((name) => getOrganizationIdentity(name)))
+      const accounts = await getAccounts()
+      const organizationNames = [...new Set(accounts.map((row) => row.actorOrg))]
+      const organizations = await Promise.all(organizationNames.map((name) => getOrganizationIdentity(name)))
+      return {
+        currentAccount,
+        currentIdentity,
+        credentialVerification,
+        identityAudits,
+        accounts,
+        organizations,
+      }
     } else {
-      accountRows.value = currentAccount ? [currentAccount] : []
-      organizationRows.value = [await getOrganizationIdentity(currentIdentity.actorOrg)]
+      const organizations = [await getOrganizationIdentity(currentIdentity.actorOrg)]
+      return {
+        currentAccount,
+        currentIdentity,
+        credentialVerification,
+        identityAudits,
+        accounts: currentAccount ? [currentAccount] : [],
+        organizations,
+      }
     }
-  } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : '加载身份中心失败。'
-  } finally {
-    loading.value = false
+  }, '加载身份中心失败。')
+
+  if (!payload) {
+    return
   }
+
+  account.value = payload.currentAccount
+  identity.value = payload.currentIdentity
+  verification.value = payload.credentialVerification
+  identityAuditRows.value = payload.identityAudits
+  accountRows.value = payload.accounts
+  organizationRows.value = payload.organizations
 }
 
 onMounted(loadPage)
@@ -156,8 +175,8 @@ onMounted(loadPage)
   <div class="identity-page">
     <section class="hero-panel glass-panel">
       <div class="hero-panel__copy">
-        <p class="section-kicker">Identity Control</p>
-        <h1>把 DID、VC、治理快照和身份审计收进一个独立工作区。</h1>
+        <p class="section-kicker">身份中心</p>
+        <h1>把身份凭证、治理状态和相关审计集中在一个页面。</h1>
         <p class="hero-panel__lede">
           当前身份是 {{ actorProfile.actorId }} / {{ formatRoleLabel(actorProfile.actorRole) }} /
           {{ formatOrganizationLabel(actorProfile.actorOrg) }}。这里负责汇聚可信身份，不再把所有内容都塞进账户页。
@@ -170,7 +189,7 @@ onMounted(loadPage)
         </div>
 
         <div class="hero-panel__guide">
-          <span>Role Guidance</span>
+          <span>当前提示</span>
           <strong>{{ roleGuide.note }}</strong>
         </div>
 
@@ -196,10 +215,10 @@ onMounted(loadPage)
               </span>
             </div>
             <p class="hero-spotlight__context">{{ identity.actorDid }}</p>
-            <p class="hero-spotlight__reason">{{ verification?.reason ?? '当前身份 VC 已通过平台校验。' }}</p>
+            <p class="hero-spotlight__reason">{{ verification?.reason ?? '当前身份凭证已通过平台校验。' }}</p>
             <div class="hero-spotlight__meta">
               <div>
-                <span>VC 状态</span>
+                <span>凭证状态</span>
                 <strong>{{ formatIdentityStatusLabel(identity.credential.credentialStatus) }}</strong>
               </div>
               <div>
@@ -257,7 +276,7 @@ onMounted(loadPage)
           <article v-if="identity" class="workspace-card glass-panel">
             <div class="workspace-card__header">
               <div>
-                <p class="section-kicker">Actor DID / VC</p>
+                <p class="section-kicker">当前身份凭证</p>
                 <h2 class="section-title">当前操作者身份卡</h2>
               </div>
               <RouterLink class="workspace-card__link" to="/accounts">去账户治理</RouterLink>
@@ -265,15 +284,15 @@ onMounted(loadPage)
 
             <dl class="identity-details">
               <div>
-                <dt>Actor DID</dt>
+                <dt>个人 DID</dt>
                 <dd>{{ identity.actorDid }}</dd>
               </div>
               <div>
-                <dt>Org DID</dt>
+                <dt>机构 DID</dt>
                 <dd>{{ identity.organizationDid }}</dd>
               </div>
               <div>
-                <dt>VC 类型</dt>
+                <dt>凭证类型</dt>
                 <dd>{{ identity.credential.type }}</dd>
               </div>
               <div>
@@ -282,13 +301,13 @@ onMounted(loadPage)
               </div>
             </dl>
 
-            <p class="workspace-card__note">{{ verification?.reason ?? '当前 VC 校验结果正常。' }}</p>
+            <p class="workspace-card__note">{{ verification?.reason ?? '当前凭证校验结果正常。' }}</p>
           </article>
 
           <article v-if="currentOrganization" class="workspace-card glass-panel">
             <div class="workspace-card__header">
               <div>
-                <p class="section-kicker">Organization VC</p>
+                <p class="section-kicker">当前机构凭证</p>
                 <h2 class="section-title">当前机构身份</h2>
               </div>
             </div>
@@ -303,7 +322,7 @@ onMounted(loadPage)
                 <dd>{{ currentOrganization.organizationDid }}</dd>
               </div>
               <div>
-                <dt>VC 状态</dt>
+                <dt>凭证状态</dt>
                 <dd>{{ formatIdentityStatusLabel(currentOrganization.statusSnapshot.effectiveStatus) }}</dd>
               </div>
               <div>
@@ -313,7 +332,7 @@ onMounted(loadPage)
             </dl>
 
             <p class="workspace-card__note">
-              {{ currentOrganization.statusSnapshot.reason || '当前机构 VC 状态暂无额外说明。' }}
+              {{ currentOrganization.statusSnapshot.reason || '当前机构凭证状态暂无额外说明。' }}
             </p>
 
             <div v-if="currentOrganization.credentialHistory.length" class="history-timeline">
@@ -334,7 +353,7 @@ onMounted(loadPage)
           <article class="workspace-card glass-panel">
             <div class="workspace-card__header">
               <div>
-                <p class="section-kicker">Account Identity</p>
+                <p class="section-kicker">账户身份</p>
                 <h2 class="section-title">{{ isAdmin ? '账户身份目录' : '我的账户身份' }}</h2>
               </div>
               <span class="status-chip">{{ accountRows.length }} 条记录</span>
@@ -372,7 +391,7 @@ onMounted(loadPage)
                 </dl>
 
                 <p class="identity-card__hint">
-                  {{ row.credentialStatus.reason || '当前账户 VC 状态暂无额外说明。' }}
+                  {{ row.credentialStatus.reason || '当前账户凭证状态暂无额外说明。' }}
                 </p>
 
                 <div class="history-timeline">
@@ -394,7 +413,7 @@ onMounted(loadPage)
           <article class="workspace-card glass-panel">
             <div class="workspace-card__header">
               <div>
-                <p class="section-kicker">Organization Identity</p>
+                <p class="section-kicker">机构身份</p>
                 <h2 class="section-title">{{ isAdmin ? '机构身份目录' : '我的机构身份' }}</h2>
               </div>
               <span class="status-chip">{{ organizationRows.length }} 个机构</span>
@@ -414,7 +433,7 @@ onMounted(loadPage)
 
                 <dl class="identity-card__details">
                   <div>
-                    <dt>VC 类型</dt>
+                    <dt>凭证类型</dt>
                     <dd>{{ row.credential.type }}</dd>
                   </div>
                   <div>
@@ -432,7 +451,7 @@ onMounted(loadPage)
                 </dl>
 
                 <p class="identity-card__hint">
-                  {{ row.statusSnapshot.reason || '当前机构 VC 状态暂无额外说明。' }}
+                  {{ row.statusSnapshot.reason || '当前机构凭证状态暂无额外说明。' }}
                 </p>
 
                 <div class="history-timeline">
@@ -454,9 +473,9 @@ onMounted(loadPage)
           <article class="workspace-card glass-panel">
             <div class="workspace-card__header">
               <div>
-                <p class="section-kicker">Identity Audit</p>
+                <p class="section-kicker">身份审计</p>
                 <h2 class="section-title">身份审计流</h2>
-                <p class="workspace-card__note workspace-card__note--inline">这里只保留认证、账户与 VC 治理相关事件，完整审计仍可跳转到审计中心继续筛查。</p>
+                <p class="workspace-card__note workspace-card__note--inline">这里只保留认证、账户与凭证治理相关事件，完整审计仍可跳转到审计中心继续筛查。</p>
               </div>
               <RouterLink class="workspace-card__link" to="/audits">打开审计中心</RouterLink>
             </div>
@@ -513,11 +532,9 @@ onMounted(loadPage)
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   gap: 20px;
-  padding: 26px;
-  border-radius: 30px;
-  background:
-    linear-gradient(135deg, rgba(7, 19, 26, 0.96), rgba(6, 13, 18, 0.84)),
-    radial-gradient(circle at top left, rgba(116, 210, 220, 0.14), transparent 36%);
+  padding: var(--space-hero);
+  border-radius: var(--radius-hero);
+  background: var(--panel-gradient);
 }
 
 .hero-panel__copy,
@@ -530,7 +547,7 @@ onMounted(loadPage)
 .audit-list,
 .history-timeline {
   display: grid;
-  gap: 18px;
+  gap: var(--space-list);
 }
 
 .hero-panel h1,
@@ -566,15 +583,16 @@ onMounted(loadPage)
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
-  padding: 0 16px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(12, 24, 32, 0.92);
+  border-radius: var(--radius-pill);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
   text-decoration: none;
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -582,10 +600,10 @@ onMounted(loadPage)
   display: grid;
   gap: 8px;
   max-width: 720px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(235, 178, 102, 0.18);
-  background: rgba(17, 24, 16, 0.42);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line-warm);
+  background: var(--panel-soft-gradient);
 }
 
 .hero-panel__guide span,
@@ -608,7 +626,7 @@ onMounted(loadPage)
 .audit-card strong,
 .history-timeline__item strong {
   display: block;
-  font-family: var(--display);
+  font-family: var(--body);
 }
 
 .hero-panel__guide strong {
@@ -625,12 +643,10 @@ onMounted(loadPage)
 .workspace-card,
 .identity-card,
 .audit-card {
-  padding: 18px;
-  border-radius: 24px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background:
-    linear-gradient(180deg, rgba(4, 15, 21, 0.94), rgba(8, 17, 23, 0.78)),
-    radial-gradient(circle at top right, rgba(116, 210, 220, 0.08), transparent 30%);
+  padding: var(--space-card);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background: var(--panel-gradient);
 }
 
 .summary-strip__card strong {
@@ -670,10 +686,10 @@ onMounted(loadPage)
 .identity-details div,
 .identity-card__details div,
 .history-timeline__item {
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.1);
-  background: rgba(8, 18, 25, 0.76);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .identity-layout {

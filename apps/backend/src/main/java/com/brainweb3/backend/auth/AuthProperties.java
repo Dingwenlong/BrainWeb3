@@ -12,6 +12,8 @@ public class AuthProperties {
   private long refreshTokenTtlDays = 14;
   private long passwordResetTtlMinutes = 30;
   private String demoPassword = "brainweb3-demo";
+  private boolean allowDemoBootstrap = true;
+  private boolean allowDemoPasswordLogin = true;
 
   public String getJwtSecret() {
     return jwtSecret;
@@ -51,5 +53,21 @@ public class AuthProperties {
 
   public void setDemoPassword(String demoPassword) {
     this.demoPassword = demoPassword;
+  }
+
+  public boolean isAllowDemoBootstrap() {
+    return allowDemoBootstrap;
+  }
+
+  public void setAllowDemoBootstrap(boolean allowDemoBootstrap) {
+    this.allowDemoBootstrap = allowDemoBootstrap;
+  }
+
+  public boolean isAllowDemoPasswordLogin() {
+    return allowDemoPasswordLogin;
+  }
+
+  public void setAllowDemoPasswordLogin(boolean allowDemoPasswordLogin) {
+    this.allowDemoPasswordLogin = allowDemoPasswordLogin;
   }
 }

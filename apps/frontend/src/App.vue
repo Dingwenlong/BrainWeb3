@@ -1,125 +1,154 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppToastStack from './components/AppToastStack.vue'
-import ActorProfileSwitcher from './components/ActorProfileSwitcher.vue'
 import { useActorProfile } from './composables/useActorProfile'
 
+const router = useRouter()
 const route = useRoute()
-const { actorProfile } = useActorProfile()
+const { actorProfile, displayName, logout } = useActorProfile()
 
 const routeLabels: Record<string, string> = {
-  login: '登录闸门',
-  overview: '总览扇区',
-  'dataset-detail': '数据舱',
-  'access-requests': '审批台',
-  'destruction-requests': '销毁台',
-  accounts: '账户域',
-  'identity-center': '身份中枢',
+  login: '登录',
+  overview: '总览',
+  'dataset-detail': '数据详情',
+  'access-requests': '访问申请',
+  'destruction-requests': '销毁流程',
+  accounts: '账户管理',
+  'identity-center': '身份中心',
   audits: '审计中心',
-  'chain-records': '链轨迹',
-  'training-jobs': '训练编排',
-  'model-records': '模型库',
+  'chain-records': '链记录',
+  'training-jobs': '训练任务',
+  'model-records': '模型记录',
 }
 
-const currentSection = computed(() => routeLabels[String(route.name ?? 'overview')] ?? '控制台')
+const currentSection = computed(() => routeLabels[String(route.name ?? 'overview')] ?? '工作区')
 const isAuthRoute = computed(() => route.name === 'login')
 const isPrivilegedActor = computed(() =>
   ['owner', 'approver', 'admin'].includes(actorProfile.value.actorRole.toLowerCase()),
 )
-const navigationLinks = computed(() => [
-  { to: '/', label: '总览' },
-  { to: '/training-jobs', label: '训练' },
-  { to: '/model-records', label: isPrivilegedActor.value ? '模型治理' : '模型库' },
-  { to: '/access-requests', label: isPrivilegedActor.value ? '审批台' : '我的申请' },
-  { to: '/destruction-requests', label: isPrivilegedActor.value ? '销毁台' : '销毁申请' },
-  { to: '/identity-center', label: actorProfile.value.actorRole.toLowerCase() === 'admin' ? '身份中心' : '我的身份' },
-  { to: '/audits', label: actorProfile.value.actorRole.toLowerCase() === 'admin' ? '监管审计' : '审计' },
-  ...(isPrivilegedActor.value
-    ? [{ to: '/chain-records', label: actorProfile.value.actorRole.toLowerCase() === 'admin' ? '链监管' : '链轨迹' }]
-    : []),
-  { to: '/accounts', label: actorProfile.value.actorRole.toLowerCase() === 'admin' ? '账户治理' : '我的账户' },
+const routeDescriptions: Record<string, string> = {
+  overview: '查看数据资产、任务进度和近期治理动态。',
+  'dataset-detail': '查看单个数据集的摘要、存证、权限与活跃度。',
+  'access-requests': '处理访问申请、审批状态和后续流转。',
+  'destruction-requests': '提交、审批和执行销毁流程。',
+  accounts: '管理账户、密码、角色和凭证状态。',
+  'identity-center': '查看 DID、VC 和身份相关审计。',
+  audits: '回看系统内的关键操作和治理事件。',
+  'chain-records': '核对关键业务动作的链上记录。',
+  'training-jobs': '发起和跟踪训练任务。',
+  'model-records': '查看模型版本和治理状态。',
+}
+
+const currentDescription = computed(
+  () => routeDescriptions[String(route.name ?? 'overview')] ?? '当前页面内容。',
+)
+
+const navigationGroups = computed(() => [
+  {
+    label: '工作台',
+    items: [
+      { to: '/', label: '总览', note: '首页与全局动态' },
+      { to: '/training-jobs', label: '训练任务', note: '任务发起与进度' },
+      { to: '/model-records', label: isPrivilegedActor.value ? '模型治理' : '模型记录', note: '模型版本与状态' },
+    ],
+  },
+  {
+    label: '治理',
+    items: [
+      { to: '/access-requests', label: isPrivilegedActor.value ? '访问申请' : '我的申请', note: '授权与审批流转' },
+      { to: '/destruction-requests', label: isPrivilegedActor.value ? '销毁流程' : '销毁申请', note: '销毁申请与执行' },
+      { to: '/audits', label: actorProfile.value.actorRole.toLowerCase() === 'admin' ? '监管审计' : '审计中心', note: '关键操作追踪' },
+      ...(isPrivilegedActor.value
+        ? [{ to: '/chain-records', label: actorProfile.value.actorRole.toLowerCase() === 'admin' ? '链记录监管' : '链记录', note: '上链状态与证明' }]
+        : []),
+    ],
+  },
+  {
+    label: '系统',
+    items: [
+      { to: '/identity-center', label: actorProfile.value.actorRole.toLowerCase() === 'admin' ? '身份中心' : '我的身份', note: 'DID 与 VC 状态' },
+      { to: '/accounts', label: actorProfile.value.actorRole.toLowerCase() === 'admin' ? '账户管理' : '我的账户', note: '账户与密码设置' },
+    ],
+  },
 ])
 
-const workflowNodes = [
-  { label: 'Upload', note: '数据接入' },
-  { label: 'Proof', note: '链上存证' },
-  { label: 'Govern', note: '权限审批' },
-  { label: 'Train', note: '联邦训练' },
-  { label: 'Audit', note: '审计追踪' },
-]
+async function handleLogout() {
+  logout()
+  await router.replace({ name: 'login' })
+}
 </script>
 
 <template>
-  <div class="app-shell">
-    <div class="app-shell__glow app-shell__glow--left"></div>
-    <div class="app-shell__glow app-shell__glow--right"></div>
-
-    <header v-if="!isAuthRoute" class="command-deck glass-panel">
-      <div class="command-deck__brand">
-        <p class="command-deck__eyebrow">
-          <span class="command-deck__pulse"></span>
-          Neural Data Trust Console
-        </p>
-
-        <RouterLink class="brandmark" to="/">
-          <div class="brandmark__core">
-            <span class="brandmark__ring"></span>
-            <span class="brandmark__beam"></span>
-          </div>
-          <div>
+  <div class="app-shell" :class="{ 'app-shell--auth': isAuthRoute, 'app-shell--workspace': !isAuthRoute }">
+    <template v-if="!isAuthRoute">
+      <header class="app-header">
+        <RouterLink class="app-brand" to="/">
+          <span class="app-brand__mark">BW</span>
+          <span class="app-brand__copy">
             <strong>BrainWeb3</strong>
-            <small>神经数据可信工作台</small>
-          </div>
+            <small>脑数据治理平台</small>
+          </span>
         </RouterLink>
 
-        <p class="command-deck__mission">上传、存证、审批、回放与审计统一在一套控制台叙事中完成。</p>
-      </div>
+        <div class="app-header__title">
+          <span>当前页面</span>
+          <strong>{{ currentSection }}</strong>
+        </div>
 
-      <div class="command-deck__nav">
-        <nav class="topnav">
-          <RouterLink v-for="item in navigationLinks" :key="item.to" :to="item.to">{{ item.label }}</RouterLink>
-          <a href="https://physionet.org/content/eegmmidb/1.0.0/" target="_blank" rel="noreferrer">
-            数据源
+        <div class="app-header__actions">
+          <a class="app-header__link" href="https://physionet.org/content/eegmmidb/1.0.0/" target="_blank" rel="noreferrer">
+            公开数据源
           </a>
-        </nav>
-
-        <div class="workflow-strip">
-          <div class="workflow-strip__intro">
-            <span>当前扇区</span>
-            <strong>{{ currentSection }}</strong>
+          <div class="app-header__account">
+            <strong>{{ displayName || actorProfile.actorId }}</strong>
+            <span>{{ actorProfile.actorRole }} · {{ actorProfile.actorOrg }}</span>
           </div>
-          <div class="workflow-strip__nodes">
-            <div v-for="node in workflowNodes" :key="node.label" class="workflow-strip__node">
-              <strong>{{ node.label }}</strong>
-              <span>{{ node.note }}</span>
+          <RouterLink class="app-header__button" to="/accounts">账户</RouterLink>
+          <button type="button" class="app-header__button app-header__button--primary" @click="handleLogout">
+            退出
+          </button>
+        </div>
+      </header>
+
+      <aside class="app-sidebar">
+        <div v-for="group in navigationGroups" :key="group.label" class="app-sidebar__group">
+          <p class="app-sidebar__label">{{ group.label }}</p>
+          <nav class="app-menu">
+            <RouterLink v-for="item in group.items" :key="item.to" :to="item.to" class="app-menu__item">
+              <strong>{{ item.label }}</strong>
+              <small>{{ item.note }}</small>
+            </RouterLink>
+          </nav>
+        </div>
+
+        <div class="app-sidebar__footer">
+          <p class="app-sidebar__label">当前会话</p>
+          <dl class="session-card">
+            <div>
+              <dt>用户</dt>
+              <dd>{{ displayName || actorProfile.actorId }}</dd>
             </div>
-          </div>
+            <div>
+              <dt>角色</dt>
+              <dd>{{ actorProfile.actorRole }}</dd>
+            </div>
+            <div>
+              <dt>机构</dt>
+              <dd>{{ actorProfile.actorOrg }}</dd>
+            </div>
+          </dl>
         </div>
-      </div>
-    </header>
+      </aside>
+    </template>
 
-    <section v-if="!isAuthRoute" class="actor-surface glass-panel">
-      <div class="actor-surface__copy">
-        <p class="section-kicker">Identity Mesh</p>
-        <h2>操作者与机构上下文</h2>
-        <p>当前工作台已经切到正式登录态，操作者身份来自会话本身，不再依赖手工伪造请求头。</p>
-        <div class="actor-surface__rail">
-          <div class="actor-surface__rail-item">
-            <span>Workspace</span>
-            <strong>{{ currentSection }}</strong>
-          </div>
-          <div class="actor-surface__rail-item">
-            <span>Flow Bias</span>
-            <strong>JWT Session</strong>
-          </div>
-        </div>
+    <main class="app-main">
+      <div v-if="!isAuthRoute" class="app-main__intro">
+        <p class="section-kicker">当前工作区</p>
+        <h1>{{ currentSection }}</h1>
+        <p>{{ currentDescription }}</p>
       </div>
 
-      <ActorProfileSwitcher />
-    </section>
-
-    <main class="app-main" :class="{ 'app-main--auth': isAuthRoute }">
       <RouterView />
     </main>
 
@@ -129,328 +158,271 @@ const workflowNodes = [
 
 <style scoped>
 .app-shell {
-  position: relative;
   min-height: 100vh;
-  padding: 20px 20px 40px;
-  overflow: hidden;
 }
 
-.app-shell__glow {
-  position: fixed;
-  width: 34vw;
-  height: 34vw;
-  border-radius: 999px;
-  filter: blur(90px);
-  pointer-events: none;
-  opacity: 0.22;
-}
-
-.app-shell__glow--left {
-  top: -10vw;
-  left: -8vw;
-  background: radial-gradient(circle, rgba(116, 210, 220, 0.4), transparent 70%);
-}
-
-.app-shell__glow--right {
-  top: 10vh;
-  right: -12vw;
-  background: radial-gradient(circle, rgba(235, 178, 102, 0.28), transparent 74%);
-}
-
-.command-deck {
-  width: min(1280px, 100%);
-  margin: 0 auto 18px;
-  display: grid;
-  grid-template-columns: minmax(320px, 1.1fr) minmax(360px, 1fr);
-  gap: 22px;
-  padding: 22px 24px;
-  border-radius: 30px;
-  background:
-    linear-gradient(140deg, rgba(8, 22, 30, 0.96), rgba(5, 15, 21, 0.86)),
-    radial-gradient(circle at top right, rgba(116, 210, 220, 0.08), transparent 32%);
-}
-
-.command-deck__brand,
-.command-deck__nav {
-  display: grid;
-  gap: 14px;
-}
-
-.command-deck__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  color: var(--text-faint);
-  font-family: var(--display);
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.command-deck__pulse {
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-  background: radial-gradient(circle, var(--amber), var(--accent));
-  box-shadow: 0 0 16px rgba(116, 210, 220, 0.58);
-}
-
-.brandmark {
-  display: inline-flex;
-  align-items: center;
-  gap: 18px;
-  color: inherit;
-  text-decoration: none;
-}
-
-.brandmark__core {
-  position: relative;
-  width: 62px;
-  height: 62px;
-  border-radius: 18px;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(116, 210, 220, 0.22), rgba(7, 17, 24, 0.1) 60%),
-    rgba(5, 15, 21, 0.88);
-  border: 1px solid rgba(108, 166, 186, 0.18);
-  overflow: hidden;
-}
-
-.brandmark__ring,
-.brandmark__beam {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  border-radius: 999px;
-}
-
-.brandmark__ring {
-  width: 34px;
-  height: 34px;
-  border: 1px solid rgba(116, 210, 220, 0.38);
-  box-shadow: inset 0 0 20px rgba(116, 210, 220, 0.08);
-}
-
-.brandmark__beam {
-  width: 10px;
-  height: 42px;
-  background: linear-gradient(180deg, rgba(235, 178, 102, 0.9), rgba(116, 210, 220, 0.18));
-  filter: blur(0.4px);
-  transform: rotate(34deg);
-}
-
-.brandmark strong,
-.brandmark small {
+.app-shell--auth {
   display: block;
+  padding: 20px;
 }
 
-.brandmark strong {
-  font-family: var(--display);
-  font-size: clamp(1.24rem, 2vw, 1.46rem);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+.app-shell--workspace {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
 }
 
-.brandmark small,
-.command-deck__mission {
-  color: var(--text-muted);
+.app-header {
+  grid-column: 1 / -1;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(242, 235, 226, 0.9);
+  backdrop-filter: blur(14px);
 }
 
-.command-deck__mission {
-  margin: 0;
-  max-width: 58ch;
-  font-size: 0.96rem;
-  line-height: 1.7;
-}
-
-.topnav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-.topnav a {
+.app-brand {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
-  padding: 0 15px;
-  border-radius: 999px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background: rgba(5, 18, 24, 0.56);
-  color: var(--text-muted);
-  text-decoration: none;
-  font-family: var(--display);
-  font-size: 0.76rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.topnav a.router-link-active {
-  color: var(--text-main);
-  border-color: rgba(235, 178, 102, 0.32);
-  background: linear-gradient(180deg, rgba(235, 178, 102, 0.16), rgba(12, 24, 32, 0.88));
-}
-
-.workflow-strip {
-  display: grid;
   gap: 14px;
-  padding: 16px 18px;
-  border-radius: 24px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background:
-    linear-gradient(180deg, rgba(3, 13, 18, 0.92), rgba(5, 15, 22, 0.7)),
-    radial-gradient(circle at top right, rgba(116, 210, 220, 0.12), transparent 34%);
+  text-decoration: none;
 }
 
-.workflow-strip__intro {
+.app-brand__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1d4053, #305f63);
+  color: #fffdf9;
+  font-family: var(--body);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.app-brand__copy {
+  display: grid;
+}
+
+.app-brand__copy strong {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.app-brand__copy small,
+.app-header__title span,
+.app-header__account span,
+.app-sidebar__label,
+.session-card dt {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.app-header__title {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+}
+
+.app-header__title strong {
+  font-family: var(--display);
+  font-size: 1.18rem;
+  font-weight: 600;
+}
+
+.app-header__actions {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: 12px;
 }
 
-.workflow-strip__intro span,
-.workflow-strip__node span,
-.actor-surface__rail-item span {
-  color: var(--text-faint);
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.app-header__link,
+.app-header__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(238, 231, 221, 0.86);
+  color: var(--text-main);
+  text-decoration: none;
+  font-size: 0.82rem;
 }
 
-.workflow-strip__intro strong {
-  font-family: var(--display);
-  font-size: 0.94rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.app-header__button--primary {
+  border-color: rgba(29, 64, 83, 0.18);
+  background: #1d4053;
+  color: #fffdf9;
 }
 
-.workflow-strip__nodes {
+.app-header__account {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  gap: 2px;
+  padding: 0 4px;
 }
 
-.workflow-strip__node {
+.app-header__account strong,
+.session-card dd {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.app-sidebar {
+  padding: 24px 18px 24px 24px;
+  border-right: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(242, 235, 226, 0.94), rgba(235, 227, 216, 0.9));
+}
+
+.app-sidebar__group + .app-sidebar__group {
+  margin-top: 20px;
+}
+
+.app-sidebar__label {
+  margin: 0 0 10px;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.app-menu {
   display: grid;
   gap: 6px;
+}
+
+.app-menu__item {
+  display: grid;
+  gap: 4px;
   padding: 12px 14px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.12);
-  background: rgba(8, 21, 28, 0.82);
+  border-radius: 16px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  color: var(--text-main);
 }
 
-.workflow-strip__node strong,
-.actor-surface__rail-item strong {
-  font-family: var(--display);
-  font-size: 0.88rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.app-menu__item strong {
+  font-size: 0.94rem;
+  font-weight: 600;
 }
 
-.actor-surface {
-  width: min(1280px, 100%);
-  margin: 0 auto 18px;
-  display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-  gap: 18px;
-  padding: 22px 24px;
-  border-radius: 28px;
-  background:
-    linear-gradient(180deg, rgba(9, 19, 26, 0.92), rgba(7, 16, 22, 0.82)),
-    radial-gradient(circle at left center, rgba(116, 210, 220, 0.08), transparent 30%);
-}
-
-.actor-surface__copy {
-  display: grid;
-  align-content: start;
-  gap: 12px;
-}
-
-.actor-surface__copy h2 {
-  margin: 0;
-  font-family: var(--display);
-  font-size: clamp(1.42rem, 2vw, 2rem);
-  line-height: 1;
-}
-
-.actor-surface__copy p:last-of-type {
-  margin: 0;
+.app-menu__item small {
   color: var(--text-muted);
-  line-height: 1.7;
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 
-.actor-surface__rail {
+.app-menu__item:hover {
+  background: rgba(236, 228, 217, 0.88);
+  border-color: rgba(29, 64, 83, 0.08);
+}
+
+.app-menu__item.router-link-active {
+  background: rgba(241, 234, 224, 0.92);
+  border-color: rgba(29, 64, 83, 0.12);
+  box-shadow: 0 12px 24px rgba(84, 71, 50, 0.08);
+}
+
+.app-sidebar__footer {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.session-card {
   display: grid;
   gap: 10px;
-  margin-top: 4px;
+  margin: 0;
 }
 
-.actor-surface__rail-item {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.12);
-  background: rgba(6, 18, 24, 0.8);
+.session-card div {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(238, 231, 220, 0.88);
+  border: 1px solid rgba(29, 64, 83, 0.08);
+}
+
+.session-card dt,
+.session-card dd {
+  margin: 0;
+}
+
+.session-card dd {
+  margin-top: 6px;
+  color: var(--text-strong);
+  line-height: 1.5;
 }
 
 .app-main {
-  width: min(1280px, 100%);
-  margin: 0 auto;
+  min-width: 0;
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(244, 238, 230, 0.44), rgba(239, 231, 220, 0.18));
 }
 
-.app-main--auth {
-  width: min(1100px, 100%);
+.app-main__intro {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.app-main__intro h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.8rem, 2.6vw, 2.4rem);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.app-main__intro p:last-child {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.7;
 }
 
 @media (max-width: 1080px) {
-  .command-deck,
-  .actor-surface {
+  .app-shell--workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+  }
+
+  .app-header {
     grid-template-columns: 1fr;
   }
 
-  .topnav {
-    justify-content: flex-start;
+  .app-sidebar {
+    padding-top: 18px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
   }
 }
 
 @media (max-width: 760px) {
-  .app-shell {
-    padding-inline: 14px;
+  .app-shell--auth {
+    padding: 14px;
   }
 
-  .command-deck,
-  .actor-surface {
-    padding: 18px;
+  .app-header,
+  .app-main {
+    padding: 16px;
   }
 
-  .workflow-strip__intro,
-  .actor-surface__rail-item {
-    flex-direction: column;
-    align-items: flex-start;
+  .app-header__actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 
-  .workflow-strip__nodes {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 560px) {
-  .brandmark {
-    align-items: flex-start;
-  }
-
-  .brandmark__core {
-    width: 54px;
-    height: 54px;
-  }
-
-  .workflow-strip__nodes {
-    grid-template-columns: 1fr;
+  .app-header__account {
+    width: 100%;
   }
 }
 </style>

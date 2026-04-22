@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import PageHero from '../components/PageHero.vue'
+import SurfaceCard from '../components/SurfaceCard.vue'
 import {
   getAccessRequests,
   getAudits,
@@ -9,6 +11,7 @@ import {
   getTrainingJobs,
   uploadDataset,
 } from '../api/client'
+import { toErrorMessage, useAsyncView } from '../composables/useAsyncView'
 import { useActorProfile } from '../composables/useActorProfile'
 import type { AccessRequest, AuditEvent, DatasetDetail, DatasetSummary, SystemStatus, TrainingJob } from '../types/api'
 import {
@@ -27,9 +30,10 @@ import {
 const router = useRouter()
 const { actorProfile } = useActorProfile()
 
-const loading = ref(true)
+const { loading, error, run: runOverviewLoad } = useAsyncView({
+  initialLoading: true,
+})
 const uploadLoading = ref(false)
-const error = ref<string | null>(null)
 const uploadError = ref<string | null>(null)
 const uploadReceipt = ref<string | null>(null)
 const systemStatus = ref<SystemStatus | null>(null)
@@ -43,7 +47,7 @@ const uploadForm = reactive({
   subjectCode: 'PMMI-S301',
   title: '样板上传会话',
   description: '通过公开数据上传链路进入系统的新 EEG 资产。',
-  ownerOrganization: 'Sichuan Neural Studio',
+  ownerOrganization: 'Sichuan Brain Lab',
   tags: 'uploaded, public-validation, demo',
 })
 
@@ -101,26 +105,26 @@ const roleGuide = computed(() => {
   if (role === 'admin') {
     return {
       nextStep: '先扫一遍训练与审计脉冲，再处理账户治理和异常回放。',
-      emptyDataset: '当前还没有数据资产进入目录，管理员可以先用上传入口投递样板数据，再从审计中心确认链路已留痕。',
-      emptyTraining: '还没有训练任务，先从训练编排页创建一条最小联邦任务，验证治理链路是否完整。',
-      emptyAudit: '还没有审计事件，登录、建号、审批或训练后会在监管审计里出现第一批事件。',
+      emptyDataset: '当前没有数据资产。先上传一份样板数据，再回看链路和审计记录。',
+      emptyTraining: '当前没有训练任务。先创建一条任务，再回来查看状态流转。',
+      emptyAudit: '当前没有审计事件。发生登录、审批或训练动作后，这里会自动出现记录。',
       uploadHint: '管理员可先投递一份样板 EEG 资产，随后回看链路回执、审计事件与账户权限表现。',
     }
   }
   if (role === 'owner' || role === 'approver') {
     return {
       nextStep: '先看待审批记录，再把已批准数据带入训练编排。',
-      emptyDataset: '当前还没有数据资产进入目录，先引入样板数据，后续审批和训练入口才会形成完整闭环。',
-      emptyTraining: '还没有训练任务，等申请获批后可直接从审批台把数据带入训练页。',
-      emptyAudit: '还没有机构审计事件，下一次审批、训练或账户动作会先出现在这里。',
+      emptyDataset: '当前没有数据资产。先引入样板数据，再继续审批和训练。',
+      emptyTraining: '当前没有训练任务。申请获批后可直接从审批台带入训练。',
+      emptyAudit: '当前没有机构审计事件。后续审批、训练或账户动作会出现在这里。',
       uploadHint: '机构侧可以先投递一份 EEG 资产，再通过审批台验证授权和训练的衔接是否顺畅。',
     }
   }
   return {
     nextStep: '先申请可用数据，再从训练编排页发起你的第一条任务。',
-    emptyDataset: '当前还没有数据资产进入目录，先投递一份样板 EEG 或等待机构侧完成首批数据导入。',
-    emptyTraining: '还没有训练任务，先去申请可训练数据，批准后就能直接带入训练页。',
-    emptyAudit: '还没有个人审计事件，登录、申请或训练后会自动生成第一批可回看记录。',
+    emptyDataset: '当前没有可用数据。先上传样板数据，或等待机构导入首批资产。',
+    emptyTraining: '当前没有训练任务。先申请可训练数据，获批后可直接带入训练页。',
+    emptyAudit: '当前没有个人审计事件。登录、申请或训练后会自动生成记录。',
     uploadHint: '研究侧可以先上传样板数据，随后申请访问、触发训练并回看自己的审计轨迹。',
   }
 })
@@ -245,10 +249,7 @@ function formatUpdatedAt(value: string) {
 }
 
 async function loadOverview() {
-  loading.value = true
-  error.value = null
-
-  try {
+  const payload = await runOverviewLoad(async () => {
     const [status, datasetRows, requestRows, trainingRows, audits] = await Promise.all([
       getSystemStatus(),
       getDatasets(),
@@ -256,16 +257,24 @@ async function loadOverview() {
       getTrainingJobs(actorProfile.value),
       getAudits(actorProfile.value),
     ])
-    systemStatus.value = status
-    datasets.value = datasetRows
-    accessRequests.value = requestRows
-    trainingJobs.value = trainingRows
-    auditRows.value = audits.slice(0, 8)
-  } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : '加载总览信息失败。'
-  } finally {
-    loading.value = false
+    return {
+      status,
+      datasetRows,
+      requestRows,
+      trainingRows,
+      audits,
+    }
+  }, '加载总览信息失败。')
+
+  if (!payload) {
+    return
   }
+
+  systemStatus.value = payload.status
+  datasets.value = payload.datasetRows
+  accessRequests.value = payload.requestRows
+  trainingJobs.value = payload.trainingRows
+  auditRows.value = payload.audits.slice(0, 8)
 }
 
 async function submitUpload() {
@@ -292,7 +301,7 @@ async function submitUpload() {
     datasets.value = [toSummary(response.dataset), ...datasets.value]
     await router.push(`/datasets/${response.dataset.id}`)
   } catch (submitError) {
-    uploadError.value = submitError instanceof Error ? submitError.message : '上传数据集失败。'
+    uploadError.value = toErrorMessage(submitError, '上传数据集失败。')
   } finally {
     uploadLoading.value = false
   }
@@ -303,39 +312,35 @@ onMounted(loadOverview)
 
 <template>
   <div class="overview-page">
-    <section class="hero-panel glass-panel">
-      <div class="hero-panel__copy">
-        <p class="section-kicker">Neural Command Deck</p>
-        <h1>把可信神经数据流转压缩进一座可操作的控制台。</h1>
-        <p class="hero-panel__lede">
-          这里不是单纯的数据列表页，而是把上传入口、链路态势、访问门禁和分析回放收拢进同一条工作流视野里。
-        </p>
+    <PageHero
+      kicker="数据工作台"
+      title="把数据接入、授权治理和训练协同放进同一个清晰页面。"
+      lede="这里优先展示当天真正要处理的事项：最近数据、系统状态、访问流转和训练入口，不再用概念化包装抢走信息本身。"
+    >
+      <template #actions>
+        <RouterLink v-if="featuredDataset" class="hero-panel__primary" :to="`/datasets/${featuredDataset.id}`">
+          打开最近数据
+        </RouterLink>
+        <RouterLink class="hero-panel__secondary" :to="isPrivilegedActor ? '/access-requests' : '/training-jobs'">
+          {{ isPrivilegedActor ? '进入访问申请' : '进入训练任务' }}
+        </RouterLink>
+      </template>
 
-        <div class="hero-role-card">
-          <span>Role Lens</span>
-          <strong>{{ roleLens.title }}</strong>
-          <p>{{ roleLens.note }}</p>
-          <small>{{ roleGuide.nextStep }}</small>
-        </div>
+      <div class="hero-role-card">
+        <span>当前视角</span>
+        <strong>{{ roleLens.title }}</strong>
+        <p>{{ roleLens.note }}</p>
+        <small>{{ roleGuide.nextStep }}</small>
+      </div>
 
-        <div class="hero-panel__actions">
-          <RouterLink v-if="featuredDataset" class="hero-panel__primary" :to="`/datasets/${featuredDataset.id}`">
-            打开最近数据
-          </RouterLink>
-          <RouterLink class="hero-panel__secondary" :to="isPrivilegedActor ? '/access-requests' : '/training-jobs'">
-            {{ isPrivilegedActor ? '进入审批台' : '进入训练编排' }}
-          </RouterLink>
-        </div>
-
-        <div class="hero-protocol">
-          <div v-for="step in commandSteps" :key="step.title" class="hero-protocol__step">
-            <strong>{{ step.title }}</strong>
-            <p>{{ step.note }}</p>
-          </div>
+      <div class="hero-protocol">
+        <div v-for="step in commandSteps" :key="step.title" class="hero-protocol__step">
+          <strong>{{ step.title }}</strong>
+          <p>{{ step.note }}</p>
         </div>
       </div>
 
-      <div class="hero-panel__rail">
+      <template #rail>
         <article class="hero-spotlight">
           <p class="hero-spotlight__kicker">最近数据</p>
           <template v-if="featuredDataset">
@@ -367,8 +372,8 @@ onMounted(loadOverview)
         <article class="hero-status">
           <div class="hero-status__header">
             <div>
-              <p class="section-kicker">Telemetry</p>
-              <h2 class="section-title">链路态势</h2>
+              <p class="section-kicker">系统概况</p>
+              <h2 class="section-title">链路状态</h2>
             </div>
             <span class="status-chip">{{ formatApplicationLabel(systemStatus?.application) }}</span>
           </div>
@@ -381,8 +386,8 @@ onMounted(loadOverview)
             </div>
           </div>
         </article>
-      </div>
-    </section>
+      </template>
+    </PageHero>
 
     <div v-if="loading" class="loading-state">正在加载总览信息...</div>
     <div v-else-if="error" class="error-state">{{ error }}</div>
@@ -397,15 +402,14 @@ onMounted(loadOverview)
       </section>
 
       <section class="mission-grid">
-        <article class="workspace-card glass-panel">
-          <div class="workspace-card__header">
-            <div>
-              <p class="section-kicker">Quick Launch</p>
-              <h2 class="section-title">门户入口</h2>
-              <p class="workspace-card__lede">把训练、审批、审计和账户域统一收进角色化入口，不再靠用户自己找页面。</p>
-            </div>
+        <SurfaceCard
+          kicker="常用入口"
+          title="门户入口"
+          lede="把训练、审批、审计和账户域统一收进角色化入口，不再靠用户自己找页面。"
+        >
+          <template #meta>
             <span class="status-chip">{{ formatRoleLabel(actorProfile.actorRole) }}</span>
-          </div>
+          </template>
 
           <div class="launch-grid">
             <RouterLink v-for="action in portalActions" :key="action.to" class="launch-card" :to="action.to">
@@ -413,16 +417,13 @@ onMounted(loadOverview)
               <strong>{{ action.note }}</strong>
             </RouterLink>
           </div>
-        </article>
+        </SurfaceCard>
 
-        <article class="workspace-card glass-panel">
-          <div class="workspace-card__header">
-            <div>
-              <p class="section-kicker">Ops Pulse</p>
-              <h2 class="section-title">运行脉冲</h2>
-              <p class="workspace-card__lede">这里先看审批、训练和审计的即时压力，再决定跳转到哪个工作区。</p>
-            </div>
-          </div>
+        <SurfaceCard
+          kicker="运行概览"
+          title="当前待处理事项"
+          lede="这里先看审批、训练和审计的即时压力，再决定跳转到哪个工作区。"
+        >
 
           <div class="operation-grid">
             <div v-for="card in operationCards" :key="card.label" class="operation-card">
@@ -431,15 +432,9 @@ onMounted(loadOverview)
               <small>{{ card.note }}</small>
             </div>
           </div>
-        </article>
+        </SurfaceCard>
 
-        <article class="workspace-card glass-panel">
-          <div class="workspace-card__header">
-            <div>
-              <p class="section-kicker">Recent Activity</p>
-              <h2 class="section-title">任务与审计摘要</h2>
-            </div>
-          </div>
+        <SurfaceCard kicker="最近动态" title="任务与审计摘要">
 
           <div class="activity-stack">
             <div class="activity-card">
@@ -465,20 +460,19 @@ onMounted(loadOverview)
               </small>
             </div>
           </div>
-        </article>
+        </SurfaceCard>
       </section>
 
       <section class="overview-layout">
         <div class="overview-layout__main">
-          <article class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">数据目录</p>
-                <h2 class="section-title">资产舱清单</h2>
-                <p class="workspace-card__lede">按最近更新时间排列，优先把已经存证或可训练的数据拉到操作路径前面。</p>
-              </div>
+          <SurfaceCard
+            kicker="数据目录"
+            title="数据资产清单"
+            lede="按最近更新时间排列，优先把已经存证或可训练的数据拉到操作路径前面。"
+          >
+            <template #meta>
               <span class="status-chip">{{ datasets.length }} 条记录</span>
-            </div>
+            </template>
 
             <div class="dataset-table" v-if="datasets.length">
               <RouterLink
@@ -509,19 +503,18 @@ onMounted(loadOverview)
                 <strong>{{ dataset.title }}</strong>
               </div>
             </div>
-          </article>
+          </SurfaceCard>
         </div>
 
         <aside class="overview-layout__side">
-          <article class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">上传入口</p>
-                <h2 class="section-title">投递新 EEG 资产</h2>
-                <p class="workspace-card__lede">{{ roleGuide.uploadHint }}</p>
-              </div>
+          <SurfaceCard
+            kicker="上传入口"
+            title="上传新 EEG 数据"
+            :lede="roleGuide.uploadHint"
+          >
+            <template #meta>
               <span class="status-chip">{{ formatSystemToken(systemStatus?.chain.mode ?? 'mock') }}</span>
-            </div>
+            </template>
 
             <form class="form-grid" @submit.prevent="submitUpload">
               <label>
@@ -556,18 +549,19 @@ onMounted(loadOverview)
             </form>
 
             <div v-if="uploadError" class="error-state form-grid__message">{{ uploadError }}</div>
-            <div v-else-if="uploadReceipt" class="workspace-card__note">上传回执：{{ uploadReceipt }}</div>
-          </article>
+            <template v-if="!uploadError && uploadReceipt" #note>
+              上传回执：{{ uploadReceipt }}
+            </template>
+          </SurfaceCard>
 
-          <article class="workspace-card glass-panel">
-            <div class="workspace-card__header">
-              <div>
-                <p class="section-kicker">系统状态</p>
-                <h2 class="section-title">链路扫描</h2>
-                <p class="workspace-card__lede">这里保持工作台级别的运行摘要，不把用户逼进单独的系统页。</p>
-              </div>
+          <SurfaceCard
+            kicker="系统状态"
+            title="链路摘要"
+            lede="这里保持工作台级别的运行摘要，不把用户逼进单独的系统页。"
+          >
+            <template #meta>
               <span class="status-chip">{{ formatApplicationLabel(systemStatus?.application) }}</span>
-            </div>
+            </template>
 
             <div class="metric-grid" v-if="systemStatus">
               <div class="metric-card">
@@ -601,7 +595,7 @@ onMounted(loadOverview)
                 <strong>{{ entry.state }}</strong>
               </div>
             </div>
-          </article>
+          </SurfaceCard>
         </aside>
       </section>
     </template>
@@ -614,72 +608,37 @@ onMounted(loadOverview)
   gap: 18px;
 }
 
-.hero-panel {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.92fr);
-  gap: 20px;
-  padding: 26px;
-  border-radius: 30px;
-  background:
-    linear-gradient(135deg, rgba(7, 19, 26, 0.96), rgba(6, 13, 18, 0.84)),
-    radial-gradient(circle at top left, rgba(116, 210, 220, 0.14), transparent 36%);
-}
-
-.hero-panel__copy,
-.hero-panel__rail {
-  display: grid;
-  gap: 18px;
-}
-
-.hero-panel h1 {
-  margin: 0;
-  font-family: var(--display);
-  font-size: clamp(2.6rem, 5vw, 4.4rem);
-  line-height: 0.94;
-  letter-spacing: 0.02em;
-}
-
-.hero-panel__lede {
-  margin: 12px 0 0;
-  max-width: 62ch;
-  color: var(--text-muted);
-  font-size: 1rem;
-  line-height: 1.8;
-}
-
-.hero-panel__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
 .hero-panel__primary,
 .hero-panel__secondary,
 .form-grid__submit {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 18px;
-  border-radius: 999px;
+  min-height: var(--control-height);
+  padding: var(--space-button);
+  border-radius: var(--radius-pill);
   text-decoration: none;
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.82rem;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .hero-panel__primary,
 .form-grid__submit {
   border: 1px solid var(--line-warm);
-  background: linear-gradient(180deg, rgba(235, 178, 102, 0.24), rgba(235, 178, 102, 0.12));
-  color: var(--text-main);
-  box-shadow: 0 10px 30px rgba(235, 178, 102, 0.08);
+  background: var(--button-warm-gradient);
+  color: var(--text-strong);
+  box-shadow: 0 12px 24px rgba(102, 84, 60, 0.08);
 }
 
 .hero-panel__secondary {
+  min-height: var(--control-height);
+  padding: var(--space-button);
+  border-radius: var(--radius-pill);
   border: 1px solid var(--line);
-  background: rgba(12, 24, 32, 0.92);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
 }
 
@@ -693,10 +652,10 @@ onMounted(loadOverview)
   display: grid;
   gap: 8px;
   max-width: 420px;
-  padding: 16px 18px;
-  border-radius: 22px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background: rgba(6, 18, 24, 0.78);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-block);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .hero-role-card span,
@@ -713,7 +672,7 @@ onMounted(loadOverview)
 .launch-card strong,
 .operation-card strong,
 .activity-card strong {
-  font-family: var(--display);
+  font-family: var(--body);
 }
 
 .hero-role-card p,
@@ -733,12 +692,10 @@ onMounted(loadOverview)
 .hero-protocol__step,
 .hero-spotlight,
 .hero-status {
-  padding: 18px;
-  border-radius: 24px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background:
-    linear-gradient(180deg, rgba(4, 15, 21, 0.94), rgba(8, 17, 23, 0.78)),
-    radial-gradient(circle at top right, rgba(116, 210, 220, 0.08), transparent 30%);
+  padding: var(--space-card);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background: var(--panel-gradient);
 }
 
 .hero-protocol__step strong,
@@ -746,7 +703,7 @@ onMounted(loadOverview)
 .hero-status__card strong,
 .dataset-glance__item strong {
   display: block;
-  font-family: var(--display);
+  font-family: var(--body);
 }
 
 .hero-protocol__step strong {
@@ -782,9 +739,10 @@ onMounted(loadOverview)
 
 .hero-spotlight__kicker {
   margin: 0;
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.74rem;
-  letter-spacing: 0.16em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -813,10 +771,10 @@ onMounted(loadOverview)
 }
 
 .hero-spotlight__meta div {
-  padding: 14px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.1);
-  background: rgba(8, 18, 25, 0.76);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .hero-spotlight__meta span {
@@ -860,9 +818,9 @@ onMounted(loadOverview)
 .summary-strip__card,
 .module-highlight__item {
   padding: 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.12);
-  background: rgba(6, 18, 24, 0.78);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .hero-status__card span,
@@ -900,9 +858,8 @@ onMounted(loadOverview)
 }
 
 .summary-strip__card {
-  background:
-    linear-gradient(180deg, rgba(5, 18, 24, 0.92), rgba(5, 15, 21, 0.78)),
-    radial-gradient(circle at top right, rgba(235, 178, 102, 0.08), transparent 34%);
+  border-color: var(--line-warm);
+  background: var(--warm-panel-gradient);
 }
 
 .summary-strip__card strong {
@@ -920,35 +877,9 @@ onMounted(loadOverview)
   gap: 18px;
 }
 
-.workspace-card {
-  padding: 20px;
-  border-radius: 24px;
-}
-
-.workspace-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.workspace-card__lede {
-  margin: 10px 0 0;
-  max-width: 52ch;
-  line-height: 1.7;
-  font-size: 0.9rem;
-}
-
-.workspace-card__note {
-  margin-top: 12px;
-  color: var(--accent);
-  font-size: 0.9rem;
-}
-
 .dataset-table {
   display: grid;
-  gap: 10px;
+  gap: var(--space-list-tight);
 }
 
 .dataset-row {
@@ -956,18 +887,16 @@ onMounted(loadOverview)
   grid-template-columns: minmax(0, 1.2fr) minmax(180px, 0.7fr) auto;
   gap: 12px;
   align-items: center;
-  padding: 16px 18px;
-  border-radius: 20px;
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-block);
   border: 1px solid var(--line);
-  background:
-    linear-gradient(180deg, rgba(8, 18, 25, 0.92), rgba(11, 22, 29, 0.72)),
-    radial-gradient(circle at left center, rgba(116, 210, 220, 0.08), transparent 26%);
+  background: var(--panel-gradient);
   text-decoration: none;
 }
 
 .dataset-row__main strong {
   display: block;
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 1rem;
   line-height: 1.3;
 }
@@ -997,10 +926,10 @@ onMounted(loadOverview)
 }
 
 .dataset-glance__item {
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.12);
-  background: rgba(6, 18, 24, 0.76);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .dataset-glance__item span {
@@ -1037,11 +966,11 @@ onMounted(loadOverview)
 .form-grid input,
 .form-grid textarea {
   width: 100%;
-  min-height: 44px;
+  min-height: var(--field-height);
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(8, 18, 25, 0.94);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel);
   color: var(--text-main);
 }
 
@@ -1066,7 +995,7 @@ onMounted(loadOverview)
 
 .module-list {
   display: grid;
-  gap: 10px;
+  gap: var(--space-list-tight);
   margin-top: 16px;
 }
 
@@ -1075,8 +1004,8 @@ onMounted(loadOverview)
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 13px 14px;
-  border-radius: 18px;
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
   background: var(--bg-panel-soft);
 }
@@ -1086,7 +1015,7 @@ onMounted(loadOverview)
 }
 
 .module-list__item strong {
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.9rem;
 }
 
@@ -1099,16 +1028,16 @@ onMounted(loadOverview)
 .operation-grid,
 .activity-stack {
   display: grid;
-  gap: 12px;
+  gap: var(--space-list-tight);
 }
 
 .launch-card,
 .operation-card,
 .activity-card {
   padding: 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(108, 166, 186, 0.12);
-  background: rgba(6, 18, 24, 0.78);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .launch-card {
@@ -1126,7 +1055,7 @@ onMounted(loadOverview)
 }
 
 .launch-card:hover {
-  border-color: rgba(235, 178, 102, 0.22);
+  border-color: rgba(156, 107, 54, 0.18);
 }
 
 .operation-grid {
@@ -1134,7 +1063,7 @@ onMounted(loadOverview)
 }
 
 @media (max-width: 1040px) {
-  .hero-panel,
+  .page-hero,
   .overview-layout,
   .mission-grid {
     grid-template-columns: 1fr;
@@ -1150,14 +1079,6 @@ onMounted(loadOverview)
 }
 
 @media (max-width: 760px) {
-  .hero-panel {
-    padding: 20px;
-  }
-
-  .hero-panel h1 {
-    font-size: 2.3rem;
-  }
-
   .hero-spotlight__headline,
   .dataset-row,
   .form-grid {

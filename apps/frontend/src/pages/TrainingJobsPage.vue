@@ -43,24 +43,24 @@ const roleGuide = computed(() => {
   if (role === 'admin') {
     return {
       title: '监管推进',
-      note: '先创建或定位一条任务，再用刷新动作确认 mock FATE 是否顺利收口。',
-      emptyJobs: '当前还没有训练任务。管理员可以先创建一条最小 FATE 编排任务，再回到审计中心核对训练事件。',
-      noDataset: '当前还没有可训练数据。先去总览上传样板资产，或在审批台确认已有数据已进入训练就绪状态。',
+      note: '先创建或定位一条任务，再用刷新动作确认当前联邦编排是否顺利收口。',
+      emptyJobs: '当前没有训练任务。先创建一条任务，再回到审计中心核对事件。',
+      noDataset: '当前没有可训练数据。先上传样板数据，或确认已有数据进入训练就绪状态。',
     }
   }
   if (role === 'owner' || role === 'approver') {
     return {
       title: '机构编排',
       note: '优先把已批准访问的数据带入训练页，确认机构内授权与训练任务能顺畅衔接。',
-      emptyJobs: '当前还没有训练任务。等审批台出现已批准记录后，可以直接把数据带入这里发起训练。',
-      noDataset: '当前还没有可训练数据。先审批一条访问申请，或确认目标数据已经完成存证并进入 training-ready。',
+      emptyJobs: '当前没有训练任务。审批通过后可直接把数据带入这里发起训练。',
+      noDataset: '当前没有可训练数据。先审批一条访问申请，或确认目标数据已进入训练就绪状态。',
     }
   }
   return {
     title: '研究执行',
     note: '先确认你手里有已批准、可训练的数据，再创建第一条最小联邦训练任务。',
-    emptyJobs: '当前还没有训练任务。先去访问申请页申请可训练数据，获批后可直接带入这里发起训练。',
-    noDataset: '当前还没有可训练数据。请先申请访问或等待数据完成存证并进入训练就绪状态。',
+    emptyJobs: '当前没有训练任务。先去访问申请页申请数据，获批后可直接带入这里发起训练。',
+    noDataset: '当前没有可训练数据。请先申请访问，或等待数据进入训练就绪状态。',
   }
 })
 const intakeHint = computed(() => {
@@ -243,11 +243,11 @@ watch(
   <section class="training-page">
     <header class="training-hero glass-panel">
       <div>
-        <p class="section-kicker">Federated Orchestration</p>
-        <h1>FATE 最小训练闭环</h1>
+        <p class="section-kicker">训练任务</p>
+        <h1>联邦训练工作台</h1>
         <p>
-          这是一条可演示的训练主线：只有获得访问权限且已完成存证的数据集才能进入编排，
-          当前运行在 mock FATE 沙箱里，通过手动刷新完成一次最小状态收口。
+          这里只有一条清晰的业务规则：获得访问权限、已经完成存证并满足训练条件的数据，才能进入训练流程。
+          当前页面用于发起任务、查看进度和回看结果，不再强调演示式包装。
         </p>
         <p v-if="intakeHint" class="training-hero__hint">{{ intakeHint }}</p>
         <div class="training-hero__guide">
@@ -276,7 +276,7 @@ watch(
       <section class="training-panel glass-panel">
         <div class="panel-head">
           <div>
-            <p class="section-kicker">Create Run</p>
+            <p class="section-kicker">新建任务</p>
             <h2>发起训练任务</h2>
           </div>
           <button type="button" class="ghost-button" :disabled="loading" @click="loadPage">
@@ -309,7 +309,7 @@ watch(
             <select v-model="form.algorithm">
               <option value="hetero-logistic-regression">Hetero LR</option>
               <option value="hetero-neural-network">Hetero NN</option>
-              <option value="failover-probe">Failure Probe</option>
+              <option value="failover-probe">故障探测</option>
             </select>
           </label>
 
@@ -324,7 +324,7 @@ watch(
         </form>
 
         <div v-if="selectedDataset" class="dataset-brief">
-          <p class="section-kicker">Selected Dataset</p>
+          <p class="section-kicker">当前数据</p>
           <h3>{{ selectedDataset.title }}</h3>
           <div class="dataset-brief__grid">
             <div>
@@ -342,7 +342,7 @@ watch(
           </div>
         </div>
         <div v-else class="dataset-brief dataset-brief--empty">
-          <p class="section-kicker">Dataset Gate</p>
+          <p class="section-kicker">数据状态</p>
           <h3>等待可训练数据</h3>
           <p>{{ roleGuide.noDataset }}</p>
         </div>
@@ -351,7 +351,7 @@ watch(
       <section class="training-panel glass-panel">
         <div class="panel-head">
           <div>
-            <p class="section-kicker">Runs</p>
+            <p class="section-kicker">任务列表</p>
             <h2>任务看板</h2>
           </div>
           <span class="hint-chip">{{ formatRoleLabel(actorProfile.actorRole) }}</span>
@@ -386,7 +386,7 @@ watch(
               </div>
               <div>
                 <span>进度</span>
-                <strong>{{ job.completedRounds }} / {{ job.requestedRounds }} rounds</strong>
+                <strong>{{ job.completedRounds }} / {{ job.requestedRounds }} 轮</strong>
               </div>
               <div>
                 <span>算法</span>
@@ -401,7 +401,7 @@ watch(
             </div>
 
             <div v-if="job.status === 'succeeded'" class="job-card__governance">
-              <p class="section-kicker">Model Governance</p>
+              <p class="section-kicker">模型治理</p>
               <template v-if="modelRecordFor(job)">
                 <div class="job-card__governance-head">
                   <strong>{{ modelRecordFor(job)?.id }} · {{ formatModelGovernanceStatusLabel(modelRecordFor(job)?.governanceStatus) }}</strong>
@@ -463,7 +463,8 @@ watch(
 .training-panel {
   display: grid;
   gap: 18px;
-  padding: 22px 24px;
+  padding: var(--space-panel);
+  border-radius: var(--radius-panel);
 }
 
 .training-hero {
@@ -490,10 +491,10 @@ watch(
 
 .training-hero__hint {
   margin-top: 12px !important;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background: rgba(6, 18, 24, 0.72);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
 }
 
 .training-hero__guide {
@@ -501,10 +502,10 @@ watch(
   gap: 8px;
   margin-top: 14px;
   max-width: 560px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(235, 178, 102, 0.18);
-  background: rgba(17, 24, 16, 0.42);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line-warm);
+  background: var(--panel-soft-gradient);
 }
 
 .training-hero__guide span {
@@ -515,7 +516,7 @@ watch(
 }
 
 .training-hero__guide strong {
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.94rem;
   line-height: 1.6;
 }
@@ -534,15 +535,15 @@ watch(
 .metric-card,
 .dataset-brief,
 .job-card {
-  padding: 16px 18px;
-  border-radius: 22px;
-  border: 1px solid rgba(108, 166, 186, 0.14);
-  background: rgba(6, 18, 24, 0.78);
+  padding: var(--space-card);
+  border-radius: var(--radius-block);
+  border: 1px solid var(--line);
+  background: var(--panel-gradient);
 }
 
 .job-card--focus {
-  border-color: rgba(235, 178, 102, 0.28);
-  box-shadow: inset 0 0 0 1px rgba(235, 178, 102, 0.08);
+  border-color: rgba(156, 107, 54, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(156, 107, 54, 0.08);
 }
 
 .dataset-brief--empty p:last-child {
@@ -565,7 +566,8 @@ watch(
 .metric-card strong {
   display: block;
   margin-top: 8px;
-  font-family: var(--display);
+  font-family: var(--body);
+  font-weight: 700;
   font-size: 1.9rem;
 }
 
@@ -592,7 +594,7 @@ watch(
 .job-card__notes,
 .job-card__governance {
   display: grid;
-  gap: 14px;
+  gap: var(--space-list);
 }
 
 .training-form label {
@@ -609,35 +611,36 @@ watch(
 
 .training-form input,
 .training-form select {
-  min-height: 46px;
-  border-radius: 16px;
-  border: 1px solid rgba(108, 166, 186, 0.16);
-  background: rgba(5, 16, 21, 0.86);
+  min-height: var(--field-height);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
   color: var(--text-main);
-  padding: 0 14px;
+  padding: var(--space-field-x);
 }
 
 .primary-button,
 .ghost-button,
 .ghost-link {
-  min-height: 44px;
-  border-radius: 999px;
-  padding: 0 18px;
-  font-family: var(--display);
-  letter-spacing: 0.08em;
+  min-height: var(--control-height);
+  border-radius: var(--radius-pill);
+  padding: var(--space-button);
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .primary-button {
-  border: 0;
-  color: #08151a;
-  background: linear-gradient(120deg, var(--amber), #f4d787);
+  border: 1px solid var(--line-warm);
+  color: var(--text-strong);
+  background: var(--button-warm-gradient);
 }
 
 .ghost-button,
 .ghost-link {
-  border: 1px solid rgba(108, 166, 186, 0.18);
-  background: rgba(6, 18, 24, 0.6);
+  border: 1px solid var(--line);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
   text-decoration: none;
 }
@@ -649,26 +652,27 @@ watch(
   min-height: 34px;
   padding: 0 12px;
   border-radius: 999px;
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 0.74rem;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .hint-chip,
 .status-chip--running {
-  background: rgba(116, 210, 220, 0.12);
-  border: 1px solid rgba(116, 210, 220, 0.24);
+  background: rgba(49, 87, 102, 0.1);
+  border: 1px solid rgba(49, 87, 102, 0.16);
 }
 
 .status-chip--success {
-  background: rgba(132, 221, 171, 0.14);
-  border: 1px solid rgba(132, 221, 171, 0.24);
+  background: rgba(120, 166, 123, 0.12);
+  border: 1px solid rgba(120, 166, 123, 0.18);
 }
 
 .status-chip--danger {
-  background: rgba(240, 120, 120, 0.14);
-  border: 1px solid rgba(240, 120, 120, 0.24);
+  background: rgba(178, 85, 76, 0.1);
+  border: 1px solid rgba(178, 85, 76, 0.18);
 }
 
 .job-card__meta {
@@ -682,10 +686,10 @@ watch(
 }
 
 .job-card__governance {
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(235, 178, 102, 0.16);
-  background: rgba(17, 24, 16, 0.36);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line-warm);
+  background: var(--warm-panel-gradient);
 }
 
 .job-card__governance p {
@@ -702,13 +706,14 @@ watch(
 }
 
 .job-card__governance-head strong {
-  font-family: var(--display);
+  font-family: var(--body);
+  font-weight: 700;
 }
 
 .job-card__governance-head span {
   color: var(--text-faint);
   font-size: 0.78rem;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 

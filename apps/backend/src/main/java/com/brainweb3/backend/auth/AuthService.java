@@ -2,7 +2,10 @@ package com.brainweb3.backend.auth;
 
 import com.brainweb3.backend.access.ActorContext;
 import com.brainweb3.backend.audit.AuditService;
+import com.brainweb3.backend.config.RuntimeSecurityGuardrails;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,25 +17,31 @@ public class AuthService {
 
   private final AppUserRepository appUserRepository;
   private final PasswordEncoder passwordEncoder;
+  private final AuthProperties authProperties;
   private final JwtService jwtService;
   private final AuditService auditService;
   private final RefreshTokenService refreshTokenService;
   private final PasswordResetService passwordResetService;
+  private final String stage;
 
   public AuthService(
       AppUserRepository appUserRepository,
       PasswordEncoder passwordEncoder,
+      AuthProperties authProperties,
       JwtService jwtService,
       AuditService auditService,
       RefreshTokenService refreshTokenService,
-      PasswordResetService passwordResetService
+      PasswordResetService passwordResetService,
+      @Value("${brainweb3.stage:bootstrap}") String stage
   ) {
     this.appUserRepository = appUserRepository;
     this.passwordEncoder = passwordEncoder;
+    this.authProperties = authProperties;
     this.jwtService = jwtService;
     this.auditService = auditService;
     this.refreshTokenService = refreshTokenService;
     this.passwordResetService = passwordResetService;
+    this.stage = stage;
   }
 
   @Transactional
@@ -41,6 +50,10 @@ public class AuthService {
         .orElseThrow(this::invalidCredentials);
 
     if (!"active".equalsIgnoreCase(user.getStatus())) {
+      throw invalidCredentials();
+    }
+    if (!authProperties.isAllowDemoPasswordLogin()
+        && authProperties.getDemoPassword().equals(request.password())) {
       throw invalidCredentials();
     }
     if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
@@ -117,10 +130,17 @@ public class AuthService {
 
   @Transactional
   public PasswordResetTicketResponse requestPasswordReset(ForgotPasswordRequest request) {
-    AppUserEntity user = appUserRepository.findById(normalize(request.actorId()).toLowerCase())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found."));
-    if (!"active".equalsIgnoreCase(user.getStatus())) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Account is disabled.");
+    String actorId = normalize(request.actorId()).toLowerCase();
+    boolean productionLike = RuntimeSecurityGuardrails.requiresProductionGuardrails(stage);
+    AppUserEntity user = appUserRepository.findById(actorId).orElse(null);
+    if (user == null || !"active".equalsIgnoreCase(user.getStatus())) {
+      if (productionLike) {
+        return hiddenPasswordResetTicket(actorId);
+      }
+      throw new ResponseStatusException(
+          user == null ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST,
+          user == null ? "Account not found." : "Account is disabled."
+      );
     }
 
     PasswordResetTicketIssue ticketIssue = passwordResetService.issueTicket(user.getId());
@@ -131,7 +151,10 @@ public class AuthService {
         "success",
         "Password reset ticket issued for " + user.getId() + "."
     );
-    return new PasswordResetTicketResponse(user.getId(), ticketIssue.resetToken(), ticketIssue.expiresAt());
+    if (productionLike) {
+      return new PasswordResetTicketResponse(user.getId(), null, ticketIssue.expiresAt(), "out-of-band", false);
+    }
+    return new PasswordResetTicketResponse(user.getId(), ticketIssue.resetToken(), ticketIssue.expiresAt(), "inline-demo", true);
   }
 
   @Transactional
@@ -189,5 +212,15 @@ public class AuthService {
 
   private String normalize(String value) {
     return value == null ? "" : value.trim();
+  }
+
+  private PasswordResetTicketResponse hiddenPasswordResetTicket(String actorId) {
+    return new PasswordResetTicketResponse(
+        actorId,
+        null,
+        Instant.now().plus(authProperties.getPasswordResetTtlMinutes(), ChronoUnit.MINUTES),
+        "out-of-band",
+        false
+    );
   }
 }
