@@ -3,7 +3,7 @@ withDefaults(
   defineProps<{
     kicker: string
     title: string
-    lede: string
+    lede?: string
     layout?: 'default' | 'balanced'
   }>(),
   {
@@ -16,8 +16,7 @@ withDefaults(
   <section class="page-hero glass-panel" :class="`page-hero--${layout}`">
     <div class="page-hero__copy">
       <p class="section-kicker">{{ kicker }}</p>
-      <h1 class="page-hero__title">{{ title }}</h1>
-      <p class="page-hero__lede">{{ lede }}</p>
+      <h1 class="page-hero__title page-main-heading">{{ title }}</h1>
 
       <div v-if="$slots.actions" class="page-hero__actions">
         <slot name="actions" />
@@ -57,23 +56,6 @@ withDefaults(
   gap: 18px;
 }
 
-.page-hero__title {
-  margin: 0;
-  font-family: var(--display);
-  font-size: clamp(2.1rem, 4vw, 3.2rem);
-  font-weight: 600;
-  line-height: 1.08;
-  letter-spacing: 0.01em;
-}
-
-.page-hero__lede {
-  margin: 12px 0 0;
-  max-width: 70ch;
-  color: var(--text-muted);
-  font-size: 1rem;
-  line-height: 1.75;
-}
-
 .page-hero__actions {
   display: flex;
   flex-wrap: wrap;
@@ -91,8 +73,5 @@ withDefaults(
     padding: 20px;
   }
 
-  .page-hero__title {
-    font-size: 2.25rem;
-  }
 }
 </style>

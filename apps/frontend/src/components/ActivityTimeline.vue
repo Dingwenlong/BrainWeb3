@@ -233,9 +233,9 @@ function applyRange() {
 .range-grid span,
 .timeline span {
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--field-label-size);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--field-label-letter-spacing);
 }
 
 .parameter-grid input,

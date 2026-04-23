@@ -39,7 +39,7 @@ async function openAccounts() {
         <p>当前操作者上下文来自后端签发的 JWT，会随所有受保护接口一起发送。</p>
       </article>
       <article class="switcher__preset">
-        <strong>Actor ID</strong>
+        <strong>账户 ID</strong>
         <p>{{ actorProfile.actorId }}</p>
       </article>
       <article class="switcher__preset">

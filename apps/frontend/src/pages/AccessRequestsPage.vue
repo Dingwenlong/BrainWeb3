@@ -35,28 +35,22 @@ const roleGuide = computed(() => {
   const role = actorProfile.value.actorRole.toLowerCase()
   if (role === 'admin') {
     return {
-      note: '你现在处于全局监管辅助视角，可以巡检申请流转、抽查审批说明，并把已批准记录带入训练页验证闭环。',
-      emptySpotlight: '当前没有访问申请。先从研究员视角提交一条申请，再回来查看审批轨迹。',
-      emptyQueue: '当前没有待审批记录，审批队列处于空闲状态。',
-      emptyList: '当前没有访问申请记录。先创建一条申请，再继续审批和训练串联验证。',
-      policyHint: '管理员可用这里的说明文案做演示，但真正的授权边界仍以后端规则为准。',
+      emptySpotlight: '暂无访问申请',
+      emptyQueue: '暂无待审批记录',
+      emptyList: '暂无访问申请记录',
     }
   }
   if (role === 'owner' || role === 'approver') {
     return {
-      note: '优先处理待审批记录，再把已批准数据带入训练页，确认机构内授权到训练的接力顺畅。',
-      emptySpotlight: '当前没有访问申请，机构审批区暂时空闲。',
-      emptyQueue: '当前没有待审批记录，下一条待决申请会优先出现在这里。',
-      emptyList: '当前没有访问申请记录。研究员发起访问后，这里会出现完整轨迹。',
-      policyHint: '这里填写的是本次动作回写到访问记录里的说明，用来解释你的审批决策。',
+      emptySpotlight: '暂无访问申请',
+      emptyQueue: '暂无待审批记录',
+      emptyList: '暂无访问申请记录',
     }
   }
   return {
-    note: '这里会优先展示你自己的申请记录；获批后可以直接把数据带入训练页，不用来回切页面。',
-    emptySpotlight: '你还没有提交访问申请。先选一份数据发起申请，再回来追踪结果。',
-    emptyQueue: '当前没有待审批记录，因为你的角色只读申请流，不参与审批。',
-    emptyList: '你还没有访问申请记录。先提交一条申请，获批后可直接发起训练。',
-    policyHint: '你现在看到的是审批说明样板，真正执行批准或拒绝的是机构侧审批人。',
+    emptySpotlight: '暂无访问申请',
+    emptyQueue: '暂无待审批记录',
+    emptyList: '暂无访问申请记录',
   }
 })
 
@@ -68,18 +62,6 @@ const requestStats = computed(() => [
     value: requestRows.value.filter((row) => row.status === 'rejected' || row.status === 'revoked').length,
   },
 ])
-const intakeHint = computed(() => {
-  const source = String(route.query.source ?? '')
-  if (!source) {
-    return ''
-  }
-  if (source === 'chain-record') {
-    return focusRequestId.value
-      ? `该视图来自链轨迹，已定位到 ${focusRequestId.value} 对应的审批记录。`
-      : '该视图来自链轨迹，可继续核对访问申请与链上授权记录是否一致。'
-  }
-  return '当前审批视图由上一页带入。'
-})
 const spotlightRequest = computed(() =>
   requestRows.value.find((row) => row.id === focusRequestId.value)
     ?? requestRows.value.find((row) => row.status === 'pending')
@@ -211,19 +193,12 @@ watch(
     <PageHero
       kicker="访问治理"
       title="把访问申请处理成一条清晰、可追踪的业务流程。"
-      :lede="`当前身份是 ${actorProfile.actorId} / ${formatRoleLabel(actorProfile.actorRole)} / ${formatOrganizationLabel(actorProfile.actorOrg)}。这个页面不再只是读一串记录，而是先把待决事项拉到前台，再把策略说明和处置动作放到同一块视野里。`"
       layout="balanced"
     >
       <template #actions>
         <span class="status-chip">{{ isPrivilegedActor ? '审批模式' : '只读模式' }}</span>
         <RouterLink class="hero-panel__secondary" to="/">返回总览</RouterLink>
       </template>
-
-      <p v-if="intakeHint" class="hero-panel__hint">{{ intakeHint }}</p>
-      <div class="hero-panel__guide">
-        <span>当前提示</span>
-        <strong>{{ roleGuide.note }}</strong>
-      </div>
 
       <div class="summary-strip">
         <article v-for="stat in requestStats" :key="stat.label" class="summary-strip__card">
@@ -272,28 +247,6 @@ watch(
           <p v-else class="hero-spotlight__empty">{{ roleGuide.emptySpotlight }}</p>
         </article>
 
-        <article class="hero-lane">
-          <div class="hero-lane__header">
-            <div>
-              <p class="section-kicker">处理步骤</p>
-              <h2 class="section-title">决策流程</h2>
-            </div>
-          </div>
-          <div class="hero-lane__steps">
-            <div class="hero-lane__step">
-              <strong>查看申请</strong>
-              <p>先识别待处理记录和申请背景。</p>
-            </div>
-            <div class="hero-lane__step">
-              <strong>确认说明</strong>
-              <p>确认批准或拒绝说明是否足够清楚。</p>
-            </div>
-            <div class="hero-lane__step">
-              <strong>完成处理</strong>
-              <p>直接批准、拒绝或撤销，并留下可回看的记录。</p>
-            </div>
-          </div>
-        </article>
       </template>
     </PageHero>
 
@@ -303,11 +256,7 @@ watch(
     <template v-else>
       <section class="requests-layout">
         <aside class="requests-layout__side">
-          <SurfaceCard
-            kicker="审批策略"
-            title="策略编辑台"
-            :lede="roleGuide.policyHint"
-          >
+          <SurfaceCard kicker="审批策略" title="策略编辑台">
 
             <div class="form-grid">
               <label>
@@ -326,10 +275,9 @@ watch(
                 <strong>{{ card.value }}</strong>
               </div>
             </div>
-            <template #note>{{ roleGuide.policyHint }}</template>
           </SurfaceCard>
 
-          <SurfaceCard kicker="待决队列" title="优先处理视图">
+          <SurfaceCard class="queue-card" kicker="待决队列" title="优先处理视图">
             <template #meta>
               <span class="status-chip status-chip--warn">{{ queuePreview.length }} 条待处理</span>
             </template>
@@ -348,11 +296,7 @@ watch(
         </aside>
 
         <div class="requests-layout__main">
-          <SurfaceCard
-            kicker="申请列表"
-            title="访问申请记录"
-            lede="每条记录都保留申请背景、决策状态和跳转入口，便于在审批与数据页之间往返处理。"
-          >
+          <SurfaceCard kicker="申请列表" title="访问申请记录">
             <template #meta>
               <span class="status-chip">{{ requestRows.length }} 条记录</span>
             </template>
@@ -381,7 +325,6 @@ watch(
                 </div>
 
                 <p class="request-card__reason">{{ row.reason }}</p>
-                <p v-if="focusRequestId === row.id" class="request-card__focus-note">该申请由链轨迹页定位而来。</p>
 
                 <dl class="request-card__details">
                   <div>
@@ -608,7 +551,8 @@ watch(
 .queue-preview__item p {
   margin: 0;
   color: var(--text-muted);
-  line-height: 1.7;
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .hero-spotlight__meta {
@@ -657,6 +601,10 @@ watch(
   margin-top: 14px;
 }
 
+.queue-card {
+  margin-top: 10px;
+}
+
 .queue-preview__item {
   display: flex;
   align-items: flex-start;
@@ -685,8 +633,8 @@ watch(
 
 .form-grid span {
   color: var(--text-faint);
-  font-size: 0.74rem;
-  letter-spacing: 0.14em;
+  font-size: var(--field-label-size);
+  letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 
@@ -734,6 +682,8 @@ watch(
 .request-card__reason {
   margin: 6px 0 0;
   color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .request-card__focus-note {

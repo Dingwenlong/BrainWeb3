@@ -56,40 +56,21 @@ const roleGuide = computed(() => {
   const role = actorProfile.value.actorRole.toLowerCase()
   if (role === 'admin') {
     return {
-      note: '优先关注登录、账户治理和训练失败事件，监管视角下可以直接回跳训练页、数据详情或链轨迹继续排查。',
-      emptyStream: '当前没有审计事件。先执行一次登录、建号、审批或训练动作。',
-      emptyTraining: '当前没有训练类事件。创建或刷新一条训练任务后，这里会出现对应轨迹。',
+      emptyStream: '暂无审计事件',
+      emptyTraining: '暂无训练事件',
     }
   }
   if (role === 'owner' || role === 'approver') {
     return {
-      note: '这里会先收敛本机构的审批、训练和账户动作，适合从机构侧回看治理闭环。',
-      emptyStream: '当前机构范围内没有审计事件。下一次审批、训练或账户操作会自动出现在这里。',
-      emptyTraining: '当前机构范围内没有训练类事件。可先批准一条申请，再带入训练页触发任务。',
+      emptyStream: '暂无审计事件',
+      emptyTraining: '暂无训练事件',
     }
   }
   return {
-    note: '这里主要用来回看你自己的登录、申请、训练与读取轨迹，不会暴露其他角色的事件。',
-    emptyStream: '当前个人范围内没有审计事件。登录、申请访问或训练后会逐步累积记录。',
-    emptyTraining: '当前个人范围内没有训练类事件。先从已批准的数据集发起训练。',
+    emptyStream: '暂无审计事件',
+    emptyTraining: '暂无训练事件',
   }
 })
-const intakeHint = computed(() => {
-  const source = String(route.query.source ?? '')
-  if (!source) {
-    return ''
-  }
-  if (source === 'chain-record') {
-    return filters.action
-      ? `该视图来自链轨迹，已预填 ${filters.action} 对应的审计筛选。`
-      : '该视图来自链轨迹，可继续核对链记录对应的审计事件。'
-  }
-  if (source === 'model-record' && focusModelId.value) {
-    return `该视图来自模型库，已聚焦 ${focusModelId.value} 对应的治理审计。`
-  }
-  return '当前筛选条件由上一页带入。'
-})
-
 const auditStats = computed(() => [
   { label: '事件总数', value: auditRows.value.length },
   { label: '成功事件', value: auditRows.value.filter((row) => row.status === 'success').length },
@@ -273,19 +254,12 @@ watch(
     <PageHero
       kicker="审计中心"
       title="把关键操作收进一条可追溯时间线。"
-      :lede="`当前身份是 ${actorProfile.actorId} / ${formatRoleLabel(actorProfile.actorRole)} / ${formatOrganizationLabel(actorProfile.actorOrg)}。这个页面是独立审计中心，不再依附单个数据详情页。`"
       layout="balanced"
     >
       <template #actions>
         <span class="status-chip">{{ scopeLabel }}</span>
         <RouterLink class="hero-panel__secondary" to="/">返回总览</RouterLink>
       </template>
-
-      <p v-if="intakeHint" class="hero-panel__hint">{{ intakeHint }}</p>
-      <div class="hero-panel__guide">
-        <span>当前提示</span>
-        <strong>{{ roleGuide.note }}</strong>
-      </div>
 
       <div class="summary-strip">
         <article v-for="stat in auditStats" :key="stat.label" class="summary-strip__card">
@@ -309,7 +283,9 @@ watch(
               {{ formatRoleLabel((focusedModelAudit ?? spotlightEvent)?.actorRole) }} ·
               {{ formatOrganizationLabel((focusedModelAudit ?? spotlightEvent)?.actorOrg) }}
             </p>
-            <p class="hero-spotlight__reason">{{ (focusedModelAudit ?? spotlightEvent)?.detail || '该事件未附带额外说明。' }}</p>
+            <p v-if="(focusedModelAudit ?? spotlightEvent)?.detail" class="hero-spotlight__reason">
+              {{ (focusedModelAudit ?? spotlightEvent)?.detail }}
+            </p>
             <div class="hero-spotlight__meta">
               <div>
                 <span>对象</span>
@@ -352,11 +328,7 @@ watch(
     <template v-else>
       <section class="audits-layout">
         <aside class="audits-layout__side">
-          <SurfaceCard
-            kicker="检索条件"
-            title="过滤器"
-            lede="后端会先按你的角色限制可见范围，再应用这些筛选项。"
-          >
+          <SurfaceCard kicker="检索条件" title="过滤器">
 
             <form class="form-grid" @submit.prevent="loadAudits">
               <label>
@@ -371,33 +343,33 @@ watch(
                 <span>动作</span>
                 <select v-model="filters.action">
                   <option value="">全部动作</option>
-                  <option value="AUTH_LOGIN_SUCCEEDED">AUTH_LOGIN_SUCCEEDED</option>
-                  <option value="AUTH_REFRESH_SUCCEEDED">AUTH_REFRESH_SUCCEEDED</option>
-                  <option value="ACCOUNT_REGISTERED">ACCOUNT_REGISTERED</option>
-                  <option value="ACCOUNT_UPDATED">ACCOUNT_UPDATED</option>
-                  <option value="ACCESS_REQUEST_CREATED">ACCESS_REQUEST_CREATED</option>
-                  <option value="ACCESS_REQUEST_APPROVED">ACCESS_REQUEST_APPROVED</option>
-                  <option value="DESTRUCTION_REQUEST_CREATED">DESTRUCTION_REQUEST_CREATED</option>
-                  <option value="DESTRUCTION_REQUEST_APPROVED">DESTRUCTION_REQUEST_APPROVED</option>
-                  <option value="DESTRUCTION_REQUEST_REJECTED">DESTRUCTION_REQUEST_REJECTED</option>
-                  <option value="DESTRUCTION_EXECUTED">DESTRUCTION_EXECUTED</option>
-                  <option value="DESTRUCTION_STORAGE_PURGE_REQUESTED">DESTRUCTION_STORAGE_PURGE_REQUESTED</option>
-                  <option value="DESTRUCTION_STORAGE_PURGE_COMPLETED">DESTRUCTION_STORAGE_PURGE_COMPLETED</option>
-                  <option value="DESTRUCTION_STORAGE_PURGE_FAILED">DESTRUCTION_STORAGE_PURGE_FAILED</option>
-                  <option value="BRAIN_ACTIVITY_READ">BRAIN_ACTIVITY_READ</option>
-                  <option value="TRAINING_RUN_CREATED">TRAINING_RUN_CREATED</option>
-                  <option value="TRAINING_RUN_COMPLETED">TRAINING_RUN_COMPLETED</option>
-                  <option value="TRAINING_RUN_FAILED">TRAINING_RUN_FAILED</option>
-                  <option value="MODEL_VERSION_REGISTERED">MODEL_VERSION_REGISTERED</option>
-                  <option value="MODEL_GOVERNANCE_UPDATED">MODEL_GOVERNANCE_UPDATED</option>
+                  <option value="AUTH_LOGIN_SUCCEEDED">登录成功</option>
+                  <option value="AUTH_REFRESH_SUCCEEDED">会话刷新成功</option>
+                  <option value="ACCOUNT_REGISTERED">账户已注册</option>
+                  <option value="ACCOUNT_UPDATED">账户已更新</option>
+                  <option value="ACCESS_REQUEST_CREATED">访问申请已创建</option>
+                  <option value="ACCESS_REQUEST_APPROVED">访问申请已批准</option>
+                  <option value="DESTRUCTION_REQUEST_CREATED">销毁申请已创建</option>
+                  <option value="DESTRUCTION_REQUEST_APPROVED">销毁申请已批准</option>
+                  <option value="DESTRUCTION_REQUEST_REJECTED">销毁申请已拒绝</option>
+                  <option value="DESTRUCTION_EXECUTED">销毁已执行</option>
+                  <option value="DESTRUCTION_STORAGE_PURGE_REQUESTED">存储清理已请求</option>
+                  <option value="DESTRUCTION_STORAGE_PURGE_COMPLETED">存储清理已完成</option>
+                  <option value="DESTRUCTION_STORAGE_PURGE_FAILED">存储清理失败</option>
+                  <option value="BRAIN_ACTIVITY_READ">脑活跃度已读取</option>
+                  <option value="TRAINING_RUN_CREATED">训练任务已创建</option>
+                  <option value="TRAINING_RUN_COMPLETED">训练任务已完成</option>
+                  <option value="TRAINING_RUN_FAILED">训练任务失败</option>
+                  <option value="MODEL_VERSION_REGISTERED">模型版本已登记</option>
+                  <option value="MODEL_GOVERNANCE_UPDATED">模型治理已更新</option>
                 </select>
               </label>
               <label>
                 <span>状态</span>
                 <select v-model="filters.status">
                   <option value="">全部状态</option>
-                  <option value="success">success</option>
-                  <option value="failed">failed</option>
+                  <option value="success">成功</option>
+                  <option value="failed">失败</option>
                 </select>
               </label>
               <label>
@@ -412,11 +384,7 @@ watch(
             </form>
           </SurfaceCard>
 
-          <SurfaceCard
-            kicker="训练筛选"
-            title="训练事件"
-            lede="快速切到训练相关审计，再一键跳回训练编排页继续追踪任务。"
-          >
+          <SurfaceCard kicker="训练筛选" title="训练事件">
 
             <div class="quick-actions">
               <button type="button" class="quick-action" @click="setActionFilter('TRAINING_RUN_CREATED')">只看创建</button>
@@ -434,7 +402,7 @@ watch(
               >
                 <span>{{ formatAuditActionLabel(event.action) }}</span>
                 <strong>{{ extractTrainingJobId(event.detail) || event.datasetId || '训练任务' }}</strong>
-                <small>{{ event.detail || '打开训练编排页继续查看。' }}</small>
+                <small v-if="event.detail">{{ event.detail }}</small>
               </RouterLink>
             </div>
             <div v-else class="empty-state">{{ roleGuide.emptyTraining }}</div>
@@ -448,7 +416,7 @@ watch(
               >
                 <span>{{ formatAuditActionLabel(event.action) }}</span>
                 <strong>{{ extractModelId(event.detail) || event.datasetId || '模型记录' }}</strong>
-                <small>{{ event.detail || '打开模型库继续查看。' }}</small>
+                <small v-if="event.detail">{{ event.detail }}</small>
               </RouterLink>
             </div>
           </SurfaceCard>
@@ -496,7 +464,7 @@ watch(
                   </div>
                 </dl>
 
-                <p class="audit-card__detail">{{ event.detail || '该事件未附带额外说明。' }}</p>
+                <p v-if="event.detail" class="audit-card__detail">{{ event.detail }}</p>
 
                 <div v-if="event.action.startsWith('TRAINING_')" class="audit-card__actions">
                   <RouterLink class="audit-card__link" :to="trainingLinkFor(event)">
@@ -717,6 +685,8 @@ watch(
 .audit-card__detail {
   margin: 0;
   color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .hero-spotlight__meta,
@@ -750,8 +720,8 @@ watch(
 
 .form-grid span {
   color: var(--text-faint);
-  font-size: 0.74rem;
-  letter-spacing: 0.14em;
+  font-size: var(--field-label-size);
+  letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 
@@ -792,7 +762,7 @@ watch(
 
 .audit-card__detail {
   margin-top: 14px;
-  line-height: 1.7;
+  line-height: var(--supporting-text-line-height);
 }
 
 .training-preview__item {

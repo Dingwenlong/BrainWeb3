@@ -27,23 +27,6 @@ const isAuthRoute = computed(() => route.name === 'login')
 const isPrivilegedActor = computed(() =>
   ['owner', 'approver', 'admin'].includes(actorProfile.value.actorRole.toLowerCase()),
 )
-const routeDescriptions: Record<string, string> = {
-  overview: '查看数据资产、任务进度和近期治理动态。',
-  'dataset-detail': '查看单个数据集的摘要、存证、权限与活跃度。',
-  'access-requests': '处理访问申请、审批状态和后续流转。',
-  'destruction-requests': '提交、审批和执行销毁流程。',
-  accounts: '管理账户、密码、角色和凭证状态。',
-  'identity-center': '查看 DID、VC 和身份相关审计。',
-  audits: '回看系统内的关键操作和治理事件。',
-  'chain-records': '核对关键业务动作的链上记录。',
-  'training-jobs': '发起和跟踪训练任务。',
-  'model-records': '查看模型版本和治理状态。',
-}
-
-const currentDescription = computed(
-  () => routeDescriptions[String(route.name ?? 'overview')] ?? '当前页面内容。',
-)
-
 const navigationGroups = computed(() => [
   {
     label: '工作台',
@@ -117,7 +100,6 @@ async function handleLogout() {
           <nav class="app-menu">
             <RouterLink v-for="item in group.items" :key="item.to" :to="item.to" class="app-menu__item">
               <strong>{{ item.label }}</strong>
-              <small>{{ item.note }}</small>
             </RouterLink>
           </nav>
         </div>
@@ -146,7 +128,6 @@ async function handleLogout() {
       <div v-if="!isAuthRoute" class="app-main__intro">
         <p class="section-kicker">当前工作区</p>
         <h1>{{ currentSection }}</h1>
-        <p>{{ currentDescription }}</p>
       </div>
 
       <RouterView />
@@ -158,12 +139,18 @@ async function handleLogout() {
 
 <style scoped>
 .app-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .app-shell--auth {
   display: block;
   padding: 20px;
+}
+
+.app-shell--auth .app-main {
+  min-height: calc(100dvh - 40px);
+  padding: 0;
+  background: transparent;
 }
 
 .app-shell--workspace {
@@ -409,6 +396,10 @@ async function handleLogout() {
 @media (max-width: 760px) {
   .app-shell--auth {
     padding: 14px;
+  }
+
+  .app-shell--auth .app-main {
+    min-height: calc(100dvh - 28px);
   }
 
   .app-header,

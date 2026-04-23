@@ -138,9 +138,8 @@ function Open-ServiceWindow {
 
   $hostPath = (Get-Process -Id $PID).Path
   $escapedWorkingDirectory = $WorkingDirectory.Replace("'", "''")
-  $escapedCommand = $Command.Replace("'", "''")
   $escapedTitle = "BrainWeb3 - $Name".Replace("'", "''")
-  $windowCommand = "`$Host.UI.RawUI.WindowTitle = '$escapedTitle'; Set-Location -LiteralPath '$escapedWorkingDirectory'; $escapedCommand"
+  $windowCommand = "`$Host.UI.RawUI.WindowTitle = '$escapedTitle'; Set-Location -LiteralPath '$escapedWorkingDirectory'; $Command"
 
   $process = Start-Process -FilePath $hostPath -WorkingDirectory $WorkingDirectory -ArgumentList @(
     "-NoExit",
@@ -179,8 +178,6 @@ try {
     throw "Maven is unavailable. Run .\scripts\bootstrap\install-host-tools.ps1 or .\start-project.cmd first."
   }
 
-  $escapedMavenCommand = $mavenCommand.Replace("'", "''")
-
   Write-Step "Starting local infrastructure"
   & (Join-Path $scriptRoot "dev-up.ps1")
 
@@ -194,7 +191,7 @@ try {
   Write-Step "Launching application services"
   $serviceEntries = @()
   $serviceEntries += Open-ServiceWindow -Name "frontend" -WorkingDirectory $workspaceRoot -Command "npm run dev:frontend"
-  $serviceEntries += Open-ServiceWindow -Name "backend" -WorkingDirectory $workspaceRoot -Command "& '$escapedMavenCommand' -pl apps/backend spring-boot:run"
+  $serviceEntries += Open-ServiceWindow -Name "backend" -WorkingDirectory $workspaceRoot -Command "& '$mavenCommand' -pl apps/backend spring-boot:run"
   $serviceEntries += Open-ServiceWindow -Name "eeg-service" -WorkingDirectory (Join-Path $workspaceRoot "services\eeg-service") -Command "python .\app.py"
 
   if ($IncludeFederatedService) {

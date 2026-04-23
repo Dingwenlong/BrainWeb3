@@ -65,17 +65,14 @@ const overviewStats = computed(() => [
   {
     label: '数据资产',
     value: datasets.value.length,
-    note: '当前目录中的数据集数量',
   },
   {
     label: '已存证',
     value: datasets.value.filter((item) => item.proofStatus === 'notarized').length,
-    note: '已生成链上回执的数据',
   },
   {
     label: '可训练',
     value: datasets.value.filter((item) => item.trainingReadiness.toLowerCase().includes('ready')).length,
-    note: '可进入训练或预览的数据',
   },
 ])
 const isPrivilegedActor = computed(() =>
@@ -86,46 +83,37 @@ const roleLens = computed(() => {
   if (role === 'admin') {
     return {
       title: '全局监管视角',
-      note: '优先观察全局审计、训练任务和账号治理脉冲。',
     }
   }
   if (role === 'owner' || role === 'approver') {
     return {
       title: '机构决策视角',
-      note: '把待审批申请、训练编排和机构内审计收拢到同一条任务面。 ',
     }
   }
   return {
     title: '研究执行视角',
-    note: '优先处理数据申请、训练发起和个人审计回看。',
   }
 })
 const roleGuide = computed(() => {
   const role = actorProfile.value.actorRole.toLowerCase()
   if (role === 'admin') {
     return {
-      nextStep: '先扫一遍训练与审计脉冲，再处理账户治理和异常回放。',
-      emptyDataset: '当前没有数据资产。先上传一份样板数据，再回看链路和审计记录。',
-      emptyTraining: '当前没有训练任务。先创建一条任务，再回来查看状态流转。',
-      emptyAudit: '当前没有审计事件。发生登录、审批或训练动作后，这里会自动出现记录。',
-      uploadHint: '管理员可先投递一份样板 EEG 资产，随后回看链路回执、审计事件与账户权限表现。',
+      emptyDataset: '暂无数据资产',
+      emptyTraining: '暂无训练任务',
+      emptyAudit: '暂无审计事件',
     }
   }
   if (role === 'owner' || role === 'approver') {
     return {
-      nextStep: '先看待审批记录，再把已批准数据带入训练编排。',
-      emptyDataset: '当前没有数据资产。先引入样板数据，再继续审批和训练。',
-      emptyTraining: '当前没有训练任务。申请获批后可直接从审批台带入训练。',
-      emptyAudit: '当前没有机构审计事件。后续审批、训练或账户动作会出现在这里。',
-      uploadHint: '机构侧可以先投递一份 EEG 资产，再通过审批台验证授权和训练的衔接是否顺畅。',
+      emptyDataset: '暂无数据资产',
+      emptyTraining: '暂无训练任务',
+      emptyAudit: '暂无审计事件',
     }
   }
   return {
-    nextStep: '先申请可用数据，再从训练编排页发起你的第一条任务。',
-    emptyDataset: '当前没有可用数据。先上传样板数据，或等待机构导入首批资产。',
-    emptyTraining: '当前没有训练任务。先申请可训练数据，获批后可直接带入训练页。',
-    emptyAudit: '当前没有个人审计事件。登录、申请或训练后会自动生成记录。',
-    uploadHint: '研究侧可以先上传样板数据，随后申请访问、触发训练并回看自己的审计轨迹。',
+    emptyDataset: '暂无数据资产',
+    emptyTraining: '暂无训练任务',
+    emptyAudit: '暂无审计事件',
   }
 })
 const latestTrainingJob = computed(() => trainingJobs.value[0] ?? null)
@@ -200,29 +188,6 @@ const commandSignals = computed(() => [
     note: generatedAtLabel.value,
   },
 ])
-
-const commandSteps = [
-  {
-    title: 'Ingest',
-    note: '接入 EDF/GDF/BDF 文件并生成资产目录。',
-  },
-  {
-    title: 'Attest',
-    note: '把哈希、合约和链路回执写入可信面。',
-  },
-  {
-    title: 'Govern',
-    note: '以访问申请和审批策略控制读取边界。',
-  },
-  {
-    title: 'Train',
-    note: '进入联邦训练编排并观察状态收口。',
-  },
-  {
-    title: 'Audit',
-    note: '把操作回放到独立审计中心。',
-  },
-]
 
 function toSummary(dataset: DatasetDetail): DatasetSummary {
   return {
@@ -315,7 +280,6 @@ onMounted(loadOverview)
     <PageHero
       kicker="数据工作台"
       title="把数据接入、授权治理和训练协同放进同一个清晰页面。"
-      lede="这里优先展示当天真正要处理的事项：最近数据、系统状态、访问流转和训练入口，不再用概念化包装抢走信息本身。"
     >
       <template #actions>
         <RouterLink v-if="featuredDataset" class="hero-panel__primary" :to="`/datasets/${featuredDataset.id}`">
@@ -329,15 +293,6 @@ onMounted(loadOverview)
       <div class="hero-role-card">
         <span>当前视角</span>
         <strong>{{ roleLens.title }}</strong>
-        <p>{{ roleLens.note }}</p>
-        <small>{{ roleGuide.nextStep }}</small>
-      </div>
-
-      <div class="hero-protocol">
-        <div v-for="step in commandSteps" :key="step.title" class="hero-protocol__step">
-          <strong>{{ step.title }}</strong>
-          <p>{{ step.note }}</p>
-        </div>
       </div>
 
       <template #rail>
@@ -397,16 +352,11 @@ onMounted(loadOverview)
         <article v-for="stat in overviewStats" :key="stat.label" class="summary-strip__card">
           <span>{{ stat.label }}</span>
           <strong>{{ stat.value }}</strong>
-          <small>{{ stat.note }}</small>
         </article>
       </section>
 
       <section class="mission-grid">
-        <SurfaceCard
-          kicker="常用入口"
-          title="门户入口"
-          lede="把训练、审批、审计和账户域统一收进角色化入口，不再靠用户自己找页面。"
-        >
+        <SurfaceCard kicker="常用入口" title="门户入口">
           <template #meta>
             <span class="status-chip">{{ formatRoleLabel(actorProfile.actorRole) }}</span>
           </template>
@@ -419,11 +369,7 @@ onMounted(loadOverview)
           </div>
         </SurfaceCard>
 
-        <SurfaceCard
-          kicker="运行概览"
-          title="当前待处理事项"
-          lede="这里先看审批、训练和审计的即时压力，再决定跳转到哪个工作区。"
-        >
+        <SurfaceCard kicker="运行概览" title="当前待处理事项">
 
           <div class="operation-grid">
             <div v-for="card in operationCards" :key="card.label" class="operation-card">
@@ -468,7 +414,6 @@ onMounted(loadOverview)
           <SurfaceCard
             kicker="数据目录"
             title="数据资产清单"
-            lede="按最近更新时间排列，优先把已经存证或可训练的数据拉到操作路径前面。"
           >
             <template #meta>
               <span class="status-chip">{{ datasets.length }} 条记录</span>
@@ -507,11 +452,7 @@ onMounted(loadOverview)
         </div>
 
         <aside class="overview-layout__side">
-          <SurfaceCard
-            kicker="上传入口"
-            title="上传新 EEG 数据"
-            :lede="roleGuide.uploadHint"
-          >
+          <SurfaceCard kicker="上传入口" title="上传新 EEG 数据">
             <template #meta>
               <span class="status-chip">{{ formatSystemToken(systemStatus?.chain.mode ?? 'mock') }}</span>
             </template>
@@ -554,11 +495,7 @@ onMounted(loadOverview)
             </template>
           </SurfaceCard>
 
-          <SurfaceCard
-            kicker="系统状态"
-            title="链路摘要"
-            lede="这里保持工作台级别的运行摘要，不把用户逼进单独的系统页。"
-          >
+          <SurfaceCard kicker="系统状态" title="链路摘要">
             <template #meta>
               <span class="status-chip">{{ formatApplicationLabel(systemStatus?.application) }}</span>
             </template>
@@ -715,8 +652,8 @@ onMounted(loadOverview)
 .hero-protocol__step p {
   margin: 8px 0 0;
   color: var(--text-muted);
-  font-size: 0.84rem;
-  line-height: 1.6;
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .hero-spotlight__kicker,
@@ -761,7 +698,8 @@ onMounted(loadOverview)
 .hero-spotlight__subject,
 .hero-spotlight__empty {
   margin: 0;
-  line-height: 1.7;
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .hero-spotlight__meta {
@@ -958,8 +896,8 @@ onMounted(loadOverview)
 
 .form-grid span {
   color: var(--text-faint);
-  font-size: 0.74rem;
-  letter-spacing: 0.14em;
+  font-size: var(--field-label-size);
+  letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 

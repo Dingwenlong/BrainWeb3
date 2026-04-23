@@ -12,6 +12,7 @@ import {
   formatRoleLabel,
   formatTrainingReadinessLabel,
 } from '../utils/labels'
+import { canInspectChainRecords } from '../utils/permissions'
 
 const { actorProfile } = useActorProfile()
 const { pushToast } = useToast()
@@ -38,53 +39,29 @@ const modelRecordByJobId = computed(() =>
   Object.fromEntries(modelRecords.value.map((record) => [record.trainingJobId, record])),
 )
 const focusJobId = computed(() => (typeof route.query.focusJobId === 'string' ? route.query.focusJobId : ''))
+const canInspectChainWorkspace = computed(() => canInspectChainRecords(actorProfile.value.actorRole))
 const roleGuide = computed(() => {
   const role = actorProfile.value.actorRole.toLowerCase()
   if (role === 'admin') {
     return {
       title: '监管推进',
-      note: '先创建或定位一条任务，再用刷新动作确认当前联邦编排是否顺利收口。',
-      emptyJobs: '当前没有训练任务。先创建一条任务，再回到审计中心核对事件。',
-      noDataset: '当前没有可训练数据。先上传样板数据，或确认已有数据进入训练就绪状态。',
+      emptyJobs: '暂无训练任务',
+      noDataset: '暂无可训练数据',
     }
   }
   if (role === 'owner' || role === 'approver') {
     return {
       title: '机构编排',
-      note: '优先把已批准访问的数据带入训练页，确认机构内授权与训练任务能顺畅衔接。',
-      emptyJobs: '当前没有训练任务。审批通过后可直接把数据带入这里发起训练。',
-      noDataset: '当前没有可训练数据。先审批一条访问申请，或确认目标数据已进入训练就绪状态。',
+      emptyJobs: '暂无训练任务',
+      noDataset: '暂无可训练数据',
     }
   }
   return {
     title: '研究执行',
-    note: '先确认你手里有已批准、可训练的数据，再创建第一条最小联邦训练任务。',
-    emptyJobs: '当前没有训练任务。先去访问申请页申请数据，获批后可直接带入这里发起训练。',
-    noDataset: '当前没有可训练数据。请先申请访问，或等待数据进入训练就绪状态。',
+    emptyJobs: '暂无训练任务',
+    noDataset: '暂无可训练数据',
   }
 })
-const intakeHint = computed(() => {
-  const source = String(route.query.source ?? '')
-  if (!source) {
-    return ''
-  }
-  if (source === 'access-request') {
-    return '该任务来自审批结果带入，数据集和用途已预填。'
-  }
-  if (source === 'dataset-detail') {
-    return '该任务来自数据详情页带入，可直接基于当前资产发起训练。'
-  }
-  if (source === 'audit') {
-    return focusJobId.value
-      ? `该任务来自审计中心，已定位到 ${focusJobId.value}。`
-      : '该任务来自审计中心，可继续追踪训练状态。'
-  }
-  if (source === 'chain-record') {
-    return '该任务来自链轨迹页，可继续核对训练结果与链上记录是否一致。'
-  }
-  return '该任务参数已由上一页带入。'
-})
-
 function applyRoutePrefill() {
   const datasetId = typeof route.query.datasetId === 'string' ? route.query.datasetId : ''
   const modelName = typeof route.query.modelName === 'string' ? route.query.modelName : ''
@@ -115,10 +92,10 @@ function modelRecordFor(job: TrainingJob) {
 
 function governanceGuide(record: ModelRecord | null) {
   if (!record) {
-    return '模型登记仍在同步中，下一次刷新后会出现在治理主线里。'
+    return '等待模型登记'
   }
   if (!record.allowedGovernanceTransitions.length) {
-    return '当前治理状态已收口，可直接进入模型治理线回看审计与链证明。'
+    return '当前状态已收口'
   }
   return `下一步可切换到 ${record.allowedGovernanceTransitions
     .map((status) => formatModelGovernanceStatusLabel(status))
@@ -244,16 +221,7 @@ watch(
     <header class="training-hero glass-panel">
       <div>
         <p class="section-kicker">训练任务</p>
-        <h1>联邦训练工作台</h1>
-        <p>
-          这里只有一条清晰的业务规则：获得访问权限、已经完成存证并满足训练条件的数据，才能进入训练流程。
-          当前页面用于发起任务、查看进度和回看结果，不再强调演示式包装。
-        </p>
-        <p v-if="intakeHint" class="training-hero__hint">{{ intakeHint }}</p>
-        <div class="training-hero__guide">
-          <span>{{ roleGuide.title }}</span>
-          <strong>{{ roleGuide.note }}</strong>
-        </div>
+        <h1 class="page-main-heading">联邦训练工作台</h1>
       </div>
 
       <div class="training-hero__stats">
@@ -307,8 +275,8 @@ watch(
           <label>
             <span>算法</span>
             <select v-model="form.algorithm">
-              <option value="hetero-logistic-regression">Hetero LR</option>
-              <option value="hetero-neural-network">Hetero NN</option>
+              <option value="hetero-logistic-regression">异构逻辑回归</option>
+              <option value="hetero-neural-network">异构神经网络</option>
               <option value="failover-probe">故障探测</option>
             </select>
           </label>
@@ -373,7 +341,6 @@ watch(
             </header>
 
             <p class="job-card__summary">{{ job.objective }}</p>
-            <p v-if="focusJobId === job.id" class="job-card__focus-note">该任务由审计中心定位而来。</p>
 
             <div class="job-card__meta">
               <div>
@@ -395,9 +362,9 @@ watch(
             </div>
 
             <div class="job-card__notes">
-              <p><strong>最新消息：</strong>{{ job.latestMessage || '暂无状态消息。' }}</p>
-              <p><strong>指标摘要：</strong>{{ job.metricSummary || '等待刷新结果。' }}</p>
-              <p><strong>结果说明：</strong>{{ job.resultSummary || '任务仍在运行中。' }}</p>
+              <p v-if="job.latestMessage"><strong>最新消息：</strong>{{ job.latestMessage }}</p>
+              <p v-if="job.metricSummary"><strong>指标摘要：</strong>{{ job.metricSummary }}</p>
+              <p v-if="job.resultSummary"><strong>结果说明：</strong>{{ job.resultSummary }}</p>
             </div>
 
             <div v-if="job.status === 'succeeded'" class="job-card__governance">
@@ -430,7 +397,7 @@ watch(
                 打开治理审计
               </RouterLink>
               <RouterLink
-                v-if="job.status === 'succeeded' && modelRecordFor(job)"
+                v-if="canInspectChainWorkspace && job.status === 'succeeded' && modelRecordFor(job)"
                 class="ghost-link"
                 :to="{ path: '/chain-records', query: { source: 'model-record', datasetId: job.datasetId, eventType: 'MODEL_GOVERNED', focusModelId: modelRecordFor(job)?.id } }"
               >
@@ -480,13 +447,27 @@ watch(
   font-family: var(--display);
 }
 
+.training-panel h2 {
+  color: var(--text-strong);
+  font-size: var(--section-title-size);
+  line-height: var(--section-title-line-height);
+}
+
+.dataset-brief h3,
+.job-card h3 {
+  color: var(--text-strong);
+  font-size: var(--card-title-size);
+  line-height: var(--card-title-line-height);
+}
+
 .training-hero p:last-child,
 .job-card__summary,
 .job-card__notes p,
 .empty-state {
   margin: 0;
   color: var(--text-muted);
-  line-height: 1.65;
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .training-hero__hint {
@@ -578,11 +559,17 @@ watch(
 }
 
 .panel-head,
-.job-card__head,
-.job-card__actions {
+.job-card__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+
+.job-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 12px;
 }
 
@@ -604,8 +591,8 @@ watch(
 
 .training-form span {
   color: var(--text-faint);
-  font-size: 0.78rem;
-  letter-spacing: 0.12em;
+  font-size: var(--field-label-size);
+  letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 
@@ -622,6 +609,9 @@ watch(
 .primary-button,
 .ghost-button,
 .ghost-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: var(--control-height);
   border-radius: var(--radius-pill);
   padding: var(--space-button);
@@ -643,6 +633,10 @@ watch(
   background: var(--button-soft-gradient);
   color: var(--text-main);
   text-decoration: none;
+}
+
+.job-card__stamp {
+  margin-left: auto;
 }
 
 .status-chip,
@@ -735,6 +729,10 @@ watch(
 
   .job-card__meta {
     grid-template-columns: 1fr;
+  }
+
+  .job-card__stamp {
+    margin-left: 0;
   }
 }
 </style>

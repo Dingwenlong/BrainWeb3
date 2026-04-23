@@ -49,18 +49,16 @@ const scopeLabel = computed(() => {
 const roleGuide = computed(() => {
   if (isAdmin.value) {
     return {
-      note: '这里用于集中查看账户凭证、机构凭证、治理时间线和身份相关审计，再决定是否回到账户管理页执行变更。',
-      accountEmpty: '当前没有账户身份记录。先在账户页创建账户，再回来查看身份分布。',
-      orgEmpty: '当前没有机构身份记录。账户目录出现机构归属后，这里会自动汇聚。',
-      auditEmpty: '当前没有身份治理审计。登录、建号、改密或凭证更新后会逐步形成时间线。',
+      accountEmpty: '暂无账户身份记录',
+      orgEmpty: '暂无机构身份记录',
+      auditEmpty: '暂无身份审计事件',
     }
   }
 
   return {
-    note: '这里集中展示你自己的 DID、凭证状态和最近身份审计，重点是回看可信身份而不是做治理操作。',
-    accountEmpty: '当前没有可展示的个人账户身份记录，请稍后刷新。',
-    orgEmpty: '当前机构身份暂未返回，请稍后重试。',
-    auditEmpty: '当前没有你的身份审计事件。登录、改密或恢复密码后会逐步出现轨迹。',
+    accountEmpty: '暂无账户身份记录',
+    orgEmpty: '暂无机构身份记录',
+    auditEmpty: '暂无身份审计事件',
   }
 })
 
@@ -176,21 +174,12 @@ onMounted(loadPage)
     <section class="hero-panel glass-panel">
       <div class="hero-panel__copy">
         <p class="section-kicker">身份中心</p>
-        <h1>把身份凭证、治理状态和相关审计集中在一个页面。</h1>
-        <p class="hero-panel__lede">
-          当前身份是 {{ actorProfile.actorId }} / {{ formatRoleLabel(actorProfile.actorRole) }} /
-          {{ formatOrganizationLabel(actorProfile.actorOrg) }}。这里负责汇聚可信身份，不再把所有内容都塞进账户页。
-        </p>
+        <h1 class="page-main-heading">把身份凭证、治理状态和相关审计集中在一个页面。</h1>
 
         <div class="hero-panel__actions">
           <span class="status-chip">{{ scopeLabel }}</span>
           <RouterLink class="hero-panel__secondary" to="/accounts">打开账户页</RouterLink>
           <RouterLink class="hero-panel__secondary" to="/audits?action=ACCOUNT_CREDENTIAL_STATUS_UPDATED">打开身份审计</RouterLink>
-        </div>
-
-        <div class="hero-panel__guide">
-          <span>当前提示</span>
-          <strong>{{ roleGuide.note }}</strong>
         </div>
 
         <div class="summary-strip">
@@ -215,7 +204,7 @@ onMounted(loadPage)
               </span>
             </div>
             <p class="hero-spotlight__context">{{ identity.actorDid }}</p>
-            <p class="hero-spotlight__reason">{{ verification?.reason ?? '当前身份凭证已通过平台校验。' }}</p>
+            <p v-if="verification?.reason" class="hero-spotlight__reason">{{ verification.reason }}</p>
             <div class="hero-spotlight__meta">
               <div>
                 <span>凭证状态</span>
@@ -246,7 +235,7 @@ onMounted(loadPage)
               {{ spotlightAudit.actorId }} · {{ formatRoleLabel(spotlightAudit.actorRole) }} ·
               {{ formatOrganizationLabel(spotlightAudit.actorOrg) }}
             </p>
-            <p class="hero-spotlight__reason">{{ spotlightAudit.detail || '该事件未附带额外说明。' }}</p>
+            <p v-if="spotlightAudit.detail" class="hero-spotlight__reason">{{ spotlightAudit.detail }}</p>
             <div class="hero-spotlight__meta">
               <div>
                 <span>原始动作</span>
@@ -301,7 +290,7 @@ onMounted(loadPage)
               </div>
             </dl>
 
-            <p class="workspace-card__note">{{ verification?.reason ?? '当前凭证校验结果正常。' }}</p>
+            <p v-if="verification?.reason" class="workspace-card__note">{{ verification.reason }}</p>
           </article>
 
           <article v-if="currentOrganization" class="workspace-card glass-panel">
@@ -331,8 +320,8 @@ onMounted(loadPage)
               </div>
             </dl>
 
-            <p class="workspace-card__note">
-              {{ currentOrganization.statusSnapshot.reason || '当前机构凭证状态暂无额外说明。' }}
+            <p v-if="currentOrganization.statusSnapshot.reason" class="workspace-card__note">
+              {{ currentOrganization.statusSnapshot.reason }}
             </p>
 
             <div v-if="currentOrganization.credentialHistory.length" class="history-timeline">
@@ -342,8 +331,8 @@ onMounted(loadPage)
                 class="history-timeline__item"
               >
                 <strong>{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
-                <p>{{ entry.reason || '该次治理未附带额外说明。' }}</p>
-                <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || 'system' }} · {{ formatTime(entry.createdAt) }}</span>
+                <p v-if="entry.reason">{{ entry.reason }}</p>
+                <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
               </div>
             </div>
           </article>
@@ -390,9 +379,7 @@ onMounted(loadPage)
                   </div>
                 </dl>
 
-                <p class="identity-card__hint">
-                  {{ row.credentialStatus.reason || '当前账户凭证状态暂无额外说明。' }}
-                </p>
+                <p v-if="row.credentialStatus.reason" class="identity-card__hint">{{ row.credentialStatus.reason }}</p>
 
                 <div class="history-timeline">
                   <div
@@ -401,8 +388,8 @@ onMounted(loadPage)
                     class="history-timeline__item"
                   >
                     <strong>{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
-                    <p>{{ entry.reason || '该次治理未附带额外说明。' }}</p>
-                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || 'system' }} · {{ formatTime(entry.createdAt) }}</span>
+                    <p v-if="entry.reason">{{ entry.reason }}</p>
+                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
                   </div>
                 </div>
               </article>
@@ -450,9 +437,7 @@ onMounted(loadPage)
                   </div>
                 </dl>
 
-                <p class="identity-card__hint">
-                  {{ row.statusSnapshot.reason || '当前机构凭证状态暂无额外说明。' }}
-                </p>
+                <p v-if="row.statusSnapshot.reason" class="identity-card__hint">{{ row.statusSnapshot.reason }}</p>
 
                 <div class="history-timeline">
                   <div
@@ -461,8 +446,8 @@ onMounted(loadPage)
                     class="history-timeline__item"
                   >
                     <strong>{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
-                    <p>{{ entry.reason || '该次治理未附带额外说明。' }}</p>
-                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || 'system' }} · {{ formatTime(entry.createdAt) }}</span>
+                    <p v-if="entry.reason">{{ entry.reason }}</p>
+                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
                   </div>
                 </div>
               </article>
@@ -475,7 +460,6 @@ onMounted(loadPage)
               <div>
                 <p class="section-kicker">身份审计</p>
                 <h2 class="section-title">身份审计流</h2>
-                <p class="workspace-card__note workspace-card__note--inline">这里只保留认证、账户与凭证治理相关事件，完整审计仍可跳转到审计中心继续筛查。</p>
               </div>
               <RouterLink class="workspace-card__link" to="/audits">打开审计中心</RouterLink>
             </div>
@@ -511,7 +495,7 @@ onMounted(loadPage)
                   </div>
                 </dl>
 
-                <p class="identity-card__hint">{{ event.detail || '该事件未附带额外说明。' }}</p>
+                <p v-if="event.detail" class="identity-card__hint">{{ event.detail }}</p>
               </article>
             </div>
             <div v-else class="empty-state">{{ roleGuide.auditEmpty }}</div>
@@ -557,8 +541,12 @@ onMounted(loadPage)
 }
 
 .hero-panel h1 {
-  font-size: clamp(2.5rem, 5vw, 4rem);
-  line-height: 0.96;
+  color: var(--text-strong);
+  font-size: var(--page-heading-size);
+  font-weight: 600;
+  line-height: var(--page-heading-line-height);
+  letter-spacing: var(--page-heading-letter-spacing);
+  text-wrap: balance;
 }
 
 .hero-panel__lede,
@@ -613,8 +601,8 @@ onMounted(loadPage)
 .identity-card dt {
   display: block;
   color: var(--text-faint);
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  font-size: var(--field-label-size);
+  letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 
@@ -669,6 +657,8 @@ onMounted(loadPage)
 .audit-card dd {
   margin: 0;
   color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .hero-spotlight__meta,
@@ -679,13 +669,14 @@ onMounted(loadPage)
 }
 
 .hero-spotlight__meta {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
 .hero-spotlight__meta div,
 .identity-details div,
 .identity-card__details div,
 .history-timeline__item {
+  min-width: 0;
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
@@ -698,11 +689,30 @@ onMounted(loadPage)
 
 .identity-details,
 .identity-card__details {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .workspace-card__note--inline {
   margin-top: 10px;
+}
+
+.hero-spotlight__headline > div,
+.identity-card__header > div,
+.audit-card__header > div,
+.hero-spotlight__context,
+.hero-spotlight__reason,
+.hero-spotlight__meta strong,
+.identity-details dd,
+.identity-card__details dd,
+.workspace-card__note,
+.identity-card__hint,
+.history-timeline__item p,
+.history-timeline__item span,
+.audit-card p,
+.audit-card dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 @media (max-width: 1040px) {

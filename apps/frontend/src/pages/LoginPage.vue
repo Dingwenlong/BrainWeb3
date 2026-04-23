@@ -28,30 +28,6 @@ const demoAccounts = [
   },
 ]
 
-const gatewaySignals = [
-  {
-    label: '身份入口',
-    value: '3 类演示角色',
-    note: '研究员、归属机构、审批岗都能一键代入',
-  },
-  {
-    label: '会话模式',
-    value: 'JWT 正式态',
-    note: '已切离手工请求头，所有页面通过后端签发令牌维持身份',
-  },
-  {
-    label: '恢复链路',
-    value: '票据可回放',
-    note: '支持演示态明文票据，也能平滑切到站外投递',
-  },
-]
-
-const gatewayChecklist = [
-  '先选择一个可用身份，确认自己接下来要走的是上传、审批还是审计链路。',
-  '登录成功后会自动回跳到原目标页面，避免在跨页流程里重复认证。',
-  '忘记密码时先申领恢复票据，再消费票据完成密码切换，整条链路和正式环境保持一致。',
-]
-
 const router = useRouter()
 const route = useRoute()
 const { login, register } = useActorProfile()
@@ -187,39 +163,17 @@ async function handlePasswordResetConfirm() {
     <section class="login-shell glass-panel">
       <div class="login-copy">
         <div class="login-copy__masthead">
-          <p class="section-kicker">Access Gateway</p>
-          <span class="login-copy__stamp">Protocol 03 · Secure Session Relay</span>
+          <p class="section-kicker">登录入口</p>
+          <span class="login-copy__stamp">JWT 会话</span>
         </div>
-        <h1>先建立可信会话，再进入上传、审批与回放链路。</h1>
-        <p class="login-copy__lede">
-          这套工作台已经从“手工伪造请求头”切到“后端签发 JWT”的正式会话模式。登录页不再只是一个表单入口，而是整个脑数据治理流程的会话闸门。下面这些演示账号都使用同一默认密码：
-          <code>brainweb3-demo</code>
-        </p>
-
-        <div class="login-signals">
-          <article v-for="signal in gatewaySignals" :key="signal.label" class="login-signal">
-            <span>{{ signal.label }}</span>
-            <strong>{{ signal.value }}</strong>
-            <p>{{ signal.note }}</p>
-          </article>
-        </div>
-
-        <div class="login-brief">
-          <div class="login-brief__header">
-            <span>Session Checklist</span>
-            <strong>登录前先确认这三件事，整条演示链路会更顺。</strong>
-          </div>
-          <ol class="login-brief__steps">
-            <li v-for="item in gatewayChecklist" :key="item">{{ item }}</li>
-          </ol>
-        </div>
+        <h1 class="page-main-heading">BrainWeb3 脑数据治理平台</h1>
+        <p class="page-main-lede login-copy__lede">演示身份默认密码：<code>brainweb3-demo</code></p>
 
         <div class="login-accounts__header">
           <div>
-            <p class="section-kicker">Demo Identity Set</p>
+            <p class="section-kicker">演示身份集</p>
             <h2 class="section-title">演示身份档案</h2>
           </div>
-          <p>每张卡片都代表一条不同的业务视角，点一下就能把登录账号代入表单。</p>
         </div>
         <div class="login-accounts">
           <button
@@ -234,39 +188,25 @@ async function handlePasswordResetConfirm() {
               <strong>{{ formatRoleLabel(account.actorRole) }}</strong>
               <span>{{ account.actorId }}</span>
             </div>
-            <small>{{ formatOrganizationLabel(account.actorOrg) }}</small>
-            <p>{{ account.description }}</p>
-            <div class="login-accounts__action">
-              <span>快速代入</span>
-              <span>{{ account.actorId === form.actorId ? '当前已选' : '点击套用账号' }}</span>
-            </div>
+            <small class="login-accounts__org">{{ formatOrganizationLabel(account.actorOrg) }}</small>
+            <p class="login-accounts__description">{{ account.description }}</p>
+            <span class="login-accounts__state">{{ account.actorId === form.actorId ? '当前已选' : '点击套用' }}</span>
           </button>
         </div>
       </div>
 
       <div class="login-column">
-        <section class="login-column__summary">
-          <div>
-            <p class="section-kicker">Session Relay</p>
-            <h2 class="section-title">一页完成进入、注册与恢复</h2>
-          </div>
-          <p>
-            我把入口重新整理成一块更像“会话中控”的面板：主登录保持最强视觉优先级，注册和恢复则作为并列辅助链路，减少过去那种均匀堆叠卡片的模板感。
-          </p>
-        </section>
-
         <form class="login-form login-form--primary" @submit.prevent="handleLogin">
           <div class="login-form__header">
             <div class="login-form__header-top">
-              <p class="section-kicker">Sign In</p>
-              <span class="login-form__tag">Primary Lane</span>
+              <p class="section-kicker">登录</p>
+              <span class="login-form__tag">主入口</span>
             </div>
-            <h2 class="section-title">登录闸门</h2>
-            <p class="login-form__note">演示账号继续可用，同时这轮已经补上研究员自注册入口。</p>
+            <h2 class="section-title">进入工作台</h2>
           </div>
 
           <label>
-            <span>Actor ID</span>
+            <span>账户 ID</span>
             <input v-model="form.actorId" type="text" autocomplete="username" placeholder="researcher-01" />
           </label>
 
@@ -282,87 +222,86 @@ async function handlePasswordResetConfirm() {
           </button>
         </form>
 
-        <div class="login-column__grid">
-          <form class="login-form login-form--register" @submit.prevent="handleRegister">
-            <div class="login-form__header">
-              <div class="login-form__header-top">
-                <p class="section-kicker">Register</p>
-                <span class="login-form__tag">Self-Service</span>
-              </div>
-              <h2 class="section-title">研究员注册</h2>
-              <p class="login-form__note">首版自注册默认创建 `researcher` 账户，`owner / approver / admin` 由管理员在账户页维护。</p>
-            </div>
+        <section class="login-utilities">
+          <div class="login-utilities__header">
+            <p class="section-kicker">辅助功能</p>
+            <h2 class="section-title">辅助入口</h2>
+          </div>
 
-            <label>
-              <span>Actor ID</span>
-              <input v-model="registerForm.actorId" type="text" autocomplete="username" placeholder="new-researcher" />
-            </label>
+          <details class="login-utility">
+            <summary class="login-utility__summary">
+              <span>研究员注册</span>
+              <small>创建研究员账户</small>
+            </summary>
+            <form class="login-form login-form--secondary" @submit.prevent="handleRegister">
+              <label>
+                <span>账户 ID</span>
+                <input v-model="registerForm.actorId" type="text" autocomplete="username" placeholder="new-researcher" />
+              </label>
 
-            <label>
-              <span>显示名</span>
-              <input v-model="registerForm.displayName" type="text" autocomplete="name" placeholder="王小明" />
-            </label>
+              <label>
+                <span>显示名</span>
+                <input v-model="registerForm.displayName" type="text" autocomplete="name" placeholder="王小明" />
+              </label>
 
-            <label>
-              <span>机构</span>
-              <input v-model="registerForm.actorOrg" type="text" placeholder="Sichuan Neuro Lab" />
-            </label>
+              <label>
+                <span>机构</span>
+                <input v-model="registerForm.actorOrg" type="text" placeholder="Sichuan Neuro Lab" />
+              </label>
 
-            <label>
-              <span>密码</span>
-              <input v-model="registerForm.password" type="password" autocomplete="new-password" placeholder="brainweb3-demo" />
-            </label>
+              <label>
+                <span>密码</span>
+                <input v-model="registerForm.password" type="password" autocomplete="new-password" placeholder="brainweb3-demo" />
+              </label>
 
-            <div v-if="registerError" class="error-state">{{ registerError }}</div>
+              <div v-if="registerError" class="error-state">{{ registerError }}</div>
 
-            <button type="submit" class="login-form__submit" :disabled="registerSubmitting">
-              {{ registerSubmitting ? '注册中...' : '创建研究员账户' }}
-            </button>
-          </form>
-
-          <form class="login-form login-form--recovery" @submit.prevent="handlePasswordResetRequest">
-            <div class="login-form__header">
-              <div class="login-form__header-top">
-                <p class="section-kicker">Recover</p>
-                <span class="login-form__tag">Fallback Lane</span>
-              </div>
-              <h2 class="section-title">忘记密码恢复</h2>
-              <p class="login-form__note">先申请恢复票据，再确认消费，后续可以无缝换成短信或邮箱投递。</p>
-            </div>
-
-            <label>
-              <span>Actor ID</span>
-              <input v-model="forgotForm.actorId" type="text" autocomplete="username" placeholder="researcher-01" />
-            </label>
-
-            <label>
-              <span>新密码</span>
-              <input v-model="forgotForm.nextPassword" type="password" autocomplete="new-password" placeholder="brainweb3-reset" />
-            </label>
-
-            <div v-if="forgotError" class="error-state">{{ forgotError }}</div>
-
-            <button type="submit" class="login-form__submit login-form__submit--secondary" :disabled="forgotSubmitting">
-              {{ forgotSubmitting ? '生成中...' : '生成恢复票据' }}
-            </button>
-
-            <div v-if="forgotTicket" class="ticket-panel">
-              <span>{{ forgotTicket.tokenVisible ? '演示票据' : '恢复投递' }}</span>
-              <code>{{ forgotTicket.resetToken || '当前环境不显示票据明文' }}</code>
-              <small>有效期至 {{ new Date(forgotTicket.expiresAt).toLocaleString() }}</small>
-              <small v-if="!forgotTicket.tokenVisible">当前环境不展示票据明文，请通过站外投递链路完成重置。</small>
-              <button
-                v-if="forgotTicket.tokenVisible && forgotTicket.resetToken"
-                type="button"
-                class="login-form__submit"
-                :disabled="resetSubmitting"
-                @click="handlePasswordResetConfirm"
-              >
-                {{ resetSubmitting ? '确认中...' : '确认消费票据并重置' }}
+              <button type="submit" class="login-form__submit login-form__submit--secondary" :disabled="registerSubmitting">
+                {{ registerSubmitting ? '注册中...' : '创建研究员账户' }}
               </button>
-            </div>
-          </form>
-        </div>
+            </form>
+          </details>
+
+          <details class="login-utility" :open="Boolean(forgotTicket || forgotError)">
+            <summary class="login-utility__summary">
+              <span>忘记密码恢复</span>
+              <small>申请并消费恢复票据</small>
+            </summary>
+            <form class="login-form login-form--secondary" @submit.prevent="handlePasswordResetRequest">
+              <label>
+                <span>账户 ID</span>
+                <input v-model="forgotForm.actorId" type="text" autocomplete="username" placeholder="researcher-01" />
+              </label>
+
+              <label>
+                <span>新密码</span>
+                <input v-model="forgotForm.nextPassword" type="password" autocomplete="new-password" placeholder="brainweb3-reset" />
+              </label>
+
+              <div v-if="forgotError" class="error-state">{{ forgotError }}</div>
+
+              <button type="submit" class="login-form__submit login-form__submit--secondary" :disabled="forgotSubmitting">
+                {{ forgotSubmitting ? '生成中...' : '生成恢复票据' }}
+              </button>
+
+              <div v-if="forgotTicket" class="ticket-panel">
+                <span>{{ forgotTicket.tokenVisible ? '演示票据' : '恢复投递' }}</span>
+                <code>{{ forgotTicket.resetToken || '当前环境不显示票据明文' }}</code>
+                <small>有效期至 {{ new Date(forgotTicket.expiresAt).toLocaleString() }}</small>
+                <small v-if="!forgotTicket.tokenVisible">当前环境不展示票据明文，请通过站外投递链路完成重置。</small>
+                <button
+                  v-if="forgotTicket.tokenVisible && forgotTicket.resetToken"
+                  type="button"
+                  class="login-form__submit"
+                  :disabled="resetSubmitting"
+                  @click="handlePasswordResetConfirm"
+                >
+                  {{ resetSubmitting ? '确认中...' : '确认消费票据并重置' }}
+                </button>
+              </div>
+            </form>
+          </details>
+        </section>
       </div>
     </section>
   </div>
@@ -372,9 +311,9 @@ async function handlePasswordResetConfirm() {
 .login-page {
   position: relative;
   display: grid;
-  min-height: calc(100vh - 80px);
-  align-items: center;
-  padding-block: clamp(16px, 3vw, 32px);
+  min-height: 100%;
+  place-items: center;
+  overflow-x: clip;
 }
 
 .login-page::before,
@@ -412,6 +351,7 @@ async function handlePasswordResetConfirm() {
   position: relative;
   overflow: hidden;
   display: grid;
+  width: min(100%, 1280px);
   grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
   gap: 28px;
   padding: clamp(22px, 3vw, 34px);
@@ -439,7 +379,7 @@ async function handlePasswordResetConfirm() {
 .login-copy,
 .login-column {
   display: grid;
-  gap: 18px;
+  gap: 16px;
   position: relative;
   z-index: 1;
 }
@@ -451,7 +391,6 @@ async function handlePasswordResetConfirm() {
 .login-copy__masthead,
 .login-form__header-top,
 .login-accounts__meta,
-.login-accounts__action,
 .login-accounts__header {
   display: flex;
   align-items: center;
@@ -477,10 +416,13 @@ async function handlePasswordResetConfirm() {
 
 .login-copy h1 {
   margin: 0;
+  color: var(--text-strong);
   font-family: var(--display);
-  font-size: clamp(2.9rem, 4.7vw, 4.7rem);
-  line-height: 0.92;
-  max-width: 11ch;
+  font-size: var(--page-heading-size);
+  font-weight: 600;
+  line-height: var(--page-heading-line-height);
+  letter-spacing: var(--page-heading-letter-spacing);
+  max-width: 10ch;
   text-wrap: balance;
 }
 
@@ -488,119 +430,29 @@ async function handlePasswordResetConfirm() {
 .login-form__note {
   margin: 0;
   color: var(--text-muted);
-  line-height: 1.8;
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .login-copy__lede {
-  max-width: 60ch;
+  max-width: 46ch;
 }
 
-.login-signals {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.login-signal {
-  display: grid;
-  gap: 8px;
-  min-height: 132px;
-  padding: 16px 18px;
-  border-radius: 22px;
-  border: 1px solid rgba(49, 87, 102, 0.11);
-  background:
-    linear-gradient(180deg, rgba(249, 246, 241, 0.92), rgba(237, 230, 220, 0.84)),
-    var(--panel-soft-gradient);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.82),
-    0 14px 28px rgba(93, 76, 54, 0.08);
-}
-
-.login-signal span,
-.login-brief__header span,
-.login-column__summary p,
 .ticket-panel span,
-.ticket-panel small {
+.ticket-panel small,
+.login-utilities__header p,
+.login-accounts__state {
   color: var(--text-faint);
   font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.login-signal strong {
-  color: var(--text-strong);
-  font-size: 1.05rem;
-  line-height: 1.3;
-}
-
-.login-signal p,
 .login-accounts__header p,
-.login-column__summary > p {
+.login-utilities__header p {
   margin: 0;
   color: var(--text-muted);
   line-height: 1.7;
-}
-
-.login-brief {
-  display: grid;
-  gap: 18px;
-  padding: 22px 22px 24px;
-  border-radius: 28px;
-  border: 1px solid rgba(49, 87, 102, 0.12);
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0)),
-    linear-gradient(180deg, rgba(236, 228, 216, 0.95), rgba(229, 220, 208, 0.88));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.76),
-    0 22px 48px rgba(93, 76, 54, 0.1);
-}
-
-.login-brief__header {
-  display: grid;
-  gap: 8px;
-}
-
-.login-brief__header strong,
-.login-column__summary .section-title {
-  font-family: var(--display);
-  font-size: clamp(1.3rem, 2vw, 1.7rem);
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.login-brief__steps {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: login-step;
-}
-
-.login-brief__steps li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
-  align-items: start;
-  color: var(--text-main);
-  line-height: 1.75;
-}
-
-.login-brief__steps li::before {
-  counter-increment: login-step;
-  content: counter(login-step, decimal-leading-zero);
-  display: inline-grid;
-  place-items: center;
-  min-width: 34px;
-  height: 34px;
-  margin-top: 2px;
-  border-radius: 10px;
-  border: 1px solid rgba(156, 107, 54, 0.22);
-  background: rgba(252, 248, 242, 0.72);
-  color: var(--amber);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
 }
 
 .login-accounts__header {
@@ -617,15 +469,17 @@ async function handlePasswordResetConfirm() {
 
 .login-accounts {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(172px, 1fr));
+  gap: 12px;
 }
 
 .login-accounts__item {
   display: grid;
-  gap: 10px;
-  padding: 18px 18px 16px;
-  border-radius: 22px;
+  align-content: start;
+  gap: 8px;
+  min-height: 0;
+  padding: 15px 15px 13px;
+  border-radius: 20px;
   border: 1px solid rgba(49, 87, 102, 0.11);
   background:
     linear-gradient(180deg, rgba(247, 242, 235, 0.94), rgba(233, 225, 214, 0.88)),
@@ -667,6 +521,11 @@ async function handlePasswordResetConfirm() {
   text-transform: uppercase;
 }
 
+.login-accounts__meta {
+  align-items: flex-start;
+  gap: 8px;
+}
+
 .login-accounts__item span,
 .login-accounts__item small,
 .login-form label span {
@@ -676,18 +535,35 @@ async function handlePasswordResetConfirm() {
 .login-accounts__item span,
 .login-accounts__item small,
 .login-form label span {
-  font-size: 0.74rem;
-  letter-spacing: 0.12em;
+  font-size: var(--field-label-size);
+  letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 
 .login-accounts__item p {
   margin: 0;
   color: var(--text-muted);
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
-.login-accounts__action {
+.login-accounts__org,
+.login-accounts__description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+}
+
+.login-accounts__org {
+  -webkit-line-clamp: 1;
+}
+
+.login-accounts__description {
+  min-height: calc(1.55em * 2);
+  -webkit-line-clamp: 2;
+}
+
+.login-accounts__state {
+  margin-top: 2px;
   padding-top: 8px;
   border-top: 1px solid rgba(49, 87, 102, 0.08);
 }
@@ -696,10 +572,10 @@ async function handlePasswordResetConfirm() {
   align-content: start;
 }
 
-.login-column__summary {
+.login-utilities {
   display: grid;
-  gap: 10px;
-  padding: 18px 20px;
+  gap: 12px;
+  padding: 18px;
   border-radius: 24px;
   border: 1px solid rgba(49, 87, 102, 0.12);
   background:
@@ -710,10 +586,56 @@ async function handlePasswordResetConfirm() {
     0 18px 32px rgba(93, 76, 54, 0.08);
 }
 
-.login-column__grid {
+.login-utilities__header {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: 4px;
+}
+
+.login-utility {
+  border: 1px solid rgba(49, 87, 102, 0.12);
+  border-radius: 20px;
+  background: rgba(250, 246, 240, 0.72);
+  overflow: hidden;
+}
+
+.login-utility[open] {
+  background: rgba(248, 244, 238, 0.92);
+}
+
+.login-utility__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 18px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.login-utility__summary::-webkit-details-marker {
+  display: none;
+}
+
+.login-utility__summary span {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.login-utility__summary small {
+  color: var(--text-muted);
+}
+
+.login-form--secondary {
+  gap: 14px;
+  padding: 0 18px 18px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.login-form--secondary::before {
+  display: none;
 }
 
 .login-form {
@@ -751,6 +673,10 @@ async function handlePasswordResetConfirm() {
 .login-form__header {
   display: grid;
   gap: 6px;
+}
+
+.login-form--primary .login-form__header {
+  margin-bottom: 4px;
 }
 
 .login-form label {
@@ -816,15 +742,16 @@ async function handlePasswordResetConfirm() {
 }
 
 @media (max-width: 1040px) {
-  .login-shell,
-  .login-accounts,
-  .login-signals,
-  .login-column__grid {
+  .login-shell {
     grid-template-columns: 1fr;
   }
 
   .login-copy h1 {
     max-width: none;
+  }
+
+  .login-accounts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -833,7 +760,7 @@ async function handlePasswordResetConfirm() {
   .login-accounts__header,
   .login-form__header-top,
   .login-accounts__meta,
-  .login-accounts__action {
+  .login-utility__summary {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -842,7 +769,10 @@ async function handlePasswordResetConfirm() {
 @media (max-width: 640px) {
   .login-page {
     min-height: auto;
-    padding-block: 4px 16px;
+  }
+
+  .login-accounts {
+    grid-template-columns: 1fr;
   }
 
   .login-shell {
@@ -851,15 +781,12 @@ async function handlePasswordResetConfirm() {
   }
 
   .login-form,
-  .login-brief,
-  .login-column__summary,
+  .login-utilities,
+  .login-utility,
   .login-accounts__item,
-  .login-signal {
+  .ticket-panel {
     border-radius: 20px;
   }
 
-  .login-copy h1 {
-    font-size: clamp(2.25rem, 10vw, 3.2rem);
-  }
 }
 </style>

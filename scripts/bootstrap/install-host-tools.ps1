@@ -12,28 +12,28 @@ $workspaceRoot = (Resolve-Path (Join-Path $scriptRoot "..\..")).Path
 
 $packagesToInstall = @()
 
-if (-not (Test-CommandReady -Name "node" -Arguments @("-v"))) {
+if (-not (Test-CommandExists -Name "node")) {
   $packagesToInstall += [ordered]@{
     id = "OpenJS.NodeJS.LTS"
     name = "Node.js LTS"
   }
 }
 
-if (-not (Test-CommandReady -Name "java" -Arguments @("-version"))) {
+if (-not (Test-CommandExists -Name "java")) {
   $packagesToInstall += [ordered]@{
     id = "EclipseAdoptium.Temurin.17.JDK"
     name = "Temurin JDK 17"
   }
 }
 
-if (-not (Test-CommandReady -Name "python" -Arguments @("--version"))) {
+if (-not (Test-CommandExists -Name "python")) {
   $packagesToInstall += [ordered]@{
     id = "Python.Python.3.11"
     name = "Python 3.11"
   }
 }
 
-if ((-not $SkipDocker) -and -not (Test-CommandReady -Name "docker" -Arguments @("--version"))) {
+if ((-not $SkipDocker) -and -not (Test-CommandExists -Name "docker")) {
   $packagesToInstall += [ordered]@{
     id = "Docker.DockerDesktop"
     name = "Docker Desktop"

@@ -21,6 +21,7 @@ import {
   formatRequestStatusLabel,
   formatRoleLabel,
 } from '../utils/labels'
+import { canInspectChainRecords } from '../utils/permissions'
 
 const route = useRoute()
 const { actorProfile } = useActorProfile()
@@ -49,14 +50,7 @@ const decisionForms = reactive<Record<string, { policy: string }>>({})
 const isPrivilegedActor = computed(() =>
   ['owner', 'approver', 'admin'].includes(actorProfile.value.actorRole.toLowerCase()),
 )
-
-const intakeHint = computed(() => {
-  const source = String(route.query.source ?? '')
-  if (source === 'dataset-detail' && filters.datasetId) {
-    return `当前请求来自数据详情页，已自动带入数据集 ${filters.datasetId}。`
-  }
-  return ''
-})
+const canInspectChainWorkspace = computed(() => canInspectChainRecords(actorProfile.value.actorRole))
 
 const roleGuide = computed(() => {
   if (isPrivilegedActor.value) {
@@ -267,23 +261,12 @@ watch(
   <div class="destruction-page">
     <section class="hero-panel glass-panel">
       <div class="hero-panel__copy">
-        <p class="section-kicker">Destruction Control</p>
-        <h1>把销毁申请、审批、执行和留痕收成一条最小可演示闭环。</h1>
-        <p class="hero-panel__lede">
-          当前身份是 {{ actorProfile.actorId }} / {{ formatRoleLabel(actorProfile.actorRole) }} /
-          {{ formatOrganizationLabel(actorProfile.actorOrg) }}。这页现在已经把“逻辑销毁 + 物理清理 + 审计 + 链凭证”收成一条可回看的最小闭环。
-        </p>
-
+        <p class="section-kicker">销毁控制</p>
+        <h1 class="page-main-heading">把销毁申请、审批、执行和留痕收成一条最小可演示闭环。</h1>
         <div class="hero-panel__actions">
           <span class="status-chip">{{ isPrivilegedActor ? '销毁治理视图' : '销毁申请视图' }}</span>
           <RouterLink class="hero-panel__secondary" to="/">返回总览</RouterLink>
         </div>
-        <p v-if="intakeHint" class="hero-panel__hint">{{ intakeHint }}</p>
-        <div class="hero-panel__guide">
-          <span>当前提示</span>
-          <strong>{{ roleGuide.note }}</strong>
-        </div>
-
         <div class="summary-strip">
           <article v-for="stat in destructionStats" :key="stat.label" class="summary-strip__card">
             <span>{{ stat.label }}</span>
@@ -335,7 +318,7 @@ watch(
           <article class="workspace-card glass-panel">
             <div class="workspace-card__header">
               <div>
-                <p class="section-kicker">Create Request</p>
+                <p class="section-kicker">发起申请</p>
                 <h2 class="section-title">发起销毁申请</h2>
               </div>
             </div>
@@ -363,28 +346,28 @@ watch(
           <article class="workspace-card glass-panel">
             <div class="workspace-card__header">
               <div>
-                <p class="section-kicker">Filters</p>
+                <p class="section-kicker">筛选条件</p>
                 <h2 class="section-title">筛选条件</h2>
               </div>
             </div>
 
             <form class="form-grid" @submit.prevent="loadPage">
               <label>
-                <span>Dataset ID</span>
+                <span>数据集 ID</span>
                 <input v-model="filters.datasetId" type="text" />
               </label>
               <label>
-                <span>Actor ID</span>
+                <span>账户 ID</span>
                 <input v-model="filters.actorId" type="text" :disabled="actorProfile.actorRole.toLowerCase() !== 'admin'" />
               </label>
               <label>
                 <span>状态</span>
                 <select v-model="filters.status">
                   <option value="">全部状态</option>
-                  <option value="pending">pending</option>
-                  <option value="approved">approved</option>
-                  <option value="rejected">rejected</option>
-                  <option value="destroyed">destroyed</option>
+                  <option value="pending">待处理</option>
+                  <option value="approved">已批准</option>
+                  <option value="rejected">已拒绝</option>
+                  <option value="destroyed">已销毁</option>
                 </select>
               </label>
               <div class="form-grid__actions">
@@ -465,7 +448,7 @@ watch(
                     打开审计流
                   </RouterLink>
                   <RouterLink
-                    v-if="row.cleanupEvidenceHash"
+                    v-if="row.cleanupEvidenceHash && canInspectChainWorkspace"
                     class="request-card__link"
                     :to="{ path: '/chain-records', query: { datasetId: row.datasetId, eventType: 'DESTRUCTION_STORAGE_PURGED' } }"
                   >
@@ -559,8 +542,12 @@ watch(
 }
 
 .hero-panel h1 {
-  font-size: clamp(2.5rem, 5vw, 4rem);
-  line-height: 0.96;
+  color: var(--text-strong);
+  font-size: var(--page-heading-size);
+  font-weight: 600;
+  line-height: var(--page-heading-line-height);
+  letter-spacing: var(--page-heading-letter-spacing);
+  text-wrap: balance;
 }
 
 .hero-panel__lede,
@@ -568,6 +555,8 @@ watch(
 .request-card__reason,
 .request-card__policy {
   color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .request-card__policy--danger {
@@ -645,8 +634,8 @@ watch(
 .decision-form span {
   display: block;
   color: var(--text-faint);
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  font-size: var(--field-label-size);
+  letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 
@@ -679,6 +668,8 @@ watch(
 .hero-spotlight__reason,
 .request-card p {
   margin: 0;
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .hero-spotlight__meta,

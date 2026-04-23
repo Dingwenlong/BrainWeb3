@@ -12,7 +12,6 @@ defineProps<{
       <div class="surface-card__heading">
         <p class="section-kicker">{{ kicker }}</p>
         <h2 class="section-title">{{ title }}</h2>
-        <p v-if="lede" class="surface-card__lede">{{ lede }}</p>
       </div>
 
       <div v-if="$slots.meta" class="surface-card__meta">
@@ -47,14 +46,6 @@ defineProps<{
   min-width: 0;
 }
 
-.surface-card__lede {
-  margin: 10px 0 0;
-  max-width: 52ch;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.7;
-}
-
 .surface-card__meta {
   display: inline-flex;
   flex-wrap: wrap;
@@ -65,8 +56,8 @@ defineProps<{
 .surface-card__note {
   margin-top: 14px;
   color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.7;
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 @media (max-width: 760px) {

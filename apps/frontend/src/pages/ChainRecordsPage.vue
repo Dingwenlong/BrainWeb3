@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { getChainPolicy, getChainRecords, retryChainRecord, updateModelGovernance } from '../api/client'
+import { ApiError, getChainPolicy, getChainRecords, retryChainRecord, updateModelGovernance } from '../api/client'
 import { toErrorMessage, useAsyncView } from '../composables/useAsyncView'
 import { useActorProfile } from '../composables/useActorProfile'
 import { useToast } from '../composables/useToast'
@@ -15,6 +15,7 @@ import {
   formatRoleLabel,
   formatSystemToken,
 } from '../utils/labels'
+import { canInspectChainRecords } from '../utils/permissions'
 
 const route = useRoute()
 const { actorProfile } = useActorProfile()
@@ -28,6 +29,7 @@ const policies = ref<ChainPolicyRule[]>([])
 const retryingRecordId = ref<number | null>(null)
 const governingModelId = ref('')
 const actionMessage = ref<string | null>(null)
+const canInspectChainWorkspace = computed(() => canInspectChainRecords(actorProfile.value.actorRole))
 const focusModelId = computed(() =>
   typeof route.query.focusModelId === 'string' ? route.query.focusModelId : '',
 )
@@ -51,14 +53,12 @@ const roleGuide = computed(() => {
   if (role === 'admin') {
     return {
       scope: '全局链监管视图',
-      note: '这里汇总的是访问授权、撤销、训练结果和模型治理等链业务记录，适合从监管侧核对哪些关键动作已经上链。',
-      empty: '当前没有链业务记录。先批准一条访问申请，或完成一条训练任务。',
+      empty: '暂无链业务记录',
     }
   }
   return {
     scope: `机构链轨迹 · ${formatOrganizationLabel(actorProfile.value.actorOrg)}`,
-    note: '这里展示的是你所属机构可见的数据集链轨迹，重点关注授权变化、训练结果和模型治理是否已经写入链业务记录。',
-    empty: '当前机构范围内没有链业务记录。先批准访问，或完成一条训练任务。',
+    empty: '暂无链业务记录',
   }
 })
 
@@ -75,17 +75,6 @@ const policyStats = computed(() => [
   { label: '可选上链', value: policies.value.filter((row) => row.anchorPolicy === 'optional').length },
   { label: '仅审计', value: policies.value.filter((row) => row.anchorPolicy === 'audit-only').length },
 ])
-const intakeHint = computed(() => {
-  const source = String(route.query.source ?? '')
-  if (source === 'model-record' && focusModelId.value) {
-    return `该视图来自模型库，已聚焦 ${focusModelId.value} 对应的链证明。`
-  }
-  if (source === 'audit' && focusModelId.value) {
-    return `该视图来自审计中心，已带入 ${focusModelId.value} 对应的模型链记录。`
-  }
-  return ''
-})
-
 function formatTime(value: string) {
   return new Date(value).toLocaleString()
 }
@@ -192,15 +181,30 @@ async function governModel(record: ChainBusinessRecord, status: 'active' | 'arch
 }
 
 async function loadRecords() {
+  if (!canInspectChainWorkspace.value) {
+    await runRecordLoad(async () => [], '加载链轨迹失败。')
+    records.value = []
+    setErrorMessage('当前身份无权查看链记录，请切换到 owner、approver 或 admin。')
+    return
+  }
+
   const rows = await runRecordLoad(
-    () =>
-      getChainRecords(actorProfile.value, {
-      datasetId: filters.datasetId.trim() || undefined,
-      eventType: filters.eventType || undefined,
-      anchorStatus: filters.anchorStatus || undefined,
-      businessStatus: filters.businessStatus || undefined,
-      chainTxHash: filters.chainTxHash.trim() || undefined,
-      }),
+    async () => {
+      try {
+        return await getChainRecords(actorProfile.value, {
+          datasetId: filters.datasetId.trim() || undefined,
+          eventType: filters.eventType || undefined,
+          anchorStatus: filters.anchorStatus || undefined,
+          businessStatus: filters.businessStatus || undefined,
+          chainTxHash: filters.chainTxHash.trim() || undefined,
+        })
+      } catch (loadError) {
+        if (loadError instanceof ApiError && loadError.status === 403) {
+          throw new Error('当前身份无权查看链记录，请切换到 owner、approver 或 admin。')
+        }
+        throw loadError
+      }
+    },
     '加载链轨迹失败。',
   )
 
@@ -212,7 +216,21 @@ async function loadRecords() {
 }
 
 async function loadPolicy() {
-  policies.value = await getChainPolicy(actorProfile.value)
+  if (!canInspectChainWorkspace.value) {
+    policies.value = []
+    return
+  }
+
+  try {
+    policies.value = await getChainPolicy(actorProfile.value)
+  } catch (loadError) {
+    if (loadError instanceof ApiError && loadError.status === 403) {
+      policies.value = []
+      setErrorMessage('当前身份无权查看链记录，请切换到 owner、approver 或 admin。')
+      return
+    }
+    throw loadError
+  }
 }
 
 function resetFilters() {
@@ -268,21 +286,11 @@ watch(
     <section class="hero-panel glass-panel">
       <div class="hero-panel__copy">
         <p class="section-kicker">链记录</p>
-        <h1>把授权、训练和模型动作汇成可查询的链记录。</h1>
-        <p class="hero-panel__lede">
-          当前身份是 {{ actorProfile.actorId }} / {{ formatRoleLabel(actorProfile.actorRole) }} /
-          {{ formatOrganizationLabel(actorProfile.actorOrg) }}。这个页面负责把关键业务动作是否已写链单独拉出来，不再只依赖数据详情页局部查看。
-        </p>
+        <h1 class="page-main-heading">把授权、训练和模型动作汇成可查询的链记录。</h1>
 
         <div class="hero-panel__actions">
           <span class="status-chip">{{ roleGuide.scope }}</span>
           <RouterLink class="hero-panel__secondary" to="/">返回总览</RouterLink>
-        </div>
-
-        <p v-if="intakeHint" class="hero-panel__hint">{{ intakeHint }}</p>
-        <div class="hero-panel__guide">
-          <span>当前提示</span>
-          <strong>{{ roleGuide.note }}</strong>
         </div>
 
         <div class="summary-strip">
@@ -307,7 +315,9 @@ watch(
               {{ (focusedModelRecord ?? spotlightRecord)?.referenceId }} · {{ (focusedModelRecord ?? spotlightRecord)?.actorId }} ·
               {{ formatOrganizationLabel((focusedModelRecord ?? spotlightRecord)?.actorOrg) }}
             </p>
-            <p class="hero-spotlight__reason">{{ (focusedModelRecord ?? spotlightRecord)?.detail || '该记录未附带额外说明。' }}</p>
+            <p v-if="(focusedModelRecord ?? spotlightRecord)?.detail" class="hero-spotlight__reason">
+              {{ (focusedModelRecord ?? spotlightRecord)?.detail }}
+            </p>
             <div class="hero-spotlight__meta">
               <div>
                 <span>对象</span>
@@ -359,7 +369,6 @@ watch(
               <div>
                 <p class="section-kicker">上链规则</p>
                 <h2 class="section-title">上链边界</h2>
-                <p class="workspace-card__lede">这块用来明确哪些动作必须上链，哪些动作当前只保留审计记录。</p>
               </div>
             </div>
 
@@ -389,7 +398,6 @@ watch(
               <div>
                 <p class="section-kicker">检索条件</p>
                 <h2 class="section-title">过滤器</h2>
-                <p class="workspace-card__lede">这里专门筛“哪些动作已写链”，和审计中心形成互补。</p>
               </div>
             </div>
 
@@ -402,35 +410,35 @@ watch(
                 <span>事件类型</span>
                 <select v-model="filters.eventType">
                   <option value="">全部类型</option>
-                  <option value="ACCESS_APPROVED">ACCESS_APPROVED</option>
-                  <option value="ACCESS_REVOKED">ACCESS_REVOKED</option>
-                  <option value="TRAINING_COMPLETED">TRAINING_COMPLETED</option>
-                  <option value="TRAINING_FAILED">TRAINING_FAILED</option>
-                  <option value="DESTRUCTION_STORAGE_PURGED">DESTRUCTION_STORAGE_PURGED</option>
-                  <option value="MODEL_REGISTERED">MODEL_REGISTERED</option>
-                  <option value="MODEL_GOVERNED">MODEL_GOVERNED</option>
+                  <option value="ACCESS_APPROVED">访问已批准</option>
+                  <option value="ACCESS_REVOKED">访问已撤销</option>
+                  <option value="TRAINING_COMPLETED">训练已完成</option>
+                  <option value="TRAINING_FAILED">训练失败</option>
+                  <option value="DESTRUCTION_STORAGE_PURGED">存储已清理</option>
+                  <option value="MODEL_REGISTERED">模型已登记</option>
+                  <option value="MODEL_GOVERNED">模型已治理</option>
                 </select>
               </label>
               <label>
                 <span>上链状态</span>
                 <select v-model="filters.anchorStatus">
                   <option value="">全部状态</option>
-                  <option value="anchored">anchored</option>
-                  <option value="failed">failed</option>
+                  <option value="anchored">已上链</option>
+                  <option value="failed">失败</option>
                 </select>
               </label>
               <label>
                 <span>业务状态</span>
                 <select v-model="filters.businessStatus">
                   <option value="">全部状态</option>
-                  <option value="approved">approved</option>
-                  <option value="revoked">revoked</option>
-                  <option value="succeeded">succeeded</option>
-                  <option value="failed">failed</option>
-                  <option value="completed">completed</option>
-                  <option value="candidate">candidate</option>
-                  <option value="active">active</option>
-                  <option value="archived">archived</option>
+                  <option value="approved">已批准</option>
+                  <option value="revoked">已撤销</option>
+                  <option value="succeeded">已成功</option>
+                  <option value="failed">失败</option>
+                  <option value="completed">已完成</option>
+                  <option value="candidate">候选</option>
+                  <option value="active">已激活</option>
+                  <option value="archived">已归档</option>
                 </select>
               </label>
               <label>
@@ -515,7 +523,7 @@ watch(
                   </div>
                 </dl>
 
-                <p class="chain-card__detail">{{ record.detail || '该记录未附带额外说明。' }}</p>
+                <p v-if="record.detail" class="chain-card__detail">{{ record.detail }}</p>
                 <p v-if="record.anchorError" class="chain-card__error">失败原因：{{ record.anchorError }}</p>
 
                 <div class="chain-card__actions">
@@ -617,8 +625,12 @@ watch(
 }
 
 .hero-panel h1 {
-  font-size: clamp(2.5rem, 5vw, 4rem);
-  line-height: 0.96;
+  color: var(--text-strong);
+  font-size: var(--page-heading-size);
+  font-weight: 600;
+  line-height: var(--page-heading-line-height);
+  letter-spacing: var(--page-heading-letter-spacing);
+  text-wrap: balance;
 }
 
 .hero-panel__lede,
@@ -626,6 +638,8 @@ watch(
 .workspace-card__flash,
 .hero-panel__hint {
   color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .workspace-card__flash {
@@ -642,7 +656,6 @@ watch(
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
   background: var(--panel-soft-gradient);
-  line-height: 1.7;
 }
 
 .hero-panel__actions,
@@ -699,8 +712,8 @@ watch(
 .chain-card dt {
   display: block;
   color: var(--text-faint);
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  font-size: var(--field-label-size);
+  letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 
@@ -776,6 +789,8 @@ watch(
 .chain-card dd {
   margin: 0;
   color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .hero-spotlight__meta,
@@ -815,8 +830,8 @@ watch(
 
 .form-grid span {
   color: var(--text-faint);
-  font-size: 0.74rem;
-  letter-spacing: 0.14em;
+  font-size: var(--field-label-size);
+  letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 

@@ -322,8 +322,7 @@ onMounted(loadAll)
       <div>
         <RouterLink class="page-header__back" to="/">返回总览</RouterLink>
         <p class="section-kicker">数据集详情</p>
-        <h1>{{ dataset.title }}</h1>
-        <p class="page-header__lede">{{ dataset.description }}</p>
+        <h1 class="page-main-heading">{{ dataset.title }}</h1>
         <div class="page-header__chips">
           <span class="status-chip">{{ formatProofStatusLabel(dataset.proofStatus) }}</span>
           <span class="status-chip status-chip--ghost">{{ formatUploadStatusLabel(dataset.uploadStatus) }}</span>
@@ -516,7 +515,7 @@ onMounted(loadAll)
               最近失败：{{ dataset.lastErrorMessage }}
             </div>
             <div v-else-if="dataset.retryAllowed" class="compensation-note">
-              当前数据资产保留了补偿所需上下文，如链路失败可直接重新收口。
+              可直接重试收口。
             </div>
 
             <div v-if="dataset.uploadAudits.length" class="upload-flow">
@@ -525,7 +524,7 @@ onMounted(loadAll)
                   <strong>{{ formatAuditActionLabel(step.action) }}</strong>
                   <span>{{ formatRequestStatusLabel(step.status) }}</span>
                 </div>
-                <p>{{ step.message || '该步骤未附带额外说明。' }}</p>
+                <p v-if="step.message">{{ step.message }}</p>
                 <time>{{ formatTime(step.createdAt) }}</time>
               </div>
             </div>
@@ -656,8 +655,8 @@ onMounted(loadAll)
               <dd>{{ proofMatchesOwnerDid ? '已对齐' : '未对齐' }}</dd>
             </div>
           </dl>
-          <p class="compensation-note">
-            {{ ownerIdentity.statusSnapshot.reason || '当前机构凭证状态暂无额外说明。' }}
+          <p v-if="ownerIdentity.statusSnapshot.reason" class="compensation-note">
+            {{ ownerIdentity.statusSnapshot.reason }}
           </p>
           <div class="upload-flow" v-if="ownerIdentity.credentialHistory.length">
             <div
@@ -669,8 +668,8 @@ onMounted(loadAll)
                 <strong>{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
                 <span>{{ formatIdentityStatusSourceLabel(entry.source) }}</span>
               </div>
-              <p>{{ entry.reason || '该次治理未附带额外说明。' }}</p>
-              <time>{{ formatTime(entry.createdAt) }} · {{ entry.updatedBy || 'system' }}</time>
+              <p v-if="entry.reason">{{ entry.reason }}</p>
+              <time>{{ formatTime(entry.createdAt) }} · {{ entry.updatedBy || '系统' }}</time>
             </div>
           </div>
         </article>
@@ -811,12 +810,12 @@ onMounted(loadAll)
                 </div>
               </dl>
 
-              <p class="chain-record__detail">{{ record.detail || '该链记录未附带额外说明。' }}</p>
+              <p v-if="record.detail" class="chain-record__detail">{{ record.detail }}</p>
               <p v-if="record.anchorError" class="chain-record__error">失败原因：{{ record.anchorError }}</p>
               <time class="chain-record__time">{{ formatTime(record.anchoredAt) }}</time>
             </div>
           </div>
-          <div v-else class="empty-state">当前还没有授权或训练类链上业务记录。</div>
+          <div v-else class="empty-state">暂无链上业务记录</div>
         </article>
 
         <article class="workspace-card glass-panel">
@@ -840,12 +839,12 @@ onMounted(loadAll)
                     <strong>{{ formatAuditActionLabel(event.action) }}</strong>
                     <span>{{ formatRequestStatusLabel(event.status) }}</span>
                   </div>
-                  <p>{{ event.detail?.replace('brain-activity', '脑区活跃度接口') ?? '暂无详细说明。' }}</p>
+                  <p v-if="event.detail">{{ event.detail.replace('brain-activity', '脑区活跃度接口') }}</p>
                   <time>{{ formatTime(event.createdAt) }}</time>
                 </div>
               </div>
             </div>
-            <div v-else class="empty-state">当前视角下还没有审计事件。</div>
+            <div v-else class="empty-state">暂无审计事件</div>
           </template>
         </article>
       </section>
@@ -888,15 +887,21 @@ onMounted(loadAll)
 
 .page-header h1 {
   margin: 0;
+  color: var(--text-strong);
   font-family: var(--display);
-  font-size: clamp(2rem, 3vw, 2.8rem);
-  line-height: 1;
+  font-size: var(--page-heading-size);
+  font-weight: 600;
+  line-height: var(--page-heading-line-height);
+  letter-spacing: var(--page-heading-letter-spacing);
+  text-wrap: balance;
 }
 
 .page-header__lede {
   margin: 12px 0 0;
   max-width: 60ch;
   color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .page-header__chips {
@@ -1105,9 +1110,9 @@ onMounted(loadAll)
 
 .access-form span {
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--field-label-size);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--field-label-letter-spacing);
 }
 
 .access-form input,

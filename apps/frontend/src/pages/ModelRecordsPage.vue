@@ -21,6 +21,7 @@ import {
   formatRoleLabel,
   formatRequestStatusLabel,
 } from '../utils/labels'
+import { canInspectChainRecords } from '../utils/permissions'
 
 const route = useRoute()
 const { actorProfile } = useActorProfile()
@@ -38,6 +39,7 @@ const governanceSummary = ref<ModelGovernanceSummary | null>(null)
 const versionComparison = ref<ModelVersionComparison | null>(null)
 const relatedModels = ref<ModelRecord[]>([])
 const chainVisible = ref(false)
+const canInspectChainWorkspace = computed(() => canInspectChainRecords(actorProfile.value.actorRole))
 
 const filters = reactive({
   datasetId: typeof route.query.datasetId === 'string' ? route.query.datasetId : '',
@@ -52,29 +54,6 @@ const focusTrainingJobId = computed(() =>
 const focusModelId = computed(() =>
   typeof route.query.focusModelId === 'string' ? route.query.focusModelId : '',
 )
-const intakeHint = computed(() => {
-  const source = String(route.query.source ?? '')
-  if (source === 'training-job' && focusTrainingJobId.value) {
-    return `该模型视图来自训练页，已定位到 ${focusTrainingJobId.value} 产出的模型记录。`
-  }
-  if (source === 'chain-record' && focusModelId.value) {
-    return `该模型视图来自链轨迹，已定位到 ${focusModelId.value} 对应的模型记录。`
-  }
-  if (source === 'audit' && focusModelId.value) {
-    return `该模型视图来自审计中心，已定位到 ${focusModelId.value} 对应的模型记录。`
-  }
-  return ''
-})
-const heroGuide = computed(() => {
-  const role = actorProfile.value.actorRole.toLowerCase()
-  if (role === 'admin') {
-    return '这里适合从全局视角核对哪些训练结果已经进入模型库，哪些版本已经被激活或归档。'
-  }
-  if (role === 'owner' || role === 'approver') {
-    return '这里适合把机构训练产物收进一个最小模型注册表，再决定是否激活给后续演示使用。'
-  }
-  return '这里会展示你参与产出的模型记录，便于从训练任务回看模型摘要与治理状态。'
-})
 const focusedRecord = computed(() => {
   if (!records.value.length) {
     return null
@@ -100,20 +79,6 @@ const comparisonStats = computed(() => {
     { label: '同算法版本', value: versionComparison.value.sameAlgorithmVersionCount },
   ]
 })
-const comparisonGuide = computed(() => {
-  const comparison = versionComparison.value
-  const record = focusedRecord.value
-  if (!comparison || !record) {
-    return ''
-  }
-  if (comparison.latestVersion) {
-    return `当前模型是同数据集里最新的一版，适合拿来作为 ${formatModelGovernanceStatusLabel(record.governanceStatus)} 状态的主候选。`
-  }
-  if (comparison.latestActiveVersionId) {
-    return `当前模型不是最新版本，且目前激活主版本是 ${comparison.latestActiveVersionId}，适合先做差异回看再决定是否切换。`
-  }
-  return '当前模型所在数据集还没有稳定的激活主版本，适合先在候选版本之间做收口。'
-})
 const registryStats = computed(() => {
   const total = records.value.length
   const candidate = records.value.filter((record) => record.governanceStatus === 'candidate').length
@@ -136,21 +101,6 @@ const recentlyGovernedRecords = computed(() =>
     .sort((left, right) => (right.governedAt ?? '').localeCompare(left.governedAt ?? ''))
     .slice(0, 3),
 )
-const registryGuide = computed(() => {
-  if (!records.value.length) {
-    return '当前没有模型记录。先完成一条训练任务，再回来查看治理分布。'
-  }
-  const activeCount = records.value.filter((record) => record.governanceStatus === 'active').length
-  const candidateCount = records.value.filter((record) => record.governanceStatus === 'candidate').length
-  if (!activeCount) {
-    return '当前模型池里没有已激活模型，建议先从候选模型里挑一条进入治理主线。'
-  }
-  if (candidateCount > activeCount) {
-    return '候选模型仍多于已激活模型，适合优先处理最近完成训练但还未收口的版本。'
-  }
-  return '当前模型池已经形成稳定的激活层，可以继续回看审计和链证明确认治理痕迹。'
-})
-
 function governanceOptionsFor(record: ModelRecord) {
   return [record.governanceStatus, ...record.allowedGovernanceTransitions]
 }
@@ -361,16 +311,8 @@ watch(
   <section class="model-page">
     <header class="model-hero glass-panel">
       <div>
-        <p class="section-kicker">Model Registry</p>
-        <h1>把训练结果收进一个可治理的模型库。</h1>
-        <p>
-          成功训练后的产物会自动登记到这里，先以候选模型进入注册表，再由机构侧或管理员决定是否激活或归档。
-        </p>
-        <p v-if="intakeHint" class="model-hero__hint">{{ intakeHint }}</p>
-        <div class="model-hero__guide">
-          <span>治理提示</span>
-          <strong>{{ heroGuide }}</strong>
-        </div>
+        <p class="section-kicker">模型注册表</p>
+        <h1 class="page-main-heading">把训练结果收进一个可治理的模型库。</h1>
       </div>
 
       <div class="model-hero__stats">
@@ -392,9 +334,8 @@ watch(
     <section class="model-panel glass-panel registry-overview">
       <div class="panel-head">
         <div>
-          <p class="section-kicker">Registry Overview</p>
+          <p class="section-kicker">注册总览</p>
           <h2>治理总览</h2>
-          <p class="registry-overview__lede">{{ registryGuide }}</p>
         </div>
       </div>
 
@@ -411,7 +352,7 @@ watch(
         <article class="registry-overview__recent">
           <div class="panel-head">
             <div>
-              <p class="section-kicker">Recent Governance</p>
+              <p class="section-kicker">最近治理</p>
               <h3>最近治理动作</h3>
             </div>
           </div>
@@ -429,7 +370,7 @@ watch(
               <small>{{ formatTime(record.governedAt) }} · {{ record.lastGovernedBy || '系统同步' }}</small>
             </button>
           </div>
-          <div v-else class="empty-state">当前还没有治理完成的模型，第一次激活或归档后这里会出现最近动作。</div>
+          <div v-else class="empty-state">暂无最近治理动作</div>
           
         </article>
       </div>
@@ -438,11 +379,8 @@ watch(
     <section v-if="focusedRecord" class="model-panel glass-panel governance-lane">
       <div class="panel-head">
         <div>
-          <p class="section-kicker">Governance Lane</p>
+          <p class="section-kicker">治理主线</p>
           <h2>模型治理主线</h2>
-          <p class="governance-lane__lede">
-            当前聚焦 {{ focusedRecord.id }}。这里把模型登记、治理审计和链证明压成一条连续工作线。
-          </p>
         </div>
       </div>
 
@@ -474,7 +412,7 @@ watch(
           <div v-if="versionComparison" class="version-compare">
             <div class="panel-head">
               <div>
-                <p class="section-kicker">Version Compare</p>
+                <p class="section-kicker">版本对比</p>
                 <h3>版本对比摘要</h3>
               </div>
             </div>
@@ -486,8 +424,6 @@ watch(
               </article>
             </div>
 
-            <p class="version-compare__guide">{{ comparisonGuide }}</p>
-
             <div class="record-card__timeline">
               <span>最新版本：{{ versionComparison.latestVersionId || '暂无' }}</span>
               <span>最新完成：{{ formatTime(versionComparison.latestVersionCompletedAt) }}</span>
@@ -498,29 +434,27 @@ watch(
 
           <div class="record-card__links">
             <RouterLink class="ghost-link" :to="auditLinkFor(focusedRecord)">打开治理审计</RouterLink>
-            <RouterLink class="ghost-link" :to="chainLinkFor(focusedRecord)">打开链证明</RouterLink>
+            <RouterLink v-if="chainVisible" class="ghost-link" :to="chainLinkFor(focusedRecord)">打开链证明</RouterLink>
           </div>
         </article>
 
         <article class="governance-lane__stream">
           <div class="panel-head">
             <div>
-              <p class="section-kicker">Audit Trail</p>
+              <p class="section-kicker">审计轨迹</p>
               <h3>治理审计</h3>
             </div>
           </div>
 
           <div v-if="timelineLoading" class="empty-state">治理主线正在加载...</div>
-          <div v-else-if="!governanceAudits.length" class="empty-state">
-            当前模型没有独立治理审计事件。完成一次激活或归档后，这里会出现对应轨迹。
-          </div>
+          <div v-else-if="!governanceAudits.length" class="empty-state">暂无治理审计</div>
           <div v-else class="governance-lane__events">
             <article v-for="event in governanceAudits" :key="event.id" class="governance-event">
               <div class="governance-event__head">
                 <strong>{{ formatAuditActionLabel(event.action) }}</strong>
                 <span class="status-chip">{{ formatRequestStatusLabel(event.status) }}</span>
               </div>
-              <p>{{ event.detail || '该事件未附带额外说明。' }}</p>
+              <p v-if="event.detail">{{ event.detail }}</p>
               <small>{{ formatTime(event.createdAt) }} · {{ event.actorId }}</small>
             </article>
           </div>
@@ -529,25 +463,21 @@ watch(
         <article class="governance-lane__stream">
           <div class="panel-head">
             <div>
-              <p class="section-kicker">Chain Proof</p>
+              <p class="section-kicker">链上证明</p>
               <h3>链证明</h3>
             </div>
           </div>
 
           <div v-if="timelineLoading" class="empty-state">治理主线正在加载...</div>
-          <div v-else-if="!chainVisible" class="empty-state">
-            当前身份没有独立链轨迹查看权限，可从模型状态和治理审计继续回看这条主线。
-          </div>
-          <div v-else-if="!governanceChains.length" class="empty-state">
-            当前模型没有独立链证明。模型登记或治理上链后，这里会自动形成对应锚点。
-          </div>
+          <div v-else-if="!chainVisible" class="empty-state">当前身份无权查看链证明</div>
+          <div v-else-if="!governanceChains.length" class="empty-state">暂无链证明</div>
           <div v-else class="governance-lane__events">
             <article v-for="record in governanceChains" :key="record.id" class="governance-event">
               <div class="governance-event__head">
                 <strong>{{ formatChainEventLabel(record.eventType) }}</strong>
                 <span class="status-chip">{{ formatChainPolicyLabel(record.anchorPolicy) }}</span>
               </div>
-              <p>{{ record.detail || '该记录未附带额外说明。' }}</p>
+              <p v-if="record.detail">{{ record.detail }}</p>
               <small>{{ formatTime(record.anchoredAt) }} · {{ record.chainTxHash || '等待上链成功' }}</small>
             </article>
           </div>
@@ -556,15 +486,13 @@ watch(
         <article class="governance-lane__stream">
           <div class="panel-head">
             <div>
-              <p class="section-kicker">Related Versions</p>
+              <p class="section-kicker">相关版本</p>
               <h3>同数据集版本</h3>
             </div>
           </div>
 
           <div v-if="timelineLoading" class="empty-state">治理主线正在加载...</div>
-          <div v-else-if="!relatedModels.length" class="empty-state">
-            当前数据集下没有其他版本记录。下一次训练产出新模型后，这里会出现同池版本对照。
-          </div>
+          <div v-else-if="!relatedModels.length" class="empty-state">暂无相关版本</div>
           <div v-else class="governance-lane__events">
             <button
               v-for="record in relatedModels"
@@ -585,7 +513,7 @@ watch(
     <section class="model-panel glass-panel">
       <div class="panel-head">
         <div>
-          <p class="section-kicker">Filters</p>
+          <p class="section-kicker">筛选条件</p>
           <h2>模型筛选</h2>
         </div>
         <button type="button" class="ghost-button" :disabled="loading" @click="loadPage">刷新模型库</button>
@@ -605,9 +533,9 @@ watch(
           <span>治理状态</span>
           <select v-model="filters.governanceStatus">
             <option value="">全部状态</option>
-            <option value="candidate">candidate</option>
-            <option value="active">active</option>
-            <option value="archived">archived</option>
+            <option value="candidate">候选</option>
+            <option value="active">已激活</option>
+            <option value="archived">已归档</option>
           </select>
         </label>
       </div>
@@ -616,15 +544,13 @@ watch(
     <section class="model-panel glass-panel">
       <div class="panel-head">
         <div>
-          <p class="section-kicker">Registry</p>
+          <p class="section-kicker">注册表</p>
           <h2>模型记录</h2>
         </div>
       </div>
 
       <div v-if="loading" class="empty-state">模型记录正在加载...</div>
-      <div v-else-if="!records.length" class="empty-state">
-        当前没有模型记录。先完成一条训练任务，再回到这里查看自动登记的模型版本。
-      </div>
+      <div v-else-if="!records.length" class="empty-state">暂无模型记录</div>
 
       <div v-else class="record-list">
         <article
@@ -663,10 +589,10 @@ watch(
           </div>
 
           <div class="record-card__notes">
-            <p><strong>指标摘要：</strong>{{ record.metricSummary || '暂无指标摘要。' }}</p>
-            <p><strong>结果说明：</strong>{{ record.resultSummary || '暂无结果说明。' }}</p>
+            <p v-if="record.metricSummary"><strong>指标摘要：</strong>{{ record.metricSummary }}</p>
+            <p v-if="record.resultSummary"><strong>结果说明：</strong>{{ record.resultSummary }}</p>
             <p><strong>模型引用：</strong>{{ record.artifactRef }}</p>
-            <p><strong>治理备注：</strong>{{ record.governanceNote || '暂无治理备注。' }}</p>
+            <p v-if="record.governanceNote"><strong>治理备注：</strong>{{ record.governanceNote }}</p>
           </div>
 
           <div class="record-card__timeline">
@@ -694,6 +620,7 @@ watch(
               打开审计流
             </RouterLink>
             <RouterLink
+              v-if="canInspectChainWorkspace"
               class="ghost-link"
               :to="{ path: '/chain-records', query: { datasetId: record.datasetId, eventType: 'MODEL_REGISTERED', focusModelId: record.id } }"
             >
@@ -778,6 +705,18 @@ watch(
   font-family: var(--display);
 }
 
+.model-panel h2 {
+  color: var(--text-strong);
+  font-size: var(--section-title-size);
+  line-height: var(--section-title-line-height);
+}
+
+.record-card h3 {
+  color: var(--text-strong);
+  font-size: var(--card-title-size);
+  line-height: var(--card-title-line-height);
+}
+
 .model-hero p:last-child,
 .record-card__summary,
 .record-card__notes p,
@@ -785,7 +724,8 @@ watch(
 .record-card__transition-guide {
   margin: 0;
   color: var(--text-muted);
-  line-height: 1.65;
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .model-hero__hint,
@@ -810,8 +750,8 @@ watch(
 .filter-grid span,
 .governance-form span {
   color: var(--text-faint);
-  font-size: 0.76rem;
-  letter-spacing: 0.12em;
+  font-size: var(--field-label-size);
+  letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 
@@ -851,7 +791,8 @@ watch(
 .version-compare__guide {
   margin: 0;
   color: var(--text-muted);
-  line-height: 1.65;
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .registry-overview__grid {

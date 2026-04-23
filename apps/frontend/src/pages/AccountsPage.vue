@@ -70,19 +70,11 @@ const organizationStats = computed(() => [
 const roleGuide = computed(() => {
   if (isAdmin.value) {
     return {
-      note: '管理员可以在这里完成账户创建、状态切换和密码重置，同时保留自保护边界，避免误伤当前治理入口。',
-      credentialHint: '凭证生命周期也集中在这里治理。签发会恢复可用状态，挂起适合临时冻结，吊销则代表明确撤销凭证。',
-      passwordHint: '修改当前管理员密码会影响下次登录，代重置其他账户密码则会同步作废对方的刷新令牌。',
-      directoryHint: '这里展示的是全局账户目录，适合从治理侧巡检角色分布、最近登录和状态切换。',
-      emptyDirectory: '当前没有其他账户记录。先创建一个研究员或审批人账户。',
+      emptyDirectory: '暂无账户记录',
     }
   }
   return {
-    note: '非管理员只会看到自己的账户记录，重点是自助改密、确认最近登录以及回看个人身份信息。',
-    credentialHint: '你的凭证状态会跟随账户和机构治理结果变化，这里主要用于查看，不提供自助变更。',
-    passwordHint: '修改密码后，下次登录会使用新密码；如忘记密码，可回到登录页走恢复票据流程。',
-    directoryHint: '这里保留的是你的个人账户记录，不会暴露其他人的身份信息或治理动作。',
-    emptyDirectory: '当前没有账户记录，请稍后刷新。',
+    emptyDirectory: '暂无账户记录',
   }
 })
 
@@ -318,14 +310,8 @@ onMounted(loadPage)
     <PageHero
       kicker="账户管理"
       title="把账户、密码和凭证状态放进一个清晰的管理页。"
-      :lede="`当前身份是 ${actorProfile.actorId} / ${formatRoleLabel(actorProfile.actorRole)} / ${formatOrganizationLabel(actorProfile.actorOrg)}。这一页负责处理账户创建、密码维护和凭证状态查看。`"
       layout="balanced"
     >
-      <div class="hero-panel__guide">
-        <span>当前提示</span>
-        <strong>{{ roleGuide.note }}</strong>
-      </div>
-
       <div class="summary-strip">
         <article v-for="stat in accountStats" :key="stat.label" class="summary-strip__card">
           <span>{{ stat.label }}</span>
@@ -393,8 +379,6 @@ onMounted(loadPage)
               </label>
               <button type="submit" class="form-grid__submit">更新当前密码</button>
             </form>
-
-            <template #note>{{ roleGuide.passwordHint }}</template>
           </SurfaceCard>
 
           <SurfaceCard v-if="identity" kicker="身份凭证" title="我的 DID 与凭证">
@@ -433,9 +417,8 @@ onMounted(loadPage)
               </div>
             </dl>
 
-            <template #note>
-              <p class="panel-note">{{ credentialVerification?.reason ?? '当前身份凭证已通过平台内置校验。' }}</p>
-              <p class="panel-note">{{ roleGuide.credentialHint }}</p>
+            <template v-if="credentialVerification?.reason" #note>
+              <p class="panel-note">{{ credentialVerification.reason }}</p>
             </template>
           </SurfaceCard>
 
@@ -453,10 +436,10 @@ onMounted(loadPage)
               <label>
                 <span>角色</span>
                 <select v-model="createForm.actorRole">
-                  <option value="researcher">researcher</option>
-                  <option value="owner">owner</option>
-                  <option value="approver">approver</option>
-                  <option value="admin">admin</option>
+                  <option value="researcher">研究员</option>
+                  <option value="owner">归属方</option>
+                  <option value="approver">审批人</option>
+                  <option value="admin">管理员</option>
                 </select>
               </label>
               <label>
@@ -466,8 +449,8 @@ onMounted(loadPage)
               <label>
                 <span>状态</span>
                 <select v-model="createForm.status">
-                  <option value="active">active</option>
-                  <option value="disabled">disabled</option>
+                  <option value="active">启用</option>
+                  <option value="disabled">停用</option>
                 </select>
               </label>
               <label>
@@ -480,11 +463,7 @@ onMounted(loadPage)
         </aside>
 
         <div class="accounts-layout__main">
-          <SurfaceCard
-            kicker="账户目录"
-            :title="isAdmin ? '账户管理台' : '我的账户记录'"
-            :lede="roleGuide.directoryHint"
-          >
+          <SurfaceCard kicker="账户目录" :title="isAdmin ? '账户管理台' : '我的账户记录'">
             <template #meta>
               <span class="status-chip">{{ accountRows.length }} 条记录</span>
             </template>
@@ -528,15 +507,13 @@ onMounted(loadPage)
                   </div>
                 </dl>
 
-                <p class="account-card__hint">
-                  {{ row.credentialStatus.reason || '当前凭证状态暂无额外说明。' }}
-                </p>
+                <p v-if="row.credentialStatus.reason" class="account-card__hint">{{ row.credentialStatus.reason }}</p>
 
                 <div class="history-timeline">
                   <div v-for="entry in row.credentialHistory.slice(0, 3)" :key="`${row.actorId}-${entry.id ?? entry.createdAt ?? entry.nextStatus}`" class="history-timeline__item">
                     <strong>{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
-                    <p>{{ entry.reason || '该次治理未附带额外说明。' }}</p>
-                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || 'system' }} · {{ formatTime(entry.createdAt) }}</span>
+                    <p v-if="entry.reason">{{ entry.reason }}</p>
+                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
                   </div>
                 </div>
 
@@ -560,9 +537,9 @@ onMounted(loadPage)
                   <label>
                     <span>凭证状态</span>
                     <select v-model="credentialForms[row.actorId].status" :disabled="!canManageRow(row) || actionLoadingId === row.actorId">
-                      <option value="issued">issued</option>
-                      <option value="suspended">suspended</option>
-                      <option value="revoked">revoked</option>
+                      <option value="issued">已签发</option>
+                      <option value="suspended">已暂停</option>
+                      <option value="revoked">已吊销</option>
                     </select>
                   </label>
                   <label>
@@ -589,12 +566,7 @@ onMounted(loadPage)
             <div v-else class="empty-state">{{ roleGuide.emptyDirectory }}</div>
           </SurfaceCard>
 
-          <SurfaceCard
-            v-if="organizationRows.length"
-            kicker="机构凭证"
-            title="机构凭证治理"
-            lede="机构级 DID 与凭证会直接影响机构可信状态和数据详情页里的身份说明。"
-          >
+          <SurfaceCard v-if="organizationRows.length" kicker="机构凭证" title="机构凭证治理">
             <template #meta>
               <span class="status-chip">{{ organizationRows.length }} 个机构</span>
             </template>
@@ -630,15 +602,13 @@ onMounted(loadPage)
                   </div>
                 </dl>
 
-                <p class="account-card__hint">
-                  {{ row.statusSnapshot.reason || '当前机构凭证状态暂无额外说明。' }}
-                </p>
+                <p v-if="row.statusSnapshot.reason" class="account-card__hint">{{ row.statusSnapshot.reason }}</p>
 
                 <div class="history-timeline">
                   <div v-for="entry in row.credentialHistory.slice(0, 3)" :key="`${row.organizationName}-${entry.id ?? entry.createdAt ?? entry.nextStatus}`" class="history-timeline__item">
                     <strong>{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
-                    <p>{{ entry.reason || '该次治理未附带额外说明。' }}</p>
-                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || 'system' }} · {{ formatTime(entry.createdAt) }}</span>
+                    <p v-if="entry.reason">{{ entry.reason }}</p>
+                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
                   </div>
                 </div>
 
@@ -649,9 +619,9 @@ onMounted(loadPage)
                       v-model="organizationCredentialForms[row.organizationName].status"
                       :disabled="actionLoadingId === `org:${row.organizationName}`"
                     >
-                      <option value="issued">issued</option>
-                      <option value="suspended">suspended</option>
-                      <option value="revoked">revoked</option>
+                      <option value="issued">已签发</option>
+                      <option value="suspended">已暂停</option>
+                      <option value="revoked">已吊销</option>
                     </select>
                   </label>
                   <label>
@@ -739,8 +709,8 @@ onMounted(loadPage)
 .account-card dt {
   display: block;
   color: var(--text-faint);
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  font-size: var(--field-label-size);
+  letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 
@@ -779,11 +749,12 @@ onMounted(loadPage)
 }
 
 .hero-spotlight__meta {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
 .hero-spotlight__meta div,
 .account-card__details div {
+  min-width: 0;
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
@@ -807,7 +778,18 @@ onMounted(loadPage)
 .panel-note {
   margin: 0;
   color: var(--text-muted);
-  line-height: 1.7;
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.hero-spotlight__context,
+.history-timeline__item p,
+.history-timeline__item span {
+  color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .form-grid label {
@@ -817,8 +799,8 @@ onMounted(loadPage)
 
 .form-grid span {
   color: var(--text-faint);
-  font-size: 0.74rem;
-  letter-spacing: 0.14em;
+  font-size: var(--field-label-size);
+  letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 
@@ -857,10 +839,25 @@ onMounted(loadPage)
 .account-card__hint {
   margin: 6px 0 0;
   color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
+}
+
+.hero-spotlight__headline > div,
+.account-card__header > div,
+.hero-spotlight__context,
+.hero-spotlight__meta strong,
+.account-card__details dd,
+.account-card__hint,
+.history-timeline__item p,
+.history-timeline__item span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .account-card__details {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   margin-top: 14px;
 }
 

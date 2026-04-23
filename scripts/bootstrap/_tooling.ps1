@@ -20,6 +20,14 @@ function Get-CommandPath {
   return $command.Source
 }
 
+function Test-CommandExists {
+  param(
+    [string]$Name
+  )
+
+  return -not [string]::IsNullOrWhiteSpace((Get-CommandPath -Name $Name))
+}
+
 function Test-CommandReady {
   param(
     [string]$Name,
@@ -147,6 +155,39 @@ function Get-MavenCommand {
   }
 
   return $null
+}
+
+function Test-LauncherPrerequisites {
+  param(
+    [string]$WorkspaceRoot,
+    [switch]$SkipDocker
+  )
+
+  if (-not (Test-CommandExists -Name "node")) {
+    return $false
+  }
+
+  if (-not (Test-CommandExists -Name "npm")) {
+    return $false
+  }
+
+  if (-not (Test-CommandExists -Name "java")) {
+    return $false
+  }
+
+  if (-not (Test-CommandExists -Name "python")) {
+    return $false
+  }
+
+  if ((-not $SkipDocker) -and -not (Test-CommandExists -Name "docker")) {
+    return $false
+  }
+
+  if (-not (Get-MavenCommand -WorkspaceRoot $WorkspaceRoot)) {
+    return $false
+  }
+
+  return $true
 }
 
 function Install-WingetPackage {
