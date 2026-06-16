@@ -219,8 +219,11 @@ watch(
 <template>
   <section class="training-page">
     <header class="training-hero glass-panel">
-      <div>
-        <p class="section-kicker">训练任务</p>
+      <div class="training-hero__copy">
+        <div class="training-hero__masthead">
+          <p class="section-kicker">训练任务</p>
+          <span class="training-hero__stamp">{{ roleGuide.title }}</span>
+        </div>
         <h1 class="page-main-heading">联邦训练工作台</h1>
       </div>
 
@@ -233,7 +236,7 @@ watch(
           <span>当前任务</span>
           <strong>{{ jobs.length }}</strong>
         </article>
-        <article class="metric-card">
+        <article class="metric-card metric-card--live">
           <span>运行中</span>
           <strong>{{ jobs.filter((job) => job.status === 'running').length }}</strong>
         </article>
@@ -329,7 +332,7 @@ watch(
         <div v-else-if="!jobs.length" class="empty-state">{{ roleGuide.emptyJobs }}</div>
 
         <div v-else class="job-list">
-          <article v-for="job in jobs" :key="job.id" class="job-card" :class="{ 'job-card--focus': focusJobId === job.id }">
+          <article v-for="job in jobs" :key="job.id" class="job-card" :class="[`job-card--${statusTone(job.status)}`, { 'job-card--focus': focusJobId === job.id }]">
             <header class="job-card__head">
               <div>
                 <p class="job-card__eyebrow">{{ job.id }} · {{ job.datasetId }}</p>
@@ -341,6 +344,19 @@ watch(
             </header>
 
             <p class="job-card__summary">{{ job.objective }}</p>
+
+            <div class="job-card__progress">
+              <div class="job-card__progress-head">
+                <span>训练轮次</span>
+                <strong>{{ job.completedRounds }} / {{ job.requestedRounds }}</strong>
+              </div>
+              <div class="job-card__progress-track" role="presentation">
+                <div
+                  class="job-card__progress-fill"
+                  :style="{ width: `${Math.min(100, Math.round((job.completedRounds / Math.max(1, job.requestedRounds)) * 100))}%` }"
+                ></div>
+              </div>
+            </div>
 
             <div class="job-card__meta">
               <div>
@@ -432,11 +448,62 @@ watch(
   gap: 18px;
   padding: var(--space-panel);
   border-radius: var(--radius-panel);
+  animation: consoleRise 0.5s ease both;
 }
 
 .training-hero {
+  position: relative;
+  overflow: hidden;
   grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.8fr);
   align-items: stretch;
+}
+
+.training-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 130% at 0% 0%, rgba(52, 225, 214, 0.08), transparent 46%),
+    radial-gradient(120% 140% at 100% 100%, rgba(160, 123, 255, 0.07), transparent 50%);
+}
+
+.training-panel {
+  animation-delay: 0.08s;
+}
+
+.training-panel:nth-of-type(2) {
+  animation-delay: 0.14s;
+}
+
+.training-hero__copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.training-hero__masthead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.training-hero__stamp {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line-warm);
+  background: rgba(52, 225, 214, 0.08);
+  color: var(--accent-strong);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .training-hero h1,
@@ -460,7 +527,7 @@ watch(
   line-height: var(--card-title-line-height);
 }
 
-.training-hero p:last-child,
+.training-hero__lede,
 .job-card__summary,
 .job-card__notes p,
 .empty-state {
@@ -470,47 +537,16 @@ watch(
   line-height: var(--supporting-text-line-height);
 }
 
-.training-hero__hint {
-  margin-top: 12px !important;
-  padding: var(--space-subpanel);
-  border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
-}
-
-.training-hero__guide {
-  display: grid;
-  gap: 8px;
-  margin-top: 14px;
-  max-width: 560px;
-  padding: var(--space-subpanel);
-  border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line-warm);
-  background: var(--panel-soft-gradient);
-}
-
-.training-hero__guide span {
-  color: var(--text-faint);
-  font-size: 0.74rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.training-hero__guide strong {
-  font-family: var(--body);
-  font-size: 0.94rem;
-  line-height: 1.6;
-}
-
-.job-card__focus-note {
-  margin: -4px 0 0;
-  color: var(--amber);
-  font-size: 0.88rem;
+.training-hero__lede {
+  max-width: 52ch;
 }
 
 .training-hero__stats {
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: 12px;
+  align-content: center;
 }
 
 .metric-card,
@@ -522,9 +558,81 @@ watch(
   background: var(--panel-gradient);
 }
 
+.metric-card {
+  border-color: var(--line-warm);
+  background: var(--warm-panel-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
+    0 0 24px rgba(52, 225, 214, 0.05);
+}
+
+.metric-card--live {
+  position: relative;
+}
+
+.metric-card--live::before {
+  content: '';
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+.dataset-brief {
+  background: var(--panel-soft-gradient);
+}
+
+.job-card {
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+}
+
+.job-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--line-strong);
+}
+
+.job-card--running::before {
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 14px rgba(52, 225, 214, 0.45);
+}
+
+.job-card--success::before {
+  background: var(--accent-strong);
+  box-shadow: 0 0 12px rgba(52, 225, 214, 0.4);
+}
+
+.job-card--danger::before {
+  background: var(--danger);
+  box-shadow: 0 0 12px var(--danger-soft);
+}
+
+.job-card:hover {
+  border-color: rgba(52, 225, 214, 0.32);
+  box-shadow: 0 0 24px rgba(52, 225, 214, 0.1);
+}
+
+.job-card--danger:hover {
+  border-color: rgba(255, 97, 115, 0.34);
+  box-shadow: 0 0 24px var(--danger-soft);
+}
+
 .job-card--focus {
-  border-color: rgba(156, 107, 54, 0.24);
-  box-shadow: inset 0 0 0 1px rgba(156, 107, 54, 0.08);
+  border-color: rgba(52, 225, 214, 0.45);
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 225, 214, 0.18),
+    0 0 28px rgba(52, 225, 214, 0.14);
 }
 
 .dataset-brief--empty p:last-child {
@@ -536,6 +644,7 @@ watch(
 .metric-card span,
 .dataset-brief__grid span,
 .job-card__meta span,
+.job-card__progress-head span,
 .job-card__eyebrow,
 .job-card__stamp {
   color: var(--text-faint);
@@ -544,12 +653,19 @@ watch(
   text-transform: uppercase;
 }
 
+.job-card__eyebrow,
+.job-card__stamp {
+  font-family: var(--mono);
+  color: var(--text-muted);
+}
+
 .metric-card strong {
   display: block;
   margin-top: 8px;
-  font-family: var(--body);
+  font-family: var(--mono);
   font-weight: 700;
-  font-size: 1.9rem;
+  font-size: clamp(1.8rem, 3vw, 2.3rem);
+  color: var(--text-strong);
 }
 
 .training-layout {
@@ -584,6 +700,20 @@ watch(
   gap: var(--space-list);
 }
 
+.job-list {
+  gap: 14px;
+}
+
+.job-card {
+  animation: consoleRise 0.5s ease both;
+}
+
+.job-card:nth-child(1) { animation-delay: 0.06s; }
+.job-card:nth-child(2) { animation-delay: 0.13s; }
+.job-card:nth-child(3) { animation-delay: 0.2s; }
+.job-card:nth-child(4) { animation-delay: 0.27s; }
+.job-card:nth-child(n + 5) { animation-delay: 0.32s; }
+
 .training-form label {
   display: grid;
   gap: 8px;
@@ -606,6 +736,10 @@ watch(
   padding: var(--space-field-x);
 }
 
+.training-form input[type='number'] {
+  font-family: var(--mono);
+}
+
 .primary-button,
 .ghost-button,
 .ghost-link {
@@ -619,12 +753,31 @@ watch(
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
 }
 
 .primary-button {
   border: 1px solid var(--line-warm);
   color: var(--text-strong);
   background: var(--button-warm-gradient);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(52, 225, 214, 0.14);
+}
+
+.primary-button:hover:not(:disabled) {
+  border-color: rgba(52, 225, 214, 0.6);
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.46),
+    0 0 28px rgba(52, 225, 214, 0.28);
+}
+
+.primary-button:disabled {
+  opacity: 0.55;
+  cursor: progress;
 }
 
 .ghost-button,
@@ -635,48 +788,134 @@ watch(
   text-decoration: none;
 }
 
+.ghost-button:hover:not(:disabled),
+.ghost-link:hover {
+  border-color: rgba(52, 225, 214, 0.34);
+  color: var(--text-strong);
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.08);
+}
+
+.ghost-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .job-card__stamp {
   margin-left: auto;
 }
 
-.status-chip,
 .hint-chip {
   display: inline-flex;
   align-items: center;
   min-height: 34px;
   padding: 0 12px;
-  border-radius: 999px;
-  font-family: var(--body);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
+  color: var(--text-main);
+  font-family: var(--mono);
   font-size: 0.74rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.hint-chip,
+/* Domain status mapping: running=cyan (live), succeeded=cyan-strong, failed=danger (global) */
 .status-chip--running {
-  background: rgba(49, 87, 102, 0.1);
-  border: 1px solid rgba(49, 87, 102, 0.16);
+  color: var(--accent);
+  border-color: var(--line-warm);
+}
+
+.status-chip--running::before {
+  animation: signalPulse 1.8s ease-in-out infinite;
 }
 
 .status-chip--success {
-  background: rgba(120, 166, 123, 0.12);
-  border: 1px solid rgba(120, 166, 123, 0.18);
+  color: var(--accent-strong);
+  border-color: var(--line-warm);
 }
 
-.status-chip--danger {
-  background: rgba(178, 85, 76, 0.1);
-  border: 1px solid rgba(178, 85, 76, 0.18);
+.job-card__progress {
+  display: grid;
+  gap: 8px;
+}
+
+.job-card__progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.job-card__progress-head strong {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.job-card__progress-track {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-panel-muted);
+  border: 1px solid var(--line);
+}
+
+.job-card__progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 12px rgba(52, 225, 214, 0.4);
+  transition: width 0.5s ease;
+}
+
+.job-card--success .job-card__progress-fill {
+  background: var(--accent-strong);
+}
+
+.job-card--danger .job-card__progress-fill {
+  background: linear-gradient(90deg, var(--danger), var(--amber));
+  box-shadow: 0 0 12px var(--danger-soft);
 }
 
 .job-card__meta {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.job-card__meta div {
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
+}
+
 .job-card__meta strong,
 .dataset-brief__grid strong {
   display: block;
   margin-top: 6px;
+  font-family: var(--mono);
+  color: var(--text-strong);
+}
+
+.dataset-brief__grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dataset-brief__grid div {
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
+}
+
+.job-card__notes p {
+  font-size: var(--supporting-text-size);
+}
+
+.job-card__notes strong {
+  color: var(--text-main);
 }
 
 .job-card__governance {
@@ -684,6 +923,7 @@ watch(
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line-warm);
   background: var(--warm-panel-gradient);
+  box-shadow: inset 0 0 0 1px rgba(52, 225, 214, 0.05);
 }
 
 .job-card__governance p {
@@ -700,12 +940,14 @@ watch(
 }
 
 .job-card__governance-head strong {
-  font-family: var(--body);
+  font-family: var(--mono);
   font-weight: 700;
+  color: var(--text-strong);
 }
 
 .job-card__governance-head span {
   color: var(--text-faint);
+  font-family: var(--mono);
   font-size: 0.78rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -727,7 +969,8 @@ watch(
     align-items: flex-start;
   }
 
-  .job-card__meta {
+  .job-card__meta,
+  .dataset-brief__grid {
     grid-template-columns: 1fr;
   }
 

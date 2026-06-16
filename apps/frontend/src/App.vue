@@ -125,11 +125,6 @@ async function handleLogout() {
     </template>
 
     <main class="app-main">
-      <div v-if="!isAuthRoute" class="app-main__intro">
-        <p class="section-kicker">当前工作区</p>
-        <h1>{{ currentSection }}</h1>
-      </div>
-
       <RouterView />
     </main>
 
@@ -170,8 +165,9 @@ async function handleLogout() {
   gap: 24px;
   padding: 16px 24px;
   border-bottom: 1px solid var(--line);
-  background: rgba(242, 235, 226, 0.9);
-  backdrop-filter: blur(14px);
+  background: linear-gradient(180deg, rgba(13, 20, 36, 0.92), rgba(9, 15, 28, 0.84));
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
 }
 
 .app-brand {
@@ -182,17 +178,33 @@ async function handleLogout() {
 }
 
 .app-brand__mark {
+  position: relative;
   display: inline-grid;
   place-items: center;
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #1d4053, #305f63);
-  color: #fffdf9;
-  font-family: var(--body);
-  font-size: 0.86rem;
+  background: linear-gradient(135deg, rgba(52, 225, 214, 0.22), rgba(160, 123, 255, 0.3));
+  border: 1px solid rgba(52, 225, 214, 0.42);
+  color: var(--text-strong);
+  font-family: var(--mono);
+  font-size: 0.84rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.25), inset 0 0 12px rgba(160, 123, 255, 0.16);
+}
+
+.app-brand__mark::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--accent-strong);
+  box-shadow: 0 0 8px var(--accent);
+  animation: signalPulse 2.4s ease-in-out infinite;
 }
 
 .app-brand__copy {
@@ -200,6 +212,8 @@ async function handleLogout() {
 }
 
 .app-brand__copy strong {
+  color: var(--text-strong);
+  font-family: var(--display);
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -221,6 +235,7 @@ async function handleLogout() {
 }
 
 .app-header__title strong {
+  color: var(--text-strong);
   font-family: var(--display);
   font-size: 1.18rem;
   font-weight: 600;
@@ -241,16 +256,30 @@ async function handleLogout() {
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(238, 231, 221, 0.86);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
   text-decoration: none;
-  font-size: 0.82rem;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+}
+
+.app-header__link:hover,
+.app-header__button:hover {
+  border-color: rgba(52, 225, 214, 0.34);
+  color: var(--text-strong);
 }
 
 .app-header__button--primary {
-  border-color: rgba(29, 64, 83, 0.18);
-  background: #1d4053;
-  color: #fffdf9;
+  border-color: rgba(52, 225, 214, 0.42);
+  background: linear-gradient(180deg, rgba(52, 225, 214, 0.2), rgba(160, 123, 255, 0.2));
+  color: var(--text-strong);
+  box-shadow: 0 0 16px rgba(52, 225, 214, 0.18);
+}
+
+.app-header__button--primary:hover {
+  border-color: rgba(52, 225, 214, 0.6);
+  box-shadow: 0 0 22px rgba(52, 225, 214, 0.3);
 }
 
 .app-header__account {
@@ -268,7 +297,7 @@ async function handleLogout() {
 .app-sidebar {
   padding: 24px 18px 24px 24px;
   border-right: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(242, 235, 226, 0.94), rgba(235, 227, 216, 0.9));
+  background: linear-gradient(180deg, rgba(12, 19, 34, 0.72), rgba(8, 13, 26, 0.5));
 }
 
 .app-sidebar__group + .app-sidebar__group {
@@ -277,10 +306,31 @@ async function handleLogout() {
 
 .app-sidebar__label {
   margin: 0 0 10px;
-  font-family: var(--body);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.66rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+}
+
+/* Violet identifies the governance + system domains; cyan stays the workspace signal */
+.app-sidebar__group:nth-of-type(2) .app-sidebar__label,
+.app-sidebar__group:nth-of-type(3) .app-sidebar__label {
+  color: var(--accent-2);
+}
+
+.app-sidebar__group:nth-of-type(2) .app-menu__item.router-link-active,
+.app-sidebar__group:nth-of-type(3) .app-menu__item.router-link-active {
+  background: linear-gradient(180deg, rgba(160, 123, 255, 0.14), rgba(52, 225, 214, 0.06));
+  border-color: rgba(160, 123, 255, 0.34);
+  box-shadow: 0 0 18px rgba(160, 123, 255, 0.12), inset 0 0 0 1px rgba(160, 123, 255, 0.08);
+}
+
+.app-sidebar__group:nth-of-type(2) .app-menu__item.router-link-active::before,
+.app-sidebar__group:nth-of-type(3) .app-menu__item.router-link-active::before {
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  box-shadow: 0 0 12px var(--accent-2);
 }
 
 .app-menu {
@@ -289,10 +339,12 @@ async function handleLogout() {
 }
 
 .app-menu__item {
+  position: relative;
+  overflow: hidden;
   display: grid;
   gap: 4px;
-  padding: 12px 14px;
-  border-radius: 16px;
+  padding: 12px 14px 12px 16px;
+  border-radius: var(--radius-block);
   border: 1px solid transparent;
   text-decoration: none;
   color: var(--text-main);
@@ -310,14 +362,33 @@ async function handleLogout() {
 }
 
 .app-menu__item:hover {
-  background: rgba(236, 228, 217, 0.88);
-  border-color: rgba(29, 64, 83, 0.08);
+  background: rgba(28, 41, 64, 0.6);
+  border-color: rgba(52, 225, 214, 0.16);
+  color: var(--text-strong);
 }
 
 .app-menu__item.router-link-active {
-  background: rgba(241, 234, 224, 0.92);
-  border-color: rgba(29, 64, 83, 0.12);
-  box-shadow: 0 12px 24px rgba(84, 71, 50, 0.08);
+  background: linear-gradient(180deg, rgba(52, 225, 214, 0.12), rgba(160, 123, 255, 0.08));
+  border-color: rgba(52, 225, 214, 0.32);
+  color: var(--text-strong);
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.12), inset 0 0 0 1px rgba(52, 225, 214, 0.08);
+}
+
+.app-menu__item.router-link-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 62%;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 12px var(--accent);
+}
+
+.app-menu__item.router-link-active strong {
+  color: var(--text-strong);
 }
 
 .app-sidebar__footer {
@@ -334,9 +405,9 @@ async function handleLogout() {
 
 .session-card div {
   padding: 12px 14px;
-  border-radius: 14px;
-  background: rgba(238, 231, 220, 0.88);
-  border: 1px solid rgba(29, 64, 83, 0.08);
+  border-radius: var(--radius-subpanel);
+  background: rgba(18, 27, 45, 0.6);
+  border: 1px solid var(--line);
 }
 
 .session-card dt,
@@ -353,27 +424,7 @@ async function handleLogout() {
 .app-main {
   min-width: 0;
   padding: 24px;
-  background: linear-gradient(180deg, rgba(244, 238, 230, 0.44), rgba(239, 231, 220, 0.18));
-}
-
-.app-main__intro {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.app-main__intro h1 {
-  margin: 0;
-  font-family: var(--display);
-  font-size: clamp(1.8rem, 2.6vw, 2.4rem);
-  font-weight: 600;
-  line-height: 1.1;
-}
-
-.app-main__intro p:last-child {
-  margin: 0;
-  color: var(--text-muted);
-  line-height: 1.7;
+  background: transparent;
 }
 
 @media (max-width: 1080px) {

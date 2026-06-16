@@ -161,6 +161,35 @@ async function handlePasswordResetConfirm() {
 <template>
   <div class="login-page">
     <section class="login-shell glass-panel">
+      <svg class="login-trace" viewBox="0 0 640 220" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="loginTrace" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#34e1d6" stop-opacity="0" />
+            <stop offset="0.45" stop-color="#34e1d6" stop-opacity="0.95" />
+            <stop offset="1" stop-color="#a07bff" stop-opacity="0.35" />
+          </linearGradient>
+        </defs>
+        <path
+          class="login-trace__wire login-trace__wire--back"
+          pathLength="100"
+          d="M0 150 H60 L86 110 L104 168 L126 134 H200 L226 120 L246 150 L268 96 L290 162 L314 140 H380 L404 124 L424 150 L444 110 L466 150 H540 L566 132 L586 150 L606 100 L628 150 H640"
+        />
+        <path
+          class="login-trace__wire"
+          pathLength="100"
+          d="M0 140 H70 L92 70 L108 188 L128 120 L150 124 H210 L232 96 L250 150 L270 60 L292 176 L312 130 H372 L392 104 L410 150 L430 84 L452 150 H520 L544 116 L560 150 L582 66 L602 168 L624 132 H640"
+        />
+        <path
+          class="login-trace__pulse login-trace__pulse--back"
+          pathLength="100"
+          d="M0 150 H60 L86 110 L104 168 L126 134 H200 L226 120 L246 150 L268 96 L290 162 L314 140 H380 L404 124 L424 150 L444 110 L466 150 H540 L566 132 L586 150 L606 100 L628 150 H640"
+        />
+        <path
+          class="login-trace__pulse"
+          pathLength="100"
+          d="M0 140 H70 L92 70 L108 188 L128 120 L150 124 H210 L232 96 L250 150 L270 60 L292 176 L312 130 H372 L392 104 L410 150 L430 84 L452 150 H520 L544 116 L560 150 L582 66 L602 168 L624 132 H640"
+        />
+      </svg>
       <div class="login-copy">
         <div class="login-copy__masthead">
           <p class="section-kicker">登录入口</p>
@@ -171,8 +200,8 @@ async function handlePasswordResetConfirm() {
 
         <div class="login-accounts__header">
           <div>
-            <p class="section-kicker">演示身份集</p>
-            <h2 class="section-title">演示身份档案</h2>
+            <p class="section-kicker">演示</p>
+            <h2 class="section-title">选择演示身份</h2>
           </div>
         </div>
         <div class="login-accounts">
@@ -224,8 +253,8 @@ async function handlePasswordResetConfirm() {
 
         <section class="login-utilities">
           <div class="login-utilities__header">
-            <p class="section-kicker">辅助功能</p>
-            <h2 class="section-title">辅助入口</h2>
+            <p class="section-kicker">更多</p>
+            <h2 class="section-title">注册与找回</h2>
           </div>
 
           <details class="login-utility">
@@ -325,25 +354,23 @@ async function handlePasswordResetConfirm() {
 }
 
 .login-page::before {
-  top: 4%;
-  left: -3%;
-  width: 320px;
-  height: 320px;
+  top: 2%;
+  left: -4%;
+  width: 380px;
+  height: 380px;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(49, 87, 102, 0.18), rgba(49, 87, 102, 0));
-  filter: blur(12px);
+  background: radial-gradient(circle, rgba(52, 225, 214, 0.2), rgba(52, 225, 214, 0));
+  filter: blur(26px);
 }
 
 .login-page::after {
-  right: -5%;
-  bottom: 2%;
-  width: 360px;
-  height: 360px;
-  border-radius: 36px;
-  background:
-    linear-gradient(135deg, rgba(156, 107, 54, 0.14), rgba(156, 107, 54, 0)),
-    linear-gradient(180deg, rgba(49, 87, 102, 0.1), rgba(49, 87, 102, 0));
-  filter: blur(14px);
+  right: -6%;
+  bottom: 0%;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(160, 123, 255, 0.22), rgba(160, 123, 255, 0));
+  filter: blur(30px);
   transform: rotate(14deg);
 }
 
@@ -355,25 +382,99 @@ async function handlePasswordResetConfirm() {
   grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
   gap: 28px;
   padding: clamp(22px, 3vw, 34px);
-  border-radius: 34px;
+  border-radius: 26px;
   background:
-    linear-gradient(180deg, rgba(244, 238, 230, 0.96), rgba(235, 227, 216, 0.92)),
-    var(--panel-gradient);
+    radial-gradient(120% 130% at 0% 0%, rgba(52, 225, 214, 0.1), transparent 44%),
+    radial-gradient(120% 140% at 100% 100%, rgba(160, 123, 255, 0.1), transparent 48%),
+    linear-gradient(180deg, rgba(17, 26, 44, 0.92), rgba(10, 16, 30, 0.94));
+  animation: consoleRise 0.6s ease both;
 }
 
 .login-shell::after {
   content: '';
   position: absolute;
-  inset: 18px;
-  border-radius: 28px;
-  border: 1px solid rgba(49, 87, 102, 0.06);
+  inset: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(124, 200, 232, 0.08);
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 36px 36px;
-  mask-image: linear-gradient(135deg, rgba(0, 0, 0, 0.48), transparent 72%);
+    linear-gradient(90deg, rgba(124, 200, 232, 0.06) 1px, transparent 1px),
+    linear-gradient(rgba(124, 200, 232, 0.04) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: linear-gradient(135deg, rgba(0, 0, 0, 0.6), transparent 72%);
   pointer-events: none;
-  opacity: 0.52;
+  opacity: 0.6;
+}
+
+.login-trace {
+  position: absolute;
+  top: clamp(8px, 5%, 38px);
+  left: 0;
+  width: 100%;
+  height: 200px;
+  z-index: 0;
+  opacity: 0.7;
+  pointer-events: none;
+  mask-image: linear-gradient(90deg, transparent, black 26%, black 72%, transparent);
+}
+
+/* Faint solid EEG "wire" — draws on once, then stays */
+.login-trace__wire {
+  fill: none;
+  stroke: url(#loginTrace);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.4;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0;
+  animation: loginWireDraw 1.5s ease-out both;
+  filter: drop-shadow(0 0 3px rgba(52, 225, 214, 0.28));
+}
+
+.login-trace__wire--back {
+  stroke: rgba(160, 123, 255, 0.5);
+  stroke-width: 1.5;
+  opacity: 0.3;
+  filter: none;
+}
+
+@keyframes loginWireDraw {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Bright current pulse that keeps travelling along the wave — cyan forward, violet back */
+.login-trace__pulse {
+  fill: none;
+  stroke: var(--accent-strong);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 10.5 89.5;
+  animation: loginPulse 2.2s linear infinite;
+  filter: drop-shadow(0 0 7px rgba(52, 225, 214, 0.7));
+}
+
+@keyframes loginPulse {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.login-trace__pulse--back {
+  stroke: #b89bff;
+  stroke-width: 2;
+  stroke-dasharray: 8.25 91.75;
+  animation-duration: 2.8s;
+  animation-direction: reverse;
+  filter: drop-shadow(0 0 6px rgba(160, 123, 255, 0.55));
 }
 
 .login-copy,
@@ -402,20 +503,25 @@ async function handlePasswordResetConfirm() {
 .login-form__tag {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
+  min-height: 30px;
   padding: 0 12px;
   border-radius: 999px;
-  border: 1px solid rgba(49, 87, 102, 0.14);
-  background: rgba(248, 243, 236, 0.7);
+  border: 1px solid rgba(52, 225, 214, 0.3);
+  background: rgba(52, 225, 214, 0.08);
   color: var(--accent-strong);
-  font-size: 0.74rem;
+  font-family: var(--mono);
+  font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .login-copy h1 {
   margin: 0;
+  background: linear-gradient(120deg, var(--text-strong) 30%, var(--accent-strong));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   color: var(--text-strong);
   font-family: var(--display);
   font-size: var(--page-heading-size);
@@ -479,16 +585,14 @@ async function handlePasswordResetConfirm() {
   gap: 8px;
   min-height: 0;
   padding: 15px 15px 13px;
-  border-radius: 20px;
-  border: 1px solid rgba(49, 87, 102, 0.11);
-  background:
-    linear-gradient(180deg, rgba(247, 242, 235, 0.94), rgba(233, 225, 214, 0.88)),
-    var(--panel-soft-gradient);
+  border-radius: var(--radius-block);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
   color: var(--text-main);
   text-align: left;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.84),
-    0 18px 32px rgba(93, 76, 54, 0.08);
+    inset 0 1px 0 rgba(150, 215, 240, 0.05),
+    0 18px 32px rgba(0, 0, 0, 0.32);
   transition:
     transform 0.22s ease,
     box-shadow 0.22s ease,
@@ -498,19 +602,21 @@ async function handlePasswordResetConfirm() {
 
 .login-accounts__item:hover {
   transform: translateY(-3px);
+  border-color: rgba(52, 225, 214, 0.28);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.84),
-    0 24px 38px rgba(93, 76, 54, 0.12);
+    inset 0 1px 0 rgba(150, 215, 240, 0.06),
+    0 24px 40px rgba(0, 0, 0, 0.42);
 }
 
 .login-accounts__item--active {
-  border-color: rgba(156, 107, 54, 0.3);
+  border-color: rgba(52, 225, 214, 0.45);
   background:
-    linear-gradient(180deg, rgba(250, 245, 238, 0.98), rgba(238, 229, 216, 0.92)),
+    linear-gradient(180deg, rgba(52, 225, 214, 0.1), rgba(160, 123, 255, 0.06)),
     var(--panel-soft-gradient);
   box-shadow:
-    inset 0 0 0 1px rgba(156, 107, 54, 0.12),
-    0 26px 42px rgba(101, 79, 53, 0.14);
+    inset 0 0 0 1px rgba(52, 225, 214, 0.18),
+    0 26px 44px rgba(0, 0, 0, 0.46),
+    0 0 26px rgba(52, 225, 214, 0.14);
 }
 
 .login-accounts__item strong,
@@ -565,7 +671,11 @@ async function handlePasswordResetConfirm() {
 .login-accounts__state {
   margin-top: 2px;
   padding-top: 8px;
-  border-top: 1px solid rgba(49, 87, 102, 0.08);
+  border-top: 1px solid var(--line);
+}
+
+.login-accounts__item--active .login-accounts__state {
+  color: var(--accent);
 }
 
 .login-column {
@@ -576,14 +686,12 @@ async function handlePasswordResetConfirm() {
   display: grid;
   gap: 12px;
   padding: 18px;
-  border-radius: 24px;
-  border: 1px solid rgba(49, 87, 102, 0.12);
-  background:
-    linear-gradient(180deg, rgba(250, 246, 240, 0.8), rgba(240, 232, 221, 0.74)),
-    var(--surface-gradient);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background: var(--surface-gradient);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.76),
-    0 18px 32px rgba(93, 76, 54, 0.08);
+    inset 0 1px 0 rgba(150, 215, 240, 0.05),
+    0 18px 32px rgba(0, 0, 0, 0.3);
 }
 
 .login-utilities__header {
@@ -592,14 +700,16 @@ async function handlePasswordResetConfirm() {
 }
 
 .login-utility {
-  border: 1px solid rgba(49, 87, 102, 0.12);
-  border-radius: 20px;
-  background: rgba(250, 246, 240, 0.72);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-block);
+  background: rgba(15, 23, 40, 0.55);
   overflow: hidden;
+  transition: border-color 0.2s ease;
 }
 
 .login-utility[open] {
-  background: rgba(248, 244, 238, 0.92);
+  border-color: rgba(52, 225, 214, 0.22);
+  background: rgba(18, 28, 47, 0.72);
 }
 
 .login-utility__summary {
@@ -645,29 +755,30 @@ async function handlePasswordResetConfirm() {
   align-content: start;
   gap: 16px;
   padding: 22px 24px 24px;
-  border-radius: 26px;
-  border: 1px solid rgba(49, 87, 102, 0.12);
-  background:
-    linear-gradient(180deg, rgba(248, 244, 238, 0.94), rgba(235, 226, 214, 0.9)),
-    var(--panel-soft-gradient);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background: var(--panel-gradient);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.84),
-    0 20px 36px rgba(93, 76, 54, 0.09);
+    inset 0 1px 0 rgba(150, 215, 240, 0.06),
+    0 20px 36px rgba(0, 0, 0, 0.34);
 }
 
 .login-form::before {
   content: '';
   position: absolute;
   inset: 0 0 auto;
-  height: 4px;
-  background: linear-gradient(90deg, rgba(49, 87, 102, 0.86), rgba(156, 107, 54, 0.64));
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 14px rgba(52, 225, 214, 0.5);
 }
 
 .login-form--primary {
   padding-top: 24px;
+  border-color: rgba(52, 225, 214, 0.2);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.84),
-    0 28px 46px rgba(82, 64, 45, 0.14);
+    inset 0 1px 0 rgba(150, 215, 240, 0.06),
+    0 28px 48px rgba(0, 0, 0, 0.46),
+    0 0 30px rgba(52, 225, 214, 0.06);
 }
 
 .login-form__header {
@@ -688,57 +799,74 @@ async function handlePasswordResetConfirm() {
   width: 100%;
   min-height: 48px;
   padding: 0 15px;
-  border: 1px solid rgba(53, 67, 75, 0.12);
-  border-radius: 16px;
-  background: rgba(251, 248, 243, 0.9);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: rgba(9, 15, 28, 0.82);
   color: var(--text-main);
-  box-shadow: inset 0 1px 2px rgba(93, 76, 54, 0.05);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .login-form input::placeholder {
-  color: rgba(102, 112, 120, 0.76);
+  color: #8b9ab1;
 }
 
 .login-form__submit {
   min-height: 48px;
   padding: 0 18px;
-  border: 1px solid rgba(156, 107, 54, 0.24);
-  border-radius: 16px;
-  background:
-    linear-gradient(180deg, rgba(187, 144, 97, 0.34), rgba(219, 196, 163, 0.48)),
-    var(--button-warm-gradient);
+  border: 1px solid rgba(52, 225, 214, 0.4);
+  border-radius: var(--radius-control);
+  background: linear-gradient(180deg, rgba(52, 225, 214, 0.24), rgba(160, 123, 255, 0.24));
   color: var(--text-strong);
+  letter-spacing: 0.06em;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    0 16px 28px rgba(114, 88, 58, 0.12);
+    inset 0 1px 0 rgba(150, 230, 245, 0.18),
+    0 16px 30px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(52, 225, 214, 0.16);
+}
+
+.login-form__submit:hover {
+  border-color: rgba(52, 225, 214, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(150, 230, 245, 0.2),
+    0 18px 34px rgba(0, 0, 0, 0.46),
+    0 0 28px rgba(52, 225, 214, 0.32);
+}
+
+.login-form__submit:disabled {
+  opacity: 0.58;
+  cursor: progress;
+  transform: none;
 }
 
 .login-form__submit--secondary {
-  border-color: rgba(49, 87, 102, 0.14);
-  background:
-    linear-gradient(180deg, rgba(244, 238, 229, 0.96), rgba(231, 223, 211, 0.9)),
-    var(--button-soft-gradient);
+  border-color: var(--line-strong);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
+.login-form__submit--secondary:hover {
+  border-color: rgba(52, 225, 214, 0.34);
 }
 
 .ticket-panel {
   display: grid;
   gap: 10px;
   padding: 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(156, 107, 54, 0.22);
+  border-radius: var(--radius-block);
+  border: 1px solid rgba(242, 178, 89, 0.3);
   background:
-    linear-gradient(180deg, rgba(247, 239, 229, 0.92), rgba(236, 226, 212, 0.9)),
-    var(--warm-panel-gradient);
+    linear-gradient(180deg, rgba(242, 178, 89, 0.08), rgba(242, 178, 89, 0.02)),
+    var(--panel-soft-gradient);
 }
 
 .ticket-panel code {
   overflow-wrap: anywhere;
-  color: var(--text-main);
+  color: var(--amber);
   padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.36);
-  border: 1px dashed rgba(156, 107, 54, 0.18);
+  border-radius: var(--radius-control);
+  background: rgba(8, 13, 26, 0.6);
+  border: 1px dashed rgba(242, 178, 89, 0.34);
 }
 
 @media (max-width: 1040px) {

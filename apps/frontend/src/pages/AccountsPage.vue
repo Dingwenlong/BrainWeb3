@@ -308,8 +308,8 @@ onMounted(loadPage)
 <template>
   <div class="accounts-page">
     <PageHero
-      kicker="账户管理"
-      title="把账户、密码和凭证状态放进一个清晰的管理页。"
+      kicker="账户"
+      title="账户与凭证"
       layout="balanced"
     >
       <div class="summary-strip">
@@ -363,7 +363,7 @@ onMounted(loadPage)
     <template v-else>
       <section class="accounts-layout">
         <aside class="accounts-layout__side">
-          <SurfaceCard kicker="安全设置" title="修改密码">
+          <SurfaceCard kicker="安全设置" title="修改密码" :style="{ animationDelay: '0.08s' }">
             <template #meta>
               <RouterLink class="panel-link" to="/">返回总览</RouterLink>
             </template>
@@ -381,7 +381,7 @@ onMounted(loadPage)
             </form>
           </SurfaceCard>
 
-          <SurfaceCard v-if="identity" kicker="身份凭证" title="我的 DID 与凭证">
+          <SurfaceCard v-if="identity" kicker="身份凭证" title="我的 DID 与凭证" :style="{ animationDelay: '0.16s' }">
             <template #meta>
               <RouterLink class="panel-link" to="/identity-center">打开身份中心</RouterLink>
             </template>
@@ -422,7 +422,7 @@ onMounted(loadPage)
             </template>
           </SurfaceCard>
 
-          <SurfaceCard v-if="isAdmin" kicker="新建账户" title="创建账户">
+          <SurfaceCard v-if="isAdmin" kicker="新建" title="创建账户" :style="{ animationDelay: '0.24s' }">
 
             <form class="form-grid" @submit.prevent="submitCreateAccount">
               <label>
@@ -463,7 +463,7 @@ onMounted(loadPage)
         </aside>
 
         <div class="accounts-layout__main">
-          <SurfaceCard kicker="账户目录" :title="isAdmin ? '账户管理台' : '我的账户记录'">
+          <SurfaceCard kicker="账户目录" :title="isAdmin ? '账户管理台' : '我的账户记录'" :style="{ animationDelay: '0.18s' }">
             <template #meta>
               <span class="status-chip">{{ accountRows.length }} 条记录</span>
             </template>
@@ -566,9 +566,9 @@ onMounted(loadPage)
             <div v-else class="empty-state">{{ roleGuide.emptyDirectory }}</div>
           </SurfaceCard>
 
-          <SurfaceCard v-if="organizationRows.length" kicker="机构凭证" title="机构凭证治理">
+          <SurfaceCard v-if="organizationRows.length" kicker="机构" title="机构凭证治理" class="org-card" :style="{ animationDelay: '0.28s' }">
             <template #meta>
-              <span class="status-chip">{{ organizationRows.length }} 个机构</span>
+              <span class="status-chip status-chip--ghost">{{ organizationRows.length }} 个机构</span>
             </template>
 
             <div class="account-list">
@@ -578,7 +578,13 @@ onMounted(loadPage)
                     <strong>{{ formatOrganizationLabel(row.organizationName) }}</strong>
                     <p>{{ row.organizationDid }}</p>
                   </div>
-                  <span class="status-chip" :class="{ 'status-chip--danger': row.statusSnapshot.effectiveStatus === 'revoked' }">
+                  <span
+                    class="status-chip"
+                    :class="{
+                      'status-chip--danger': row.statusSnapshot.effectiveStatus === 'revoked',
+                      'status-chip--warn': row.statusSnapshot.effectiveStatus === 'suspended',
+                    }"
+                  >
                     {{ formatIdentityStatusLabel(row.statusSnapshot.effectiveStatus) }}
                   </span>
                 </div>
@@ -667,29 +673,7 @@ onMounted(loadPage)
   gap: var(--space-list);
 }
 
-.hero-panel__guide {
-  display: grid;
-  gap: 8px;
-  max-width: 720px;
-  padding: var(--space-subpanel);
-  border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line-warm);
-  background: var(--panel-soft-gradient);
-}
-
-.hero-panel__guide span {
-  color: var(--text-faint);
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.hero-panel__guide strong {
-  font-family: var(--body);
-  font-size: 0.94rem;
-  line-height: 1.6;
-}
-
+/* === Hero summary strip — cyan signal readouts === */
 .summary-strip {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -697,10 +681,63 @@ onMounted(loadPage)
 .summary-strip__card,
 .hero-spotlight,
 .account-card {
+  position: relative;
   padding: var(--space-card);
   border-radius: var(--radius-panel);
   border: 1px solid var(--line);
   background: var(--panel-gradient);
+}
+
+.summary-strip__card {
+  overflow: hidden;
+  border-color: var(--line-warm);
+  background: var(--warm-panel-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
+    0 0 26px rgba(52, 225, 214, 0.05);
+  animation: consoleRise 0.5s ease both;
+}
+
+/* Governance / org-side stats lean into the violet system domain */
+.summary-strip__card--secondary {
+  border-color: rgba(160, 123, 255, 0.28);
+  background:
+    linear-gradient(180deg, rgba(160, 123, 255, 0.08), rgba(160, 123, 255, 0.02)),
+    var(--panel-soft-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(160, 123, 255, 0.06),
+    0 0 26px rgba(160, 123, 255, 0.05);
+}
+
+.summary-strip__card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--accent), transparent);
+}
+
+.summary-strip__card--secondary::before {
+  background: linear-gradient(180deg, var(--accent-2), transparent);
+}
+
+.summary-strip__card:nth-child(1) {
+  animation-delay: 0.06s;
+}
+.summary-strip__card:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.summary-strip__card:nth-child(3) {
+  animation-delay: 0.18s;
+}
+.summary-strip__card:nth-child(4) {
+  animation-delay: 0.24s;
+}
+.summary-strip__card:nth-child(5) {
+  animation-delay: 0.3s;
+}
+.summary-strip__card:nth-child(6) {
+  animation-delay: 0.36s;
 }
 
 .summary-strip__card span,
@@ -709,6 +746,7 @@ onMounted(loadPage)
 .account-card dt {
   display: block;
   color: var(--text-faint);
+  font-family: var(--mono);
   font-size: var(--field-label-size);
   letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
@@ -724,12 +762,20 @@ onMounted(loadPage)
 
 .summary-strip__card strong {
   margin-top: 10px;
+  font-family: var(--mono);
   font-size: clamp(1.8rem, 3vw, 2.4rem);
+  color: var(--text-strong);
 }
 
+.summary-strip__card--secondary strong {
+  color: var(--accent-2);
+}
+
+/* === Hero spotlight — current account readout === */
 .hero-spotlight {
   display: grid;
   gap: 14px;
+  animation: consoleRise 0.5s ease both;
 }
 
 .hero-spotlight__headline,
@@ -739,6 +785,20 @@ onMounted(loadPage)
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.hero-spotlight__headline strong {
+  font-size: 1.3rem;
+  line-height: 1.18;
+  color: var(--text-strong);
+}
+
+.hero-spotlight__context {
+  margin: 0;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .hero-spotlight__meta,
@@ -761,18 +821,41 @@ onMounted(loadPage)
   background: var(--panel-soft-gradient);
 }
 
+.hero-spotlight__meta strong {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--text-strong);
+}
+
+/* === Layout === */
 .accounts-layout {
   grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
 }
 
 .panel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   text-decoration: none;
-  font-family: var(--body);
-  font-size: 0.8rem;
+  font-family: var(--mono);
+  font-size: 0.74rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--accent);
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.panel-link::before {
+  content: '↳';
+  color: var(--accent-2);
+}
+
+.panel-link:hover {
+  color: var(--accent-strong);
+  text-shadow: 0 0 12px rgba(52, 225, 214, 0.4);
 }
 
 .panel-note {
@@ -784,14 +867,7 @@ onMounted(loadPage)
   word-break: break-word;
 }
 
-.hero-spotlight__context,
-.history-timeline__item p,
-.history-timeline__item span {
-  color: var(--text-muted);
-  font-size: var(--supporting-text-size);
-  line-height: var(--supporting-text-line-height);
-}
-
+/* === Forms (create account / change password) === */
 .form-grid label {
   display: grid;
   gap: 8px;
@@ -799,6 +875,7 @@ onMounted(loadPage)
 
 .form-grid span {
   color: var(--text-faint);
+  font-family: var(--mono);
   font-size: var(--field-label-size);
   letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
@@ -827,20 +904,99 @@ onMounted(loadPage)
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
+}
+
+.account-card__actions button:not(:disabled):hover {
+  border-color: rgba(52, 225, 214, 0.4);
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.12);
+  color: var(--text-strong);
+}
+
+.account-card__actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .form-grid__submit {
   border-color: var(--line-warm);
   background: var(--button-warm-gradient);
+  color: var(--text-strong);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(52, 225, 214, 0.14);
 }
 
-.account-card__header p,
+.form-grid__submit:hover {
+  border-color: rgba(52, 225, 214, 0.6);
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.46),
+    0 0 28px rgba(52, 225, 214, 0.28);
+}
+
+/* === Account / org cards === */
+.account-card {
+  animation: consoleRise 0.5s ease both;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.account-card:nth-child(1) { animation-delay: 0.04s; }
+.account-card:nth-child(2) { animation-delay: 0.1s; }
+.account-card:nth-child(3) { animation-delay: 0.16s; }
+.account-card:nth-child(4) { animation-delay: 0.22s; }
+.account-card:nth-child(5) { animation-delay: 0.28s; }
+
+.account-card:hover {
+  border-color: rgba(52, 225, 214, 0.2);
+  box-shadow: var(--shadow-soft), 0 0 26px rgba(52, 225, 214, 0.05);
+}
+
+/* Org governance cards belong to the violet system domain */
+.org-card .account-card:hover {
+  border-color: rgba(160, 123, 255, 0.24);
+  box-shadow: var(--shadow-soft), 0 0 26px rgba(160, 123, 255, 0.06);
+}
+
+.account-card__header strong {
+  font-size: 1.06rem;
+  line-height: 1.3;
+  color: var(--text-strong);
+}
+
+.account-card__header p {
+  margin: 6px 0 0;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
+}
+
 .account-card dd,
 .account-card__hint {
   margin: 6px 0 0;
   color: var(--text-muted);
   font-size: var(--supporting-text-size);
   line-height: var(--supporting-text-line-height);
+}
+
+/* Numbers / IDs / DIDs / statuses / timestamps read as instrument data */
+.account-card__details dd {
+  font-family: var(--mono);
+  color: var(--text-strong);
+}
+
+.account-card__hint {
+  padding: 10px 12px;
+  margin-top: 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--amber-soft);
+  background: rgba(242, 178, 89, 0.05);
+  color: var(--text-muted);
 }
 
 .hero-spotlight__headline > div,
@@ -866,6 +1022,7 @@ onMounted(loadPage)
   margin-top: 16px;
 }
 
+/* === Credential history timeline === */
 .history-timeline {
   display: grid;
   gap: var(--space-list-tight);
@@ -873,15 +1030,26 @@ onMounted(loadPage)
 }
 
 .history-timeline__item {
-  padding: 12px 14px;
+  position: relative;
+  padding: 12px 14px 12px 18px;
   border-radius: var(--radius-control);
   border: 1px solid var(--line);
   background: var(--panel-soft-gradient);
 }
 
+.history-timeline__item::before {
+  content: '';
+  position: absolute;
+  inset: 12px auto 12px 0;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--accent-2), transparent);
+}
+
 .history-timeline__item strong {
-  font-family: var(--body);
-  font-weight: 700;
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--text-strong);
 }
 
 .history-timeline__item p,
@@ -889,16 +1057,26 @@ onMounted(loadPage)
   display: block;
   margin: 6px 0 0;
   color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
+.history-timeline__item span {
+  font-family: var(--mono);
+  color: var(--text-faint);
+}
+
+/* === Credential governance form — violet system domain === */
 .credential-form {
   display: grid;
   gap: 10px;
   margin-top: 14px;
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  border: 1px solid rgba(160, 123, 255, 0.22);
+  background:
+    linear-gradient(180deg, rgba(160, 123, 255, 0.05), rgba(160, 123, 255, 0)),
+    var(--panel-soft-gradient);
 }
 
 .credential-form label {
@@ -908,7 +1086,8 @@ onMounted(loadPage)
 
 .credential-form span {
   color: var(--text-faint);
-  font-size: 0.74rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -927,16 +1106,36 @@ onMounted(loadPage)
 
 .credential-form__submit {
   min-height: var(--control-height);
-  border-color: var(--line-warm);
-  background: var(--button-warm-gradient);
+  border-color: rgba(160, 123, 255, 0.4);
+  background: linear-gradient(180deg, rgba(160, 123, 255, 0.24), rgba(52, 225, 214, 0.2));
+  color: var(--text-strong);
   font-family: var(--body);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  box-shadow: 0 0 18px rgba(160, 123, 255, 0.12);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.credential-form__submit:not(:disabled):hover {
+  border-color: rgba(160, 123, 255, 0.62);
+  box-shadow: 0 0 26px rgba(160, 123, 255, 0.26);
+}
+
+.credential-form__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Destructive: reset password to default */
 .account-card__danger {
-  border-color: rgba(242, 126, 126, 0.28) !important;
+  border-color: var(--danger-soft) !important;
+  color: var(--danger) !important;
+}
+
+.account-card__danger:not(:disabled):hover {
+  border-color: rgba(255, 97, 115, 0.55) !important;
+  box-shadow: 0 0 18px rgba(255, 97, 115, 0.16) !important;
   color: var(--danger) !important;
 }
 

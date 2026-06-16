@@ -261,14 +261,25 @@ watch(
   <div class="destruction-page">
     <section class="hero-panel glass-panel">
       <div class="hero-panel__copy">
-        <p class="section-kicker">销毁控制</p>
-        <h1 class="page-main-heading">把销毁申请、审批、执行和留痕收成一条最小可演示闭环。</h1>
+        <div class="hero-panel__masthead">
+          <p class="section-kicker">销毁控制</p>
+          <span class="hero-panel__stamp">IRREVERSIBLE</span>
+        </div>
+        <h1 class="page-main-heading">数据销毁</h1>
         <div class="hero-panel__actions">
-          <span class="status-chip">{{ isPrivilegedActor ? '销毁治理视图' : '销毁申请视图' }}</span>
+          <span class="status-chip status-chip--danger">{{ isPrivilegedActor ? '销毁治理视图' : '销毁申请视图' }}</span>
           <RouterLink class="hero-panel__secondary" to="/">返回总览</RouterLink>
         </div>
         <div class="summary-strip">
-          <article v-for="stat in destructionStats" :key="stat.label" class="summary-strip__card">
+          <article
+            v-for="stat in destructionStats"
+            :key="stat.label"
+            class="summary-strip__card"
+            :class="{
+              'summary-strip__card--warn': stat.label === '待审批',
+              'summary-strip__card--danger': stat.label === '已销毁',
+            }"
+          >
             <span>{{ stat.label }}</span>
             <strong>{{ stat.value }}</strong>
           </article>
@@ -281,7 +292,13 @@ watch(
           <template v-if="latestRequest">
             <div class="hero-spotlight__headline">
               <strong>{{ latestRequest.datasetTitle }}</strong>
-              <span class="status-chip" :class="{ 'status-chip--danger': latestRequest.status === 'rejected' || latestRequest.status === 'destroyed' }">
+              <span
+                class="status-chip"
+                :class="{
+                  'status-chip--danger': latestRequest.status === 'rejected' || latestRequest.status === 'destroyed',
+                  'status-chip--warn': latestRequest.status === 'pending' || latestRequest.status === 'approved',
+                }"
+              >
                 {{ formatRequestStatusLabel(latestRequest.status) }}
               </span>
             </div>
@@ -389,13 +406,27 @@ watch(
             </div>
 
             <div v-if="requestRows.length" class="request-list">
-              <article v-for="row in requestRows" :key="row.id" class="request-card">
+              <article
+                v-for="row in requestRows"
+                :key="row.id"
+                class="request-card"
+                :class="{
+                  'request-card--danger': row.status === 'rejected' || row.status === 'destroyed',
+                  'request-card--warn': row.status === 'pending' || row.status === 'approved',
+                }"
+              >
                 <div class="request-card__header">
                   <div>
                     <strong>{{ row.datasetTitle }}</strong>
-                    <p>{{ row.id }} · {{ row.requesterId }} / {{ formatRoleLabel(row.requesterRole) }}</p>
+                    <p class="request-card__ident">{{ row.id }} · {{ row.requesterId }} / {{ formatRoleLabel(row.requesterRole) }}</p>
                   </div>
-                  <span class="status-chip" :class="{ 'status-chip--danger': row.status === 'rejected' || row.status === 'destroyed' }">
+                  <span
+                    class="status-chip"
+                    :class="{
+                      'status-chip--danger': row.status === 'rejected' || row.status === 'destroyed',
+                      'status-chip--warn': row.status === 'pending' || row.status === 'approved',
+                    }"
+                  >
                     {{ formatRequestStatusLabel(row.status) }}
                   </span>
                 </div>
@@ -428,9 +459,9 @@ watch(
                 <p v-if="row.cleanupError" class="request-card__policy request-card__policy--danger">清理失败：{{ row.cleanupError }}</p>
                 <div v-if="row.cleanupEvidenceHash" class="request-card__evidence">
                   <strong>清理凭证</strong>
-                  <p>凭证引用：{{ row.cleanupEvidenceRef }}</p>
-                  <p>凭证摘要：{{ row.cleanupEvidenceHash }}</p>
-                  <p>确认人：{{ row.cleanupVerifiedBy || '暂无' }}</p>
+                  <p>凭证引用：<span class="request-card__hash">{{ row.cleanupEvidenceRef }}</span></p>
+                  <p>凭证摘要：<span class="request-card__hash">{{ row.cleanupEvidenceHash }}</span></p>
+                  <p>确认人：<span class="request-card__hash">{{ row.cleanupVerifiedBy || '暂无' }}</span></p>
                 </div>
 
                 <div class="request-card__links">
@@ -465,6 +496,7 @@ watch(
                     <button
                       v-if="row.status === 'pending'"
                       type="button"
+                      class="decision-form__primary"
                       @click="approveRequest(row)"
                       :disabled="actionLoadingId === row.id"
                     >
@@ -491,6 +523,7 @@ watch(
                     <button
                       v-if="row.status === 'destroyed' && row.cleanupStatus !== 'completed'"
                       type="button"
+                      class="decision-form__danger"
                       @click="purgeStorage(row)"
                       :disabled="actionLoadingId === row.id"
                     >
@@ -515,13 +548,30 @@ watch(
   padding-bottom: 8px;
 }
 
+/* ===== Hero — danger-led mission masthead ===== */
 .hero-panel {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   gap: 20px;
   padding: var(--space-hero);
   border-radius: var(--radius-hero);
-  background: var(--panel-gradient);
+  border: 1px solid var(--line-strong);
+  background:
+    radial-gradient(120% 130% at 0% 0%, rgba(255, 97, 115, 0.1), transparent 46%),
+    radial-gradient(120% 140% at 100% 100%, rgba(160, 123, 255, 0.08), transparent 52%),
+    var(--panel-gradient);
+  animation: consoleRise 0.55s ease both;
+}
+
+.hero-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--danger), var(--accent-2) 70%, transparent);
+  box-shadow: 0 0 16px rgba(255, 97, 115, 0.5);
 }
 
 .hero-panel__copy,
@@ -533,6 +583,35 @@ watch(
 .request-list {
   display: grid;
   gap: var(--space-list);
+}
+
+.hero-panel__copy {
+  position: relative;
+  z-index: 1;
+  align-content: start;
+}
+
+.hero-panel__masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hero-panel__stamp {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--danger-soft);
+  background: rgba(255, 97, 115, 0.08);
+  color: var(--danger);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
 }
 
 .hero-panel h1,
@@ -573,8 +652,17 @@ watch(
 }
 
 .request-card__evidence strong {
-  font-family: var(--body);
-  font-weight: 700;
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-strong);
+}
+
+.request-card__hash {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
 }
 
 .hero-panel__actions,
@@ -587,6 +675,10 @@ watch(
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.hero-panel__actions {
+  align-items: center;
 }
 
 .hero-panel__secondary,
@@ -606,10 +698,19 @@ watch(
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
 }
 
-.hero-panel__hint,
-.hero-panel__guide,
+.hero-panel__secondary:hover,
+.form-grid__secondary:hover {
+  border-color: var(--line-warm);
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.14);
+  color: var(--text-strong);
+}
+
 .request-card,
 .workspace-card,
 .hero-spotlight,
@@ -620,12 +721,6 @@ watch(
   background: var(--panel-gradient);
 }
 
-.hero-panel__guide {
-  display: grid;
-  gap: 8px;
-}
-
-.hero-panel__guide span,
 .summary-strip__card span,
 .hero-spotlight__kicker,
 .hero-spotlight__meta span,
@@ -639,22 +734,93 @@ watch(
   text-transform: uppercase;
 }
 
-.hero-panel__guide strong,
+.hero-spotlight__kicker,
+.request-card dt {
+  font-family: var(--mono);
+}
+
 .summary-strip__card strong,
 .hero-spotlight__headline strong,
 .hero-spotlight__meta strong,
 .request-card strong {
   display: block;
   font-family: var(--body);
+  color: var(--text-strong);
 }
 
+/* ===== Summary strip — instrument readouts ===== */
 .summary-strip {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.summary-strip__card {
+  border-color: var(--line-warm);
+  background: var(--warm-panel-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
+    0 0 24px rgba(52, 225, 214, 0.05);
+  animation: consoleRise 0.5s ease both;
+}
+
+.summary-strip__card:nth-child(1) {
+  animation-delay: 0.08s;
+}
+
+.summary-strip__card:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.summary-strip__card:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.summary-strip__card:nth-child(4) {
+  animation-delay: 0.26s;
+}
+
+.summary-strip__card span {
+  font-family: var(--mono);
+}
+
 .summary-strip__card strong {
   margin-top: 10px;
+  font-family: var(--mono);
   font-size: clamp(1.8rem, 3vw, 2.4rem);
+  color: var(--text-strong);
+}
+
+.summary-strip__card--warn {
+  border-color: var(--amber-soft);
+  background:
+    linear-gradient(180deg, rgba(242, 178, 89, 0.08), rgba(242, 178, 89, 0.015)),
+    var(--panel-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(242, 178, 89, 0.08),
+    0 0 24px rgba(242, 178, 89, 0.05);
+}
+
+.summary-strip__card--warn strong {
+  color: var(--amber);
+}
+
+.summary-strip__card--danger {
+  border-color: var(--danger-soft);
+  background:
+    linear-gradient(180deg, rgba(255, 97, 115, 0.09), rgba(255, 97, 115, 0.02)),
+    var(--panel-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 97, 115, 0.1),
+    0 0 26px rgba(255, 97, 115, 0.06);
+}
+
+.summary-strip__card--danger strong {
+  color: var(--danger);
+}
+
+/* ===== Hero spotlight — latest request ===== */
+.hero-panel__rail {
+  position: relative;
+  z-index: 1;
 }
 
 .hero-spotlight,
@@ -664,12 +830,34 @@ watch(
   background: var(--panel-gradient);
 }
 
+.hero-spotlight {
+  animation: consoleRise 0.55s ease 0.12s both;
+}
+
+.hero-spotlight__kicker {
+  margin: 0;
+}
+
+.hero-spotlight__headline strong {
+  font-size: 1.3rem;
+  line-height: 1.18;
+}
+
+.hero-spotlight__context {
+  font-family: var(--mono);
+  color: var(--text-muted);
+}
+
 .hero-spotlight__context,
 .hero-spotlight__reason,
 .request-card p {
   margin: 0;
   font-size: var(--supporting-text-size);
   line-height: var(--supporting-text-line-height);
+}
+
+.hero-spotlight__reason {
+  color: var(--text-main);
 }
 
 .hero-spotlight__meta,
@@ -691,8 +879,42 @@ watch(
   background: var(--panel-soft-gradient);
 }
 
+.hero-spotlight__meta span {
+  font-family: var(--mono);
+}
+
+.hero-spotlight__meta strong {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+/* ===== Workspace cards (forms + stream) ===== */
 .destruction-layout {
   grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
+}
+
+.workspace-card {
+  animation: consoleRise 0.5s ease both;
+}
+
+.destruction-layout__side .workspace-card:nth-child(1) {
+  animation-delay: 0.16s;
+}
+
+.destruction-layout__side .workspace-card:nth-child(2) {
+  animation-delay: 0.24s;
+}
+
+.destruction-layout__main .workspace-card {
+  animation-delay: 0.2s;
+}
+
+.workspace-card__header .section-title {
+  margin-top: 4px;
+  font-size: 1.18rem;
+  color: var(--text-strong);
 }
 
 .form-grid label,
@@ -714,42 +936,215 @@ watch(
   color: var(--text-main);
 }
 
+.form-grid textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+/* Primary cyan->violet action (submit / refresh) */
 .form-grid__submit,
-.decision-form__actions button {
+.decision-form__primary {
   min-height: var(--control-height);
   padding: var(--space-button);
   border: 1px solid var(--line-warm);
   border-radius: var(--radius-pill);
   background: var(--button-warm-gradient);
-  color: var(--text-main);
+  color: var(--text-strong);
   font-family: var(--body);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.36),
+    0 0 18px rgba(52, 225, 214, 0.12);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.form-grid__submit:hover:not(:disabled),
+.decision-form__primary:hover:not(:disabled) {
+  border-color: rgba(52, 225, 214, 0.6);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.42),
+    0 0 26px rgba(52, 225, 214, 0.26);
+}
+
+.form-grid__submit:disabled,
+.decision-form__actions button:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.form-grid__actions {
+  align-items: stretch;
+}
+
+.form-grid__actions .form-grid__submit {
+  flex: 1;
 }
 
 .request-card__details {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.request-card__details dd {
+  margin: 6px 0 0;
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  color: var(--text-strong);
+}
+
+.request-card__ident {
+  font-family: var(--mono);
+  color: var(--text-muted);
+}
+
+/* ===== Request stream cards ===== */
+.request-card {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  animation: consoleRise 0.5s ease both;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.request-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  border-radius: var(--radius-panel) 0 0 var(--radius-panel);
+  background: var(--line-strong);
+}
+
+.request-card:nth-child(1) {
+  animation-delay: 0.04s;
+}
+
+.request-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.request-card:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+.request-card:nth-child(4) {
+  animation-delay: 0.22s;
+}
+
+.request-card:nth-child(n + 5) {
+  animation-delay: 0.28s;
+}
+
+.request-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 22px rgba(52, 225, 214, 0.08);
+}
+
+.request-card--warn::before {
+  background: linear-gradient(180deg, var(--amber), transparent);
+  box-shadow: 0 0 12px rgba(242, 178, 89, 0.35);
+}
+
+.request-card--warn:hover {
+  border-color: var(--amber-soft);
+  box-shadow: 0 0 22px rgba(242, 178, 89, 0.1);
+}
+
+.request-card--danger::before {
+  background: linear-gradient(180deg, var(--danger), transparent);
+  box-shadow: 0 0 12px rgba(255, 97, 115, 0.4);
+}
+
+.request-card--danger:hover {
+  border-color: var(--danger-soft);
+  box-shadow: 0 0 22px rgba(255, 97, 115, 0.1);
+}
+
+.request-card__header strong {
+  font-size: 1.06rem;
+  line-height: 1.3;
+}
+
+.request-card__policy {
+  color: var(--text-muted);
+}
+
 .request-card__links {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 14px;
+  margin-top: 4px;
 }
 
+.request-card__link {
+  min-height: 38px;
+  font-size: 0.78rem;
+}
+
+.request-card__link:hover {
+  border-color: var(--line-warm);
+  box-shadow: 0 0 16px rgba(52, 225, 214, 0.14);
+  color: var(--text-strong);
+}
+
+/* ===== Decision form — destructive gravity ===== */
 .decision-form {
   display: grid;
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 8px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
 
+.decision-form__actions {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.decision-form__actions button {
+  min-height: var(--control-height);
+  padding: var(--space-button);
+  border-radius: var(--radius-pill);
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Destructive: reject / execute / purge — must read as serious */
 .decision-form__danger {
-  border-color: rgba(242, 126, 126, 0.28) !important;
+  border: 1px solid var(--danger-soft);
+  background:
+    linear-gradient(180deg, rgba(255, 97, 115, 0.14), rgba(255, 97, 115, 0.04)),
+    var(--button-soft-gradient);
   color: var(--danger);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 97, 115, 0.08),
+    0 10px 22px rgba(0, 0, 0, 0.3);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.decision-form__danger:hover:not(:disabled) {
+  border-color: var(--danger);
+  background:
+    linear-gradient(180deg, rgba(255, 97, 115, 0.22), rgba(255, 97, 115, 0.06)),
+    var(--button-soft-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 97, 115, 0.18),
+    0 12px 26px rgba(0, 0, 0, 0.4),
+    0 0 22px rgba(255, 97, 115, 0.28);
+}
+
+.empty-state {
+  font-family: var(--body);
 }
 
 @media (max-width: 1040px) {
@@ -761,14 +1156,17 @@ watch(
     grid-template-columns: 1fr;
   }
 
-  .hero-panel__actions,
   .workspace-card__header,
   .hero-spotlight__headline,
-  .request-card__header,
+  .request-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .form-grid__actions,
   .decision-form__actions {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
 }
 </style>

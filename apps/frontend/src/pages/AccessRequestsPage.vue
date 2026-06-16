@@ -191,8 +191,8 @@ watch(
 <template>
   <div class="requests-page">
     <PageHero
-      kicker="访问治理"
-      title="把访问申请处理成一条清晰、可追踪的业务流程。"
+      kicker="治理"
+      title="访问申请"
       layout="balanced"
     >
       <template #actions>
@@ -212,7 +212,7 @@ watch(
           <p class="hero-spotlight__kicker">优先事项</p>
           <template v-if="spotlightRequest">
             <div class="hero-spotlight__headline">
-              <strong>{{ spotlightRequest.id }}</strong>
+              <strong class="data-id">{{ spotlightRequest.id }}</strong>
               <span
                 class="status-chip"
                 :class="{
@@ -225,7 +225,8 @@ watch(
               </span>
             </div>
             <p class="hero-spotlight__context">
-              {{ spotlightRequest.datasetId }} · {{ spotlightRequest.actorId }} ·
+              <span class="data-id">{{ spotlightRequest.datasetId }}</span> ·
+              <span class="data-id">{{ spotlightRequest.actorId }}</span> ·
               {{ formatOrganizationLabel(spotlightRequest.actorOrg) }}
             </p>
             <p class="hero-spotlight__reason">{{ spotlightRequest.reason }}</p>
@@ -236,11 +237,11 @@ watch(
               </div>
               <div>
                 <span>申请时长</span>
-                <strong>{{ spotlightRequest.requestedDurationHours }} 小时</strong>
+                <strong class="data-id">{{ spotlightRequest.requestedDurationHours }} 小时</strong>
               </div>
               <div>
                 <span>提交时间</span>
-                <strong>{{ formatTime(spotlightRequest.createdAt) }}</strong>
+                <strong class="data-id">{{ formatTime(spotlightRequest.createdAt) }}</strong>
               </div>
             </div>
           </template>
@@ -285,10 +286,13 @@ watch(
             <div v-if="queuePreview.length" class="queue-preview">
               <div v-for="row in queuePreview" :key="row.id" class="queue-preview__item">
                 <div>
-                  <strong>{{ row.id }}</strong>
-                  <p>{{ row.datasetId }} · {{ row.actorId }}</p>
+                  <strong class="data-id">{{ row.id }}</strong>
+                  <p>
+                    <span class="data-id">{{ row.datasetId }}</span> ·
+                    <span class="data-id">{{ row.actorId }}</span>
+                  </p>
                 </div>
-                <span>{{ formatTime(row.createdAt) }}</span>
+                <span class="data-id">{{ formatTime(row.createdAt) }}</span>
               </div>
             </div>
             <div v-else class="empty-state">{{ roleGuide.emptyQueue }}</div>
@@ -296,7 +300,7 @@ watch(
         </aside>
 
         <div class="requests-layout__main">
-          <SurfaceCard kicker="申请列表" title="访问申请记录">
+          <SurfaceCard kicker="列表" title="访问申请记录">
             <template #meta>
               <span class="status-chip">{{ requestRows.length }} 条记录</span>
             </template>
@@ -310,8 +314,8 @@ watch(
               >
                 <div class="request-card__header">
                   <div>
-                    <strong>{{ row.id }}</strong>
-                    <p>{{ row.datasetId }} · {{ row.purpose }}</p>
+                    <strong class="data-id">{{ row.id }}</strong>
+                    <p><span class="data-id">{{ row.datasetId }}</span> · {{ row.purpose }}</p>
                   </div>
                   <span
                     class="status-chip"
@@ -329,11 +333,11 @@ watch(
                 <dl class="request-card__details">
                   <div>
                     <dt>提交时间</dt>
-                    <dd>{{ formatTime(row.createdAt) }}</dd>
+                    <dd class="data-id">{{ formatTime(row.createdAt) }}</dd>
                   </div>
                   <div>
                     <dt>申请人</dt>
-                    <dd>{{ row.actorId }}</dd>
+                    <dd class="data-id">{{ row.actorId }}</dd>
                   </div>
                   <div>
                     <dt>角色</dt>
@@ -345,7 +349,7 @@ watch(
                   </div>
                   <div>
                     <dt>申请时长</dt>
-                    <dd>{{ row.requestedDurationHours }} 小时</dd>
+                    <dd class="data-id">{{ row.requestedDurationHours }} 小时</dd>
                   </div>
                   <div v-if="row.policyNote">
                     <dt>策略说明</dt>
@@ -353,7 +357,7 @@ watch(
                   </div>
                   <div v-if="row.expiresAt">
                     <dt>到期时间</dt>
-                    <dd>{{ formatTime(row.expiresAt) }}</dd>
+                    <dd class="data-id">{{ formatTime(row.expiresAt) }}</dd>
                   </div>
                 </dl>
 
@@ -363,7 +367,12 @@ watch(
                   </RouterLink>
 
                   <div v-if="isPrivilegedActor && row.status === 'pending'" class="request-card__actions">
-                    <button type="button" @click="approve(row)" :disabled="actionLoadingId === row.id">
+                    <button
+                      type="button"
+                      class="request-card__approve"
+                      @click="approve(row)"
+                      :disabled="actionLoadingId === row.id"
+                    >
                       {{ actionLoadingId === row.id ? '处理中...' : '批准 24 小时' }}
                     </button>
                     <button
@@ -411,6 +420,13 @@ watch(
   gap: 18px;
 }
 
+/* Mono data readouts: IDs, timestamps, durations, actor handles */
+.data-id {
+  font-family: var(--mono);
+  color: var(--text-strong);
+  letter-spacing: 0.01em;
+}
+
 .hero-spotlight__headline,
 .hero-lane__header {
   display: flex;
@@ -437,43 +453,19 @@ watch(
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
 }
 
-.hero-panel__guide {
-  display: grid;
-  gap: 8px;
-  max-width: 720px;
-  padding: var(--space-subpanel);
-  border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line-warm);
-  background: var(--panel-soft-gradient);
-}
-
-.hero-panel__hint {
-  margin: 0;
-  padding: var(--space-subpanel);
-  border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
-  color: var(--text-muted);
-  line-height: 1.7;
-}
-
-.hero-panel__guide span {
-  color: var(--text-faint);
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.hero-panel__guide strong {
-  font-family: var(--body);
-  font-size: 0.94rem;
-  line-height: 1.6;
+.hero-panel__secondary:hover {
+  border-color: var(--accent-2);
+  color: var(--text-strong);
+  box-shadow: var(--glow-violet);
 }
 
 .summary-strip,
-.hero-lane__steps,
 .policy-cards,
 .queue-preview {
   display: grid;
@@ -484,9 +476,33 @@ watch(
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.summary-strip__card,
+/* Hero summary strip = governance signal surface, violet-led */
+.summary-strip__card {
+  padding: var(--space-card);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(160, 123, 255, 0.08), rgba(160, 123, 255, 0.02)),
+    var(--panel-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(160, 123, 255, 0.06),
+    0 0 24px rgba(160, 123, 255, 0.05);
+  animation: consoleRise 0.5s ease both;
+}
+
+.summary-strip__card:nth-child(1) {
+  animation-delay: 0.08s;
+}
+
+.summary-strip__card:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.summary-strip__card:nth-child(3) {
+  animation-delay: 0.22s;
+}
+
 .hero-spotlight,
-.hero-lane,
 .policy-cards__item,
 .queue-preview__item {
   padding: var(--space-card);
@@ -499,16 +515,10 @@ watch(
 .hero-spotlight__kicker,
 .hero-spotlight__meta span,
 .policy-cards__item span,
-.queue-preview__item span,
-.workspace-card__lede {
-  color: var(--text-muted);
-}
-
-.summary-strip__card span,
-.hero-spotlight__kicker,
-.hero-spotlight__meta span,
-.policy-cards__item span {
+.queue-preview__item span {
   display: block;
+  color: var(--text-faint);
+  font-family: var(--mono);
   font-size: 0.72rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -517,7 +527,6 @@ watch(
 .summary-strip__card strong,
 .hero-spotlight__headline strong,
 .hero-spotlight__meta strong,
-.hero-lane__step strong,
 .policy-cards__item strong,
 .queue-preview__item strong {
   display: block;
@@ -526,12 +535,38 @@ watch(
 
 .summary-strip__card strong {
   margin-top: 10px;
+  font-family: var(--mono);
   font-size: clamp(1.8rem, 3vw, 2.4rem);
+  color: var(--text-strong);
 }
 
+/* Hero priority spotlight = top governance decision, violet rail */
 .hero-spotlight {
   display: grid;
   gap: 14px;
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(160, 123, 255, 0.22);
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgba(160, 123, 255, 0.1), transparent 52%),
+    var(--panel-gradient);
+}
+
+.hero-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  box-shadow: 0 0 14px rgba(160, 123, 255, 0.5);
+}
+
+.hero-spotlight__kicker {
+  margin: 0;
+  font-family: var(--mono);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .hero-spotlight__headline {
@@ -540,14 +575,14 @@ watch(
 }
 
 .hero-spotlight__headline strong {
+  font-family: var(--mono);
   font-size: 1.3rem;
+  color: var(--text-strong);
 }
 
 .hero-spotlight__context,
 .hero-spotlight__reason,
 .hero-spotlight__empty,
-.hero-lane__step p,
-.workspace-card__note,
 .queue-preview__item p {
   margin: 0;
   color: var(--text-muted);
@@ -561,8 +596,7 @@ watch(
   gap: 12px;
 }
 
-.hero-spotlight__meta div,
-.hero-lane__step {
+.hero-spotlight__meta div {
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
@@ -576,29 +610,42 @@ watch(
   line-height: 1.6;
 }
 
-.hero-lane {
-  display: grid;
-  gap: 16px;
-}
-
-.hero-lane__steps {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.hero-lane__step strong {
-  font-size: 0.9rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .requests-layout {
   display: grid;
   grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
   gap: 18px;
 }
 
+.requests-layout__side {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  animation: consoleRise 0.5s ease both;
+  animation-delay: 0.12s;
+}
+
+.requests-layout__main {
+  animation: consoleRise 0.5s ease both;
+  animation-delay: 0.2s;
+}
+
 .policy-cards {
   margin-top: 14px;
+}
+
+.policy-cards__item {
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.policy-cards__item:hover {
+  border-color: rgba(160, 123, 255, 0.28);
+  box-shadow: 0 0 20px rgba(160, 123, 255, 0.08);
 }
 
 .queue-card {
@@ -610,15 +657,41 @@ watch(
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  /* amber-tinted pending queue */
+  background:
+    linear-gradient(180deg, rgba(242, 178, 89, 0.06), transparent),
+    var(--panel-soft-gradient);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.queue-preview__item:hover {
+  border-color: rgba(242, 178, 89, 0.32);
+  box-shadow: 0 0 20px rgba(242, 178, 89, 0.08);
 }
 
 .queue-preview__item strong {
+  font-family: var(--mono);
   font-size: 0.94rem;
+  color: var(--text-strong);
 }
 
-.queue-preview__item span {
-  font-size: 0.76rem;
+.queue-preview__item span.data-id {
+  display: inline;
+  font-size: inherit;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.queue-preview__item > span {
+  flex-shrink: 0;
+  font-size: 0.74rem;
   line-height: 1.5;
+  text-align: right;
 }
 
 .form-grid {
@@ -633,6 +706,7 @@ watch(
 
 .form-grid span {
   color: var(--text-faint);
+  font-family: var(--mono);
   font-size: var(--field-label-size);
   letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
@@ -658,11 +732,22 @@ watch(
   border-radius: var(--radius-block);
   border: 1px solid var(--line);
   background: var(--panel-gradient);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
+.request-card:hover {
+  border-color: rgba(160, 123, 255, 0.26);
+  box-shadow: 0 0 24px rgba(160, 123, 255, 0.07);
+}
+
+/* Focused (deep-linked) request = highlighted governance target, violet */
 .request-card--focus {
-  border-color: rgba(156, 107, 54, 0.26);
-  box-shadow: inset 0 0 0 1px rgba(156, 107, 54, 0.08);
+  border-color: rgba(160, 123, 255, 0.4);
+  box-shadow:
+    inset 0 0 0 1px rgba(160, 123, 255, 0.14),
+    0 0 28px rgba(160, 123, 255, 0.12);
 }
 
 .request-card__header,
@@ -675,7 +760,9 @@ watch(
 
 .request-card__header strong {
   display: block;
-  font-family: var(--body);
+  font-family: var(--mono);
+  font-size: 1.04rem;
+  color: var(--text-strong);
 }
 
 .request-card__header p,
@@ -686,10 +773,18 @@ watch(
   line-height: var(--supporting-text-line-height);
 }
 
-.request-card__focus-note {
-  margin: 10px 0 0;
-  color: var(--amber);
-  font-size: 0.88rem;
+.request-card__header p .data-id {
+  color: var(--accent);
+}
+
+.request-card__reason {
+  padding: var(--space-subpanel);
+  margin-top: 12px;
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent-2);
+  background: var(--panel-soft-gradient);
+  color: var(--text-main);
 }
 
 .request-card__details {
@@ -701,6 +796,7 @@ watch(
 
 .request-card__details dt {
   color: var(--text-faint);
+  font-family: var(--mono);
   font-size: 0.74rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -711,19 +807,34 @@ watch(
   color: var(--text-main);
 }
 
+.request-card__details dd.data-id {
+  color: var(--text-strong);
+}
+
 .request-card__footer {
   margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
   align-items: center;
 }
 
 .request-card__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--accent);
   text-decoration: none;
-  font-family: var(--body);
-  font-size: 0.82rem;
+  font-family: var(--mono);
+  font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+
+.request-card__link:hover {
+  color: var(--accent-strong);
+  text-shadow: 0 0 12px rgba(52, 225, 214, 0.45);
 }
 
 .request-card__actions {
@@ -744,11 +855,44 @@ watch(
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
 }
 
+/* Approve = deliberate primary decision, cyan->violet warm gradient */
+.request-card__approve {
+  border-color: var(--line-warm);
+  background: var(--button-warm-gradient);
+  color: var(--text-strong);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.38),
+    0 0 18px rgba(52, 225, 214, 0.14);
+}
+
+.request-card__approve:hover:not(:disabled) {
+  border-color: var(--accent);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.44),
+    0 0 26px rgba(52, 225, 214, 0.3);
+}
+
+/* Reject / revoke = destructive decision, danger */
 .request-card__danger {
-  border-color: rgba(242, 126, 126, 0.28) !important;
-  color: var(--danger) !important;
+  border-color: var(--danger-soft);
+  color: var(--danger);
+}
+
+.request-card__danger:hover:not(:disabled) {
+  border-color: var(--danger);
+  box-shadow: 0 0 20px rgba(255, 97, 115, 0.22);
+}
+
+.request-card__actions button:disabled {
+  opacity: 0.58;
+  cursor: progress;
 }
 
 @media (max-width: 1040px) {
@@ -757,8 +901,7 @@ watch(
     grid-template-columns: 1fr;
   }
 
-  .summary-strip,
-  .hero-lane__steps {
+  .summary-strip {
     grid-template-columns: 1fr;
   }
 }

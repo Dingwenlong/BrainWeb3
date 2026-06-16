@@ -289,13 +289,13 @@ function createHeatShaderUniforms(): HeatShaderUniformSet {
       value: 0,
     },
     uHeatCool: {
-      value: new Color('#1f8da8'),
+      value: new Color('#1b3b7a'),
     },
     uHeatWarm: {
-      value: new Color('#efb06f'),
+      value: new Color('#2fd4e0'),
     },
     uHeatHot: {
-      value: new Color('#f46f5c'),
+      value: new Color('#e85cff'),
     },
     uHeatContrast: {
       value: 1,
@@ -305,7 +305,7 @@ function createHeatShaderUniforms(): HeatShaderUniformSet {
 
 function buildCortexMaterial(uniforms: HeatShaderUniformSet) {
   const material = new MeshPhysicalMaterial({
-    color: '#cbb9ad',
+    color: '#27324c',
     roughness: 0.79,
     metalness: 0.01,
     clearcoat: 0.12,
@@ -318,8 +318,8 @@ function buildCortexMaterial(uniforms: HeatShaderUniformSet) {
     thickness: 0.26,
     ior: 1.18,
     attenuationDistance: 7.5,
-    attenuationColor: '#f0d8c5',
-    emissive: '#1c1410',
+    attenuationColor: '#16314c',
+    emissive: '#0a1322',
     emissiveIntensity: 0.028,
   })
 
@@ -543,7 +543,7 @@ async function createViewerRuntime() {
   }
 
   const scene = new Scene()
-  scene.fog = new Fog('#12161a', 8.4, 14.6)
+  scene.fog = new Fog('#08101e', 8.4, 14.6)
 
   const camera = new PerspectiveCamera(30, 1, 0.1, 100)
   camera.position.set(0.18, 0.34, 6.75)
@@ -577,11 +577,11 @@ async function createViewerRuntime() {
   brainGroup.rotation.set(-0.06, -0.42, 0.04)
   scene.add(brainGroup)
 
-  const ambient = new AmbientLight('#efe6da', 0.82)
-  const sky = new HemisphereLight('#f8f1e5', '#12161a', 0.48)
-  const key = new DirectionalLight('#fff7ee', 1.52)
-  const rim = new DirectionalLight('#d1b89b', 0.62)
-  const fill = new PointLight('#8da0a6', 0.32, 18, 2)
+  const ambient = new AmbientLight('#9fb3d6', 0.6)
+  const sky = new HemisphereLight('#bcd0f2', '#0a1020', 0.45)
+  const key = new DirectionalLight('#e6f0ff', 1.42)
+  const rim = new DirectionalLight('#5ce0e6', 0.7)
+  const fill = new PointLight('#9a7bef', 0.34, 18, 2)
 
   key.position.set(3.4, 4.8, 5.2)
   key.castShadow = true

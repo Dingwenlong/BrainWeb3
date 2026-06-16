@@ -12,6 +12,7 @@ defineProps<{
       <div class="surface-card__heading">
         <p class="section-kicker">{{ kicker }}</p>
         <h2 class="section-title">{{ title }}</h2>
+        <p v-if="lede" class="surface-card__lede">{{ lede }}</p>
       </div>
 
       <div v-if="$slots.meta" class="surface-card__meta">
@@ -32,6 +33,15 @@ defineProps<{
   padding: 20px;
   border-radius: var(--radius-panel);
   background: var(--panel-gradient);
+  animation: consoleRise 0.5s ease both;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.surface-card:hover {
+  border-color: rgba(52, 225, 214, 0.2);
+  box-shadow: var(--shadow-soft), 0 0 30px rgba(52, 225, 214, 0.05);
 }
 
 .surface-card__header {
@@ -44,6 +54,13 @@ defineProps<{
 
 .surface-card__heading {
   min-width: 0;
+}
+
+.surface-card__lede {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .surface-card__meta {

@@ -285,11 +285,11 @@ watch(
   <div class="chain-page">
     <section class="hero-panel glass-panel">
       <div class="hero-panel__copy">
-        <p class="section-kicker">链记录</p>
-        <h1 class="page-main-heading">把授权、训练和模型动作汇成可查询的链记录。</h1>
+        <p class="section-kicker">区块链</p>
+        <h1 class="page-main-heading">链上记录</h1>
 
         <div class="hero-panel__actions">
-          <span class="status-chip">{{ roleGuide.scope }}</span>
+          <span class="status-chip status-chip--violet">{{ roleGuide.scope }}</span>
           <RouterLink class="hero-panel__secondary" to="/">返回总览</RouterLink>
         </div>
 
@@ -307,12 +307,12 @@ watch(
           <template v-if="focusedModelRecord || spotlightRecord">
             <div class="hero-spotlight__headline">
               <strong>{{ formatChainEventLabel((focusedModelRecord ?? spotlightRecord)?.eventType) }}</strong>
-              <span class="status-chip" :class="{ 'status-chip--danger': (focusedModelRecord ?? spotlightRecord)?.anchorStatus !== 'anchored' }">
+              <span class="status-chip" :class="(focusedModelRecord ?? spotlightRecord)?.anchorStatus === 'anchored' ? 'status-chip--anchored' : 'status-chip--danger'">
                 {{ formatRequestStatusLabel((focusedModelRecord ?? spotlightRecord)?.anchorStatus) }}
               </span>
             </div>
             <p class="hero-spotlight__context">
-              {{ (focusedModelRecord ?? spotlightRecord)?.referenceId }} · {{ (focusedModelRecord ?? spotlightRecord)?.actorId }} ·
+              <span class="mono-id">{{ (focusedModelRecord ?? spotlightRecord)?.referenceId }}</span> · {{ (focusedModelRecord ?? spotlightRecord)?.actorId }} ·
               {{ formatOrganizationLabel((focusedModelRecord ?? spotlightRecord)?.actorOrg) }}
             </p>
             <p v-if="(focusedModelRecord ?? spotlightRecord)?.detail" class="hero-spotlight__reason">
@@ -321,19 +321,19 @@ watch(
             <div class="hero-spotlight__meta">
               <div>
                 <span>对象</span>
-                <strong>{{ (focusedModelRecord ?? spotlightRecord)?.datasetId }}</strong>
+                <strong class="mono-value">{{ (focusedModelRecord ?? spotlightRecord)?.datasetId }}</strong>
               </div>
               <div>
                 <span>合约</span>
-                <strong>{{ (focusedModelRecord ?? spotlightRecord)?.contractName || '未声明' }}</strong>
+                <strong class="mono-value">{{ (focusedModelRecord ?? spotlightRecord)?.contractName || '未声明' }}</strong>
               </div>
-              <div>
+              <div class="hero-spotlight__meta-wide">
                 <span>交易</span>
-                <strong>{{ (focusedModelRecord ?? spotlightRecord)?.chainTxHash || '等待上链成功' }}</strong>
+                <strong class="mono-value mono-value--hash">{{ (focusedModelRecord ?? spotlightRecord)?.chainTxHash || '等待上链成功' }}</strong>
               </div>
               <div>
                 <span>时间</span>
-                <strong>{{ formatTime((focusedModelRecord ?? spotlightRecord)?.anchoredAt || '') }}</strong>
+                <strong class="mono-value">{{ formatTime((focusedModelRecord ?? spotlightRecord)?.anchoredAt || '') }}</strong>
               </div>
             </div>
           </template>
@@ -376,7 +376,13 @@ watch(
               <article v-for="policy in policies" :key="policy.eventType" class="policy-card">
                 <div class="policy-card__header">
                   <strong>{{ formatChainEventLabel(policy.eventType) }}</strong>
-                  <span class="status-chip" :class="{ 'status-chip--danger': policy.anchorPolicy === 'audit-only' }">
+                  <span
+                    class="status-chip"
+                    :class="{
+                      'status-chip--violet': policy.anchorPolicy === 'audit-only',
+                      'status-chip--ghost': policy.anchorPolicy === 'optional',
+                    }"
+                  >
                     {{ formatChainPolicyLabel(policy.anchorPolicy) }}
                   </span>
                 </div>
@@ -476,13 +482,26 @@ watch(
                 <div class="chain-card__header">
                   <div>
                     <strong>{{ formatChainEventLabel(record.eventType) }}</strong>
-                    <p>{{ record.referenceId }} · {{ record.actorId }} · {{ formatRoleLabel(record.actorRole) }}</p>
+                    <p><span class="mono-id">{{ record.referenceId }}</span> · {{ record.actorId }} · {{ formatRoleLabel(record.actorRole) }}</p>
                   </div>
                   <div class="chain-card__chips">
-                    <span class="status-chip" :class="{ 'status-chip--danger': record.anchorPolicy === 'audit-only' }">
+                    <span
+                      class="status-chip"
+                      :class="{
+                        'status-chip--violet': record.anchorPolicy === 'audit-only',
+                        'status-chip--ghost': record.anchorPolicy === 'optional',
+                      }"
+                    >
                       {{ formatChainPolicyLabel(record.anchorPolicy) }}
                     </span>
-                    <span class="status-chip" :class="{ 'status-chip--danger': record.anchorStatus !== 'anchored' && record.anchorStatus !== 'policy-skipped' }">
+                    <span
+                      class="status-chip"
+                      :class="{
+                        'status-chip--anchored': record.anchorStatus === 'anchored',
+                        'status-chip--ghost': record.anchorStatus === 'policy-skipped',
+                        'status-chip--danger': record.anchorStatus !== 'anchored' && record.anchorStatus !== 'policy-skipped',
+                      }"
+                    >
                       {{ formatRequestStatusLabel(record.anchorStatus) }}
                     </span>
                   </div>
@@ -491,7 +510,7 @@ watch(
                 <dl class="chain-card__details">
                   <div>
                     <dt>数据集</dt>
-                    <dd>{{ record.datasetId }}</dd>
+                    <dd class="chain-card__value">{{ record.datasetId }}</dd>
                   </div>
                   <div>
                     <dt>业务状态</dt>
@@ -499,27 +518,27 @@ watch(
                   </div>
                   <div>
                     <dt>链提供方</dt>
-                    <dd>{{ formatSystemToken(record.chainProvider) }}</dd>
+                    <dd class="chain-card__value">{{ formatSystemToken(record.chainProvider) }}</dd>
                   </div>
                   <div>
                     <dt>链群组</dt>
-                    <dd>{{ record.chainGroup || '暂无' }}</dd>
+                    <dd class="chain-card__value">{{ record.chainGroup || '暂无' }}</dd>
                   </div>
                   <div>
                     <dt>合约</dt>
-                    <dd>{{ formatContractLabel(record.contractName || '未声明') }}</dd>
+                    <dd class="chain-card__value">{{ formatContractLabel(record.contractName || '未声明') }}</dd>
                   </div>
                   <div>
                     <dt>合约地址</dt>
-                    <dd>{{ record.contractAddress || '暂无' }}</dd>
+                    <dd class="chain-card__value chain-card__value--hash">{{ record.contractAddress || '暂无' }}</dd>
                   </div>
-                  <div>
+                  <div class="chain-card__details-wide">
                     <dt>交易哈希</dt>
-                    <dd>{{ record.chainTxHash || '等待上链成功' }}</dd>
+                    <dd class="chain-card__value chain-card__value--hash">{{ record.chainTxHash || '等待上链成功' }}</dd>
                   </div>
-                  <div>
+                  <div class="chain-card__details-wide">
                     <dt>事件哈希</dt>
-                    <dd>{{ record.eventHash || '暂无' }}</dd>
+                    <dd class="chain-card__value chain-card__value--hash">{{ record.eventHash || '暂无' }}</dd>
                   </div>
                 </dl>
 
@@ -596,13 +615,29 @@ watch(
   gap: 18px;
 }
 
+/* ---- Hero: on-chain proof console ---- */
 .hero-panel {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   gap: 20px;
   padding: var(--space-hero);
   border-radius: var(--radius-hero);
-  background: var(--panel-gradient);
+  background:
+    radial-gradient(120% 130% at 0% 0%, rgba(52, 225, 214, 0.08), transparent 46%),
+    radial-gradient(130% 150% at 100% 0%, rgba(160, 123, 255, 0.1), transparent 50%),
+    var(--panel-gradient);
+  animation: consoleRise 0.55s ease both;
+}
+
+.hero-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2) 70%, transparent);
+  box-shadow: 0 0 16px rgba(52, 225, 214, 0.4);
 }
 
 .hero-panel__copy,
@@ -616,6 +651,12 @@ watch(
 .hero-lane__steps {
   display: grid;
   gap: var(--space-list);
+}
+
+.hero-panel__copy,
+.hero-panel__rail {
+  position: relative;
+  z-index: 1;
 }
 
 .hero-panel h1,
@@ -633,29 +674,17 @@ watch(
   text-wrap: balance;
 }
 
-.hero-panel__lede,
-.workspace-card__lede,
-.workspace-card__flash,
-.hero-panel__hint {
-  color: var(--text-muted);
-  font-size: var(--supporting-text-size);
-  line-height: var(--supporting-text-line-height);
-}
-
 .workspace-card__flash {
   margin: 0 0 14px;
   padding: var(--space-subpanel);
-  border: 1px solid rgba(49, 87, 102, 0.16);
+  border: 1px solid rgba(52, 225, 214, 0.22);
   border-radius: var(--radius-subpanel);
-  background: var(--panel-soft-gradient);
-}
-
-.hero-panel__hint {
-  margin: 0;
-  padding: var(--space-subpanel);
-  border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background:
+    linear-gradient(180deg, rgba(52, 225, 214, 0.08), rgba(52, 225, 214, 0.02)),
+    var(--panel-soft-gradient);
+  color: var(--text-main);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .hero-panel__actions,
@@ -667,6 +696,27 @@ watch(
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.hero-panel__actions {
+  align-items: center;
+  margin-top: 4px;
+}
+
+/* ---- Violet chip variant: governance / audit-only domain ---- */
+.status-chip--violet {
+  color: var(--accent-2);
+  border-color: rgba(160, 123, 255, 0.34);
+}
+
+/* ---- Anchored chip: confirmed on-chain proof, cyan glow ---- */
+.status-chip--anchored {
+  color: var(--accent);
+  border-color: rgba(52, 225, 214, 0.42);
+  background:
+    linear-gradient(180deg, rgba(52, 225, 214, 0.12), rgba(52, 225, 214, 0.04)),
+    rgba(18, 28, 47, 0.7);
+  box-shadow: 0 0 16px rgba(52, 225, 214, 0.18);
 }
 
 .hero-panel__secondary,
@@ -688,6 +738,19 @@ watch(
   letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
+}
+
+.hero-panel__secondary:hover,
+.form-grid__secondary:hover,
+.chain-card__link:hover,
+.chain-card__action-button:not(:disabled):hover {
+  border-color: rgba(52, 225, 214, 0.4);
+  box-shadow: 0 0 20px rgba(52, 225, 214, 0.12);
+  color: var(--text-strong);
 }
 
 .chain-card__action-button:disabled {
@@ -695,29 +758,19 @@ watch(
   cursor: wait;
 }
 
-.hero-panel__guide {
-  display: grid;
-  gap: 8px;
-  max-width: 720px;
-  padding: var(--space-subpanel);
-  border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line-warm);
-  background: var(--panel-soft-gradient);
-}
-
-.hero-panel__guide span,
+/* ---- Labels (kickers / dt / spotlight) ---- */
 .summary-strip__card span,
 .hero-spotlight__kicker,
 .hero-spotlight__meta span,
 .chain-card dt {
   display: block;
   color: var(--text-faint);
+  font-family: var(--mono);
   font-size: var(--field-label-size);
   letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 
-.hero-panel__guide strong,
 .summary-strip__card strong,
 .hero-spotlight__headline strong,
 .hero-spotlight__meta strong,
@@ -727,16 +780,59 @@ watch(
   font-family: var(--body);
 }
 
-.hero-panel__guide strong {
-  font-size: 0.94rem;
-  line-height: 1.6;
+/* ---- Mono readouts: ids, hashes, contracts, timestamps ---- */
+.mono-id,
+.mono-value,
+.chain-card__value {
+  font-family: var(--mono);
+  color: var(--text-strong);
+}
+
+.mono-id {
+  letter-spacing: 0.02em;
+}
+
+.mono-value {
+  margin-top: 10px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.mono-value--hash,
+.chain-card__value--hash {
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
 .summary-strip {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
-.summary-strip__card,
+/* ---- Summary metric tiles (cyan signal surface) ---- */
+.summary-strip__card {
+  padding: var(--space-card);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line-warm);
+  background: var(--warm-panel-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
+    0 0 26px rgba(52, 225, 214, 0.05);
+  animation: consoleRise 0.5s ease both;
+}
+
+.summary-strip__card:nth-child(1) { animation-delay: 0.08s; }
+.summary-strip__card:nth-child(2) { animation-delay: 0.14s; }
+.summary-strip__card:nth-child(3) { animation-delay: 0.2s; }
+.summary-strip__card:nth-child(4) { animation-delay: 0.26s; }
+.summary-strip__card:nth-child(5) { animation-delay: 0.32s; }
+
+.summary-strip__card strong {
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  color: var(--text-strong);
+}
+
 .hero-spotlight,
 .hero-lane,
 .policy-card,
@@ -747,20 +843,22 @@ watch(
   background: var(--panel-gradient);
 }
 
-.chain-card--focus {
-  border-color: rgba(156, 107, 54, 0.24);
-  box-shadow: inset 0 0 0 1px rgba(156, 107, 54, 0.08);
-}
-
-.summary-strip__card strong {
-  margin-top: 10px;
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
-}
-
 .hero-spotlight,
 .hero-lane {
   display: grid;
   gap: 14px;
+}
+
+/* Spotlight = latest proof / focused model anchor */
+.hero-spotlight {
+  border-color: rgba(52, 225, 214, 0.2);
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 225, 214, 0.05),
+    0 0 28px rgba(52, 225, 214, 0.06);
+}
+
+.hero-spotlight__kicker {
+  font-weight: 600;
 }
 
 .hero-spotlight__headline {
@@ -770,12 +868,23 @@ watch(
   gap: 12px;
 }
 
+.hero-spotlight__headline strong {
+  font-size: 1.24rem;
+  line-height: 1.2;
+  color: var(--text-strong);
+}
+
 .policy-card__header,
 .chain-card__chips {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.chain-card__chips {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .hero-spotlight__context,
@@ -793,6 +902,14 @@ watch(
   line-height: var(--supporting-text-line-height);
 }
 
+.hero-spotlight__reason {
+  padding: var(--space-subpanel);
+  border-left: 2px solid rgba(160, 123, 255, 0.4);
+  border-radius: var(--radius-subpanel);
+  background: var(--panel-soft-gradient);
+  color: var(--text-main);
+}
+
 .hero-spotlight__meta,
 .chain-card__details,
 .form-grid,
@@ -802,7 +919,11 @@ watch(
 }
 
 .hero-spotlight__meta {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hero-spotlight__meta-wide {
+  grid-column: 1 / -1;
 }
 
 .hero-spotlight__meta div,
@@ -814,6 +935,35 @@ watch(
   background: var(--panel-soft-gradient);
 }
 
+/* Policy lane = violet governance accent */
+.hero-lane {
+  border-color: rgba(160, 123, 255, 0.2);
+}
+
+.hero-lane__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hero-lane__step strong {
+  font-size: 0.96rem;
+  color: var(--text-strong);
+}
+
+.hero-lane__step p {
+  margin-top: 6px;
+  font-family: var(--mono);
+  color: var(--accent-2);
+}
+
+.hero-lane__empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+}
+
 .chain-layout {
   grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
 }
@@ -821,8 +971,39 @@ watch(
 .workspace-card {
   padding: 20px;
   border-radius: var(--radius-panel);
+  animation: consoleRise 0.5s ease both;
 }
 
+.chain-layout__side .workspace-card:nth-child(1) { animation-delay: 0.1s; }
+.chain-layout__side .workspace-card:nth-child(2) { animation-delay: 0.18s; }
+.chain-layout__main .workspace-card { animation-delay: 0.22s; }
+
+/* Policy boundary card carries the governance (violet) domain */
+.workspace-card .section-kicker { font-family: var(--mono); }
+
+/* ---- Policy list ---- */
+.policy-card {
+  padding: var(--space-subpanel);
+  background: var(--panel-soft-gradient);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.policy-card:hover {
+  border-color: rgba(160, 123, 255, 0.3);
+  box-shadow: 0 0 18px rgba(160, 123, 255, 0.08);
+}
+
+.policy-card strong {
+  color: var(--text-strong);
+}
+
+.policy-card p {
+  margin-top: 8px;
+}
+
+/* ---- Filter form ---- */
 .form-grid label {
   display: grid;
   gap: 8px;
@@ -830,6 +1011,7 @@ watch(
 
 .form-grid span {
   color: var(--text-faint);
+  font-family: var(--mono);
   font-size: var(--field-label-size);
   letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
@@ -846,17 +1028,63 @@ watch(
   color: var(--text-main);
 }
 
+.form-grid__actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
 .form-grid__submit {
   min-height: var(--control-height);
   padding: var(--space-button);
   border: 1px solid var(--line-warm);
   border-radius: var(--radius-pill);
   background: var(--button-warm-gradient);
-  color: var(--text-main);
+  color: var(--text-strong);
   font-family: var(--body);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(52, 225, 214, 0.14);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.form-grid__submit:hover {
+  border-color: rgba(52, 225, 214, 0.6);
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.46),
+    0 0 28px rgba(52, 225, 214, 0.28);
+}
+
+/* ---- Chain record cards ---- */
+.chain-card {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.chain-card:hover {
+  border-color: rgba(52, 225, 214, 0.3);
+  box-shadow: 0 0 22px rgba(52, 225, 214, 0.08);
+}
+
+.chain-card__header strong {
+  font-size: 1.06rem;
+  color: var(--text-strong);
+}
+
+.chain-card__header p {
+  margin-top: 6px;
+}
+
+.chain-card--focus {
+  border-color: rgba(160, 123, 255, 0.4);
+  box-shadow:
+    inset 0 0 0 1px rgba(160, 123, 255, 0.14),
+    0 0 26px rgba(160, 123, 255, 0.12);
 }
 
 .chain-card__details {
@@ -864,8 +1092,22 @@ watch(
   margin-top: 14px;
 }
 
+.chain-card__details-wide {
+  grid-column: 1 / -1;
+}
+
+.chain-card__value {
+  margin-top: 6px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
 .chain-card__detail {
   margin-top: 14px;
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
   line-height: 1.7;
 }
 
@@ -878,13 +1120,19 @@ watch(
 .chain-card__time {
   display: block;
   margin-top: 12px;
-  font-size: 0.76rem;
+  font-family: var(--mono);
+  font-size: 0.74rem;
   letter-spacing: 0.04em;
+  color: var(--text-faint);
 }
 
 .chain-card__error {
   margin-top: 10px;
-  color: var(--danger);
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid rgba(255, 97, 115, 0.32);
+  background: var(--danger-soft);
+  color: #ffb3bc;
 }
 
 @media (max-width: 1040px) {
@@ -902,6 +1150,10 @@ watch(
   .form-grid__actions {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .chain-card__chips {
+    justify-content: flex-start;
   }
 }
 </style>

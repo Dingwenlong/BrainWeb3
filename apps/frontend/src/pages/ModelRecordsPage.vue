@@ -312,7 +312,7 @@ watch(
     <header class="model-hero glass-panel">
       <div>
         <p class="section-kicker">模型注册表</p>
-        <h1 class="page-main-heading">把训练结果收进一个可治理的模型库。</h1>
+        <h1 class="page-main-heading">模型治理</h1>
       </div>
 
       <div class="model-hero__stats">
@@ -365,7 +365,16 @@ watch(
               class="registry-overview__event"
               @click="focusGovernanceLane(record.id)"
             >
-              <strong>{{ record.id }} · {{ formatModelGovernanceStatusLabel(record.governanceStatus) }}</strong>
+              <div class="registry-overview__event-head">
+                <strong>{{ record.id }}</strong>
+                <span
+                  class="status-chip"
+                  :class="{
+                    'status-chip--active': record.governanceStatus === 'active',
+                    'status-chip--ghost': record.governanceStatus === 'archived',
+                  }"
+                >{{ formatModelGovernanceStatusLabel(record.governanceStatus) }}</span>
+              </div>
               <p>{{ record.modelName }}</p>
               <small>{{ formatTime(record.governedAt) }} · {{ record.lastGovernedBy || '系统同步' }}</small>
             </button>
@@ -391,7 +400,13 @@ watch(
               <p class="record-card__eyebrow">{{ focusedRecord.trainingJobId }} · {{ focusedRecord.datasetId }}</p>
               <h3>{{ focusedRecord.modelName }}</h3>
             </div>
-            <span class="status-chip">{{ formatModelGovernanceStatusLabel(focusedRecord.governanceStatus) }}</span>
+            <span
+              class="status-chip"
+              :class="{
+                'status-chip--active': focusedRecord.governanceStatus === 'active',
+                'status-chip--ghost': focusedRecord.governanceStatus === 'archived',
+              }"
+            >{{ formatModelGovernanceStatusLabel(focusedRecord.governanceStatus) }}</span>
           </div>
 
           <p class="record-card__summary">{{ focusedRecord.objective }}</p>
@@ -415,6 +430,21 @@ watch(
                 <p class="section-kicker">版本对比</p>
                 <h3>版本对比摘要</h3>
               </div>
+              <span class="version-compare__rank">{{ versionComparison.currentVersionRank }} / {{ versionComparison.totalVisibleVersions }}</span>
+            </div>
+
+            <div class="version-compare__ids">
+              <div class="version-compare__id">
+                <span>最新版本</span>
+                <strong class="version-id">{{ versionComparison.latestVersionId || '暂无' }}</strong>
+                <small>{{ formatTime(versionComparison.latestVersionCompletedAt) }}</small>
+              </div>
+              <div class="version-compare__arrow">→</div>
+              <div class="version-compare__id version-compare__id--active">
+                <span>当前激活版</span>
+                <strong class="version-id">{{ versionComparison.latestActiveVersionId || '暂无' }}</strong>
+                <small>{{ formatTime(versionComparison.latestActiveGovernedAt) }}</small>
+              </div>
             </div>
 
             <div class="version-compare__stats">
@@ -422,13 +452,6 @@ watch(
                 <span>{{ stat.label }}</span>
                 <strong>{{ stat.value }}</strong>
               </article>
-            </div>
-
-            <div class="record-card__timeline">
-              <span>最新版本：{{ versionComparison.latestVersionId || '暂无' }}</span>
-              <span>最新完成：{{ formatTime(versionComparison.latestVersionCompletedAt) }}</span>
-              <span>当前激活版：{{ versionComparison.latestActiveVersionId || '暂无' }}</span>
-              <span>激活治理时间：{{ formatTime(versionComparison.latestActiveGovernedAt) }}</span>
             </div>
           </div>
 
@@ -475,7 +498,7 @@ watch(
             <article v-for="record in governanceChains" :key="record.id" class="governance-event">
               <div class="governance-event__head">
                 <strong>{{ formatChainEventLabel(record.eventType) }}</strong>
-                <span class="status-chip">{{ formatChainPolicyLabel(record.anchorPolicy) }}</span>
+                <span class="status-chip status-chip--ghost">{{ formatChainPolicyLabel(record.anchorPolicy) }}</span>
               </div>
               <p v-if="record.detail">{{ record.detail }}</p>
               <small>{{ formatTime(record.anchoredAt) }} · {{ record.chainTxHash || '等待上链成功' }}</small>
@@ -501,7 +524,16 @@ watch(
               class="registry-overview__event"
               @click="focusGovernanceLane(record.id)"
             >
-              <strong>{{ record.id }} · {{ formatModelGovernanceStatusLabel(record.governanceStatus) }}</strong>
+              <div class="registry-overview__event-head">
+                <strong>{{ record.id }}</strong>
+                <span
+                  class="status-chip"
+                  :class="{
+                    'status-chip--active': record.governanceStatus === 'active',
+                    'status-chip--ghost': record.governanceStatus === 'archived',
+                  }"
+                >{{ formatModelGovernanceStatusLabel(record.governanceStatus) }}</span>
+              </div>
               <p>{{ record.modelName }}</p>
               <small>{{ formatTime(record.completedAt) }} · {{ record.trainingJobId }}</small>
             </button>
@@ -564,7 +596,13 @@ watch(
               <p class="record-card__eyebrow">{{ record.id }} · {{ record.trainingJobId }}</p>
               <h3>{{ record.modelName }}</h3>
             </div>
-            <span class="status-chip">{{ formatModelGovernanceStatusLabel(record.governanceStatus) }}</span>
+            <span
+              class="status-chip"
+              :class="{
+                'status-chip--active': record.governanceStatus === 'active',
+                'status-chip--ghost': record.governanceStatus === 'archived',
+              }"
+            >{{ formatModelGovernanceStatusLabel(record.governanceStatus) }}</span>
           </header>
 
           <p class="record-card__summary">{{ record.objective }}</p>
@@ -684,6 +722,8 @@ watch(
 }
 
 .model-page {
+  display: grid;
+  gap: 18px;
   padding-bottom: 8px;
 }
 
@@ -691,11 +731,37 @@ watch(
 .model-panel {
   padding: var(--space-panel);
   border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
   background: var(--panel-gradient);
+  animation: consoleRise 0.5s ease both;
 }
 
 .model-hero {
   grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.8fr);
+  position: relative;
+  overflow: hidden;
+  border-color: var(--line-strong);
+  background:
+    radial-gradient(120% 130% at 100% 0%, rgba(160, 123, 255, 0.1), transparent 46%),
+    radial-gradient(120% 140% at 0% 100%, rgba(52, 225, 214, 0.07), transparent 50%),
+    var(--panel-gradient);
+}
+
+/* Staggered console boot per section */
+.model-panel:nth-of-type(1) {
+  animation-delay: 0.08s;
+}
+
+.model-panel:nth-of-type(2) {
+  animation-delay: 0.16s;
+}
+
+.model-panel:nth-of-type(3) {
+  animation-delay: 0.24s;
+}
+
+.model-panel:nth-of-type(4) {
+  animation-delay: 0.32s;
 }
 
 .model-hero h1,
@@ -709,6 +775,15 @@ watch(
   color: var(--text-strong);
   font-size: var(--section-title-size);
   line-height: var(--section-title-line-height);
+}
+
+.panel-head h3,
+.governance-lane__headline h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-family: var(--display);
+  font-size: var(--card-title-size);
+  line-height: var(--card-title-line-height);
 }
 
 .record-card h3 {
@@ -728,8 +803,12 @@ watch(
   line-height: var(--supporting-text-line-height);
 }
 
-.model-hero__hint,
-.model-hero__guide,
+.record-card__notes p strong {
+  color: var(--text-main);
+  font-family: var(--body);
+  font-weight: 600;
+}
+
 .metric-card,
 .record-card {
   padding: var(--space-subpanel);
@@ -738,21 +817,23 @@ watch(
   background: var(--panel-soft-gradient);
 }
 
-.model-hero__hint {
-  margin-top: 12px !important;
-}
-
-.model-hero__guide span,
 .metric-card span,
 .record-card__eyebrow,
 .record-card__meta span,
 .record-card__timeline span,
 .filter-grid span,
-.governance-form span {
+.governance-form span,
+.registry-overview__event span,
+.version-compare__id span {
   color: var(--text-faint);
+  font-family: var(--mono);
   font-size: var(--field-label-size);
   letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
+}
+
+.record-card__eyebrow {
+  color: var(--accent);
 }
 
 .model-hero__stats {
@@ -760,12 +841,14 @@ watch(
   gap: 12px;
 }
 
+/* Numeric readouts -> mono + strong (let the global metric-card win, but keep large scale) */
 .metric-card strong {
   display: block;
   margin-top: 8px;
-  font-family: var(--body);
+  font-family: var(--mono);
   font-weight: 700;
-  font-size: 1.9rem;
+  font-size: 1.7rem;
+  color: var(--text-strong);
 }
 
 .panel-head,
@@ -778,6 +861,12 @@ watch(
   gap: 12px;
 }
 
+.record-card__head,
+.governance-lane__headline,
+.panel-head {
+  align-items: flex-start;
+}
+
 .filter-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -785,14 +874,23 @@ watch(
 .governance-lane__lede,
 .registry-overview__lede,
 .governance-event p,
-.governance-event small,
 .registry-overview__event p,
-.registry-overview__event small,
 .version-compare__guide {
   margin: 0;
   color: var(--text-muted);
   font-size: var(--supporting-text-size);
   line-height: var(--supporting-text-line-height);
+}
+
+/* IDs / hashes / timestamps -> mono readouts */
+.governance-event small,
+.registry-overview__event small {
+  display: block;
+  margin: 0;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.02em;
 }
 
 .registry-overview__grid {
@@ -804,6 +902,7 @@ watch(
 }
 
 .registry-overview__event {
+  gap: 8px;
   padding: var(--space-subpanel);
   border: 1px solid var(--line);
   border-radius: var(--radius-subpanel);
@@ -811,16 +910,47 @@ watch(
   color: var(--text-main);
   text-align: left;
   cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.registry-overview__event:hover {
+  border-color: rgba(160, 123, 255, 0.35);
+  box-shadow: 0 0 22px rgba(160, 123, 255, 0.1);
+  background: var(--panel-soft-gradient);
+}
+
+.registry-overview__event-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .registry-overview__event strong {
-  display: block;
-  font-family: var(--body);
+  font-family: var(--mono);
   font-weight: 700;
+  color: var(--text-strong);
+  letter-spacing: 0.02em;
+}
+
+.governance-lane {
+  border-color: rgba(160, 123, 255, 0.22);
 }
 
 .governance-lane__grid {
   grid-template-columns: minmax(0, 1.1fr) repeat(2, minmax(260px, 0.8fr));
+}
+
+.governance-lane__spotlight {
+  padding: var(--space-card);
+  border-radius: var(--radius-block);
+  border: 1px solid rgba(160, 123, 255, 0.24);
+  background:
+    radial-gradient(140% 120% at 0% 0%, rgba(160, 123, 255, 0.1), transparent 52%),
+    var(--panel-soft-gradient);
 }
 
 .governance-lane__headline {
@@ -834,11 +964,100 @@ watch(
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.governance-lane__stream {
+  padding: var(--space-card);
+  border-radius: var(--radius-block);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-gradient);
+}
+
+.governance-event {
+  gap: 8px;
+  padding: var(--space-subpanel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-subpanel);
+  background: var(--bg-panel-soft);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.governance-event:hover {
+  border-color: rgba(52, 225, 214, 0.28);
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.07);
+}
+
+.governance-event__head strong {
+  font-family: var(--body);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+/* ---- Version comparison: clear mono version ids ---- */
 .version-compare {
+  gap: 14px;
   padding: var(--space-card);
   border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line-warm);
-  background: var(--warm-panel-gradient);
+  border: 1px solid rgba(160, 123, 255, 0.3);
+  background:
+    radial-gradient(130% 130% at 100% 0%, rgba(160, 123, 255, 0.12), transparent 54%),
+    var(--bg-panel-soft);
+}
+
+.version-compare__rank {
+  font-family: var(--mono);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent-2);
+}
+
+.version-compare__ids {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.version-compare__id {
+  display: grid;
+  gap: 6px;
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
+}
+
+.version-compare__id--active {
+  border-color: rgba(52, 225, 214, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(52, 225, 214, 0.12);
+}
+
+.version-compare__id .version-id {
+  font-family: var(--mono);
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-strong);
+  word-break: break-all;
+}
+
+.version-compare__id--active .version-id {
+  color: var(--accent);
+}
+
+.version-compare__id small {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+.version-compare__arrow {
+  color: var(--accent-2);
+  font-family: var(--mono);
+  font-size: 1.3rem;
+  text-shadow: 0 0 12px rgba(160, 123, 255, 0.45);
 }
 
 .version-compare__stats {
@@ -862,13 +1081,38 @@ watch(
   padding: var(--space-field-x);
 }
 
+/* Focused record -> cyan workspace signal (was warm brown) */
+.record-card {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.record-card:hover {
+  border-color: rgba(52, 225, 214, 0.24);
+  box-shadow: 0 0 22px rgba(52, 225, 214, 0.06);
+}
+
 .record-card--focus {
-  border-color: rgba(156, 107, 54, 0.28);
-  box-shadow: inset 0 0 0 1px rgba(156, 107, 54, 0.1);
+  border-color: rgba(52, 225, 214, 0.4);
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 225, 214, 0.16),
+    0 0 26px rgba(52, 225, 214, 0.1);
+}
+
+.record-card--focus .record-card__eyebrow {
+  color: var(--accent-strong);
 }
 
 .record-card__meta {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.record-card__meta strong {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-strong);
 }
 
 .record-card__timeline {
@@ -877,15 +1121,36 @@ watch(
   gap: 14px;
 }
 
+.record-card__timeline span {
+  font-family: var(--mono);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--text-faint);
+}
+
+/* Transition guide -> violet governance affordance */
 .record-card__transition-guide {
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line-warm);
-  background: var(--warm-panel-gradient);
+  border: 1px solid rgba(160, 123, 255, 0.28);
+  background:
+    linear-gradient(180deg, rgba(160, 123, 255, 0.08), transparent),
+    var(--bg-panel-soft);
+}
+
+/* ---- Governance domain status chips ---- */
+.status-chip--active {
+  color: var(--accent-strong);
+  border-color: rgba(52, 225, 214, 0.45);
+  background: rgba(52, 225, 214, 0.08);
+}
+
+.status-chip--ghost {
+  color: var(--accent-2);
+  border-color: rgba(160, 123, 255, 0.32);
 }
 
 .ghost-link,
-.status-chip,
 .ghost-button,
 .primary-button {
   display: inline-flex;
@@ -899,25 +1164,63 @@ watch(
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
 }
 
 .ghost-link,
-.ghost-button,
-.status-chip {
+.ghost-button {
   border: 1px solid var(--line);
-  background: var(--bg-panel-soft);
+  background: var(--button-soft-gradient);
   color: var(--text-main);
 }
 
+.ghost-link:hover,
+.ghost-button:hover:not(:disabled) {
+  border-color: rgba(52, 225, 214, 0.4);
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.1);
+  color: var(--text-strong);
+}
+
+.ghost-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Primary governance action -> cyan->violet signal */
 .primary-button {
   border: 1px solid var(--line-warm);
-  color: var(--text-main);
+  color: var(--text-strong);
   background: var(--button-warm-gradient);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(52, 225, 214, 0.14);
+}
+
+.primary-button:hover:not(:disabled) {
+  border-color: rgba(52, 225, 214, 0.6);
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.46),
+    0 0 28px rgba(52, 225, 214, 0.28);
+}
+
+.primary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .governance-form {
   grid-template-columns: minmax(160px, 220px) minmax(0, 1fr) auto;
   align-items: end;
+  padding: var(--space-card);
+  border-radius: var(--radius-block);
+  border: 1px solid rgba(160, 123, 255, 0.2);
+  background:
+    linear-gradient(180deg, rgba(160, 123, 255, 0.05), transparent),
+    var(--bg-panel-soft);
 }
 
 @media (max-width: 980px) {
@@ -945,6 +1248,15 @@ watch(
   .record-card__links {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .version-compare__ids {
+    grid-template-columns: 1fr;
+  }
+
+  .version-compare__arrow {
+    transform: rotate(90deg);
+    justify-self: center;
   }
 }
 </style>

@@ -319,9 +319,12 @@ onMounted(loadAll)
 <template>
   <div class="detail-page">
     <section class="page-header glass-panel" v-if="dataset">
-      <div>
+      <div class="page-header__lead">
         <RouterLink class="page-header__back" to="/">返回总览</RouterLink>
-        <p class="section-kicker">数据集详情</p>
+        <div class="page-header__title-line">
+          <p class="section-kicker">数据集详情</p>
+          <span class="page-header__id">{{ dataset.id }}</span>
+        </div>
         <h1 class="page-main-heading">{{ dataset.title }}</h1>
         <div class="page-header__chips">
           <span class="status-chip">{{ formatProofStatusLabel(dataset.proofStatus) }}</span>
@@ -466,11 +469,11 @@ onMounted(loadAll)
             <dl class="detail-list">
               <div>
                 <dt>源文件</dt>
-                <dd>{{ dataset.originalFilename }}</dd>
+                <dd class="is-mono">{{ dataset.originalFilename }}</dd>
               </div>
               <div>
                 <dt>采样点数</dt>
-                <dd>{{ dataset.sampleCount }}</dd>
+                <dd class="is-mono">{{ dataset.sampleCount }}</dd>
               </div>
               <div>
                 <dt>归属机构</dt>
@@ -478,7 +481,7 @@ onMounted(loadAll)
               </div>
               <div>
                 <dt>系统阶段</dt>
-                <dd>{{ formatSystemToken(systemStatus?.stage ?? 'bootstrap') }}</dd>
+                <dd class="is-mono">{{ formatSystemToken(systemStatus?.stage ?? 'bootstrap') }}</dd>
               </div>
             </dl>
           </article>
@@ -503,11 +506,11 @@ onMounted(loadAll)
             <dl class="detail-list">
               <div>
                 <dt>上传回执</dt>
-                <dd>{{ dataset.lastUploadTraceId || '暂无' }}</dd>
+                <dd class="is-mono">{{ dataset.lastUploadTraceId || '暂无' }}</dd>
               </div>
               <div>
                 <dt>当前状态</dt>
-                <dd>{{ formatUploadStatusLabel(dataset.uploadStatus) }} / {{ formatProofStatusLabel(dataset.proofStatus) }}</dd>
+                <dd class="is-mono">{{ formatUploadStatusLabel(dataset.uploadStatus) }} / {{ formatProofStatusLabel(dataset.proofStatus) }}</dd>
               </div>
             </dl>
 
@@ -536,9 +539,18 @@ onMounted(loadAll)
         <article class="workspace-card glass-panel">
           <div class="workspace-card__header">
             <div>
-              <p class="section-kicker">访问控制</p>
-              <h2 class="section-title">访问门禁与申请状态</h2>
+              <p class="section-kicker section-kicker--violet">访问控制</p>
+              <h2 class="section-title">访问门禁</h2>
             </div>
+            <span
+              class="status-chip"
+              :class="{
+                'status-chip--warn': accessState === 'pending',
+                'status-chip--danger': accessState === 'denied',
+              }"
+            >
+              {{ formatAccessStateLabel(accessState) }}
+            </span>
           </div>
 
           <div class="access-stage" :class="`access-stage--${accessState}`">
@@ -570,9 +582,9 @@ onMounted(loadAll)
           <div v-if="requestError" class="error-state access-note">{{ requestError }}</div>
 
           <div v-if="latestAccessRequest" class="access-note">
-            最新记录：{{ latestAccessRequest.id }} · {{ formatRequestStatusLabel(latestAccessRequest.status) }}
+            最新记录：<span class="is-mono">{{ latestAccessRequest.id }}</span> · {{ formatRequestStatusLabel(latestAccessRequest.status) }}
             <br />
-            到期时间：{{ formatTime(latestAccessRequest.expiresAt) }}
+            到期时间：<span class="is-mono">{{ formatTime(latestAccessRequest.expiresAt) }}</span>
           </div>
 
           <div class="access-actions">
@@ -598,8 +610,8 @@ onMounted(loadAll)
           <div class="request-preview" v-if="recentAccessRequests.length">
             <div v-for="row in recentAccessRequests" :key="row.id" class="request-preview__item">
               <div>
-                <strong>{{ row.id }}</strong>
-                <p>{{ row.actorId }} · {{ row.purpose }}</p>
+                <strong class="is-mono">{{ row.id }}</strong>
+                <p><span class="is-mono">{{ row.actorId }}</span> · {{ row.purpose }}</p>
               </div>
               <span
                 class="status-chip"
@@ -614,45 +626,51 @@ onMounted(loadAll)
           </div>
         </article>
 
-        <article v-if="ownerIdentity" class="workspace-card glass-panel">
+        <article v-if="ownerIdentity" class="workspace-card workspace-card--violet glass-panel">
           <div class="workspace-card__header">
             <div>
-              <p class="section-kicker">身份信息</p>
-              <h2 class="section-title">归属机构身份凭证</h2>
+              <p class="section-kicker section-kicker--violet">身份信息</p>
+              <h2 class="section-title">机构身份凭证</h2>
             </div>
+            <span
+              class="status-chip"
+              :class="proofMatchesOwnerDid ? 'status-chip--ghost' : 'status-chip--danger'"
+            >
+              {{ proofMatchesOwnerDid ? 'DID 已对齐' : 'DID 未对齐' }}
+            </span>
           </div>
           <dl class="proof-list">
             <div>
               <dt>机构名称</dt>
               <dd>{{ ownerIdentity.organizationName }}</dd>
             </div>
-            <div>
+            <div class="proof-list__wide">
               <dt>机构 DID</dt>
-              <dd>{{ ownerIdentity.organizationDid }}</dd>
+              <dd class="is-mono">{{ ownerIdentity.organizationDid }}</dd>
             </div>
             <div>
               <dt>凭证类型</dt>
-              <dd>{{ ownerIdentity.credential.type }}</dd>
+              <dd class="is-mono">{{ ownerIdentity.credential.type }}</dd>
             </div>
             <div>
               <dt>凭证状态</dt>
-              <dd>{{ formatIdentityStatusLabel(ownerIdentity.credential.credentialStatus) }}</dd>
+              <dd class="is-mono">{{ formatIdentityStatusLabel(ownerIdentity.credential.credentialStatus) }}</dd>
             </div>
             <div>
               <dt>校验状态</dt>
-              <dd>{{ formatIdentityStatusLabel(ownerCredentialVerification?.status ?? ownerIdentity.credential.verificationStatus) }}</dd>
+              <dd class="is-mono">{{ formatIdentityStatusLabel(ownerCredentialVerification?.status ?? ownerIdentity.credential.verificationStatus) }}</dd>
             </div>
             <div>
               <dt>状态来源</dt>
-              <dd>{{ formatIdentityStatusSourceLabel(ownerIdentity.statusSnapshot.source) }}</dd>
+              <dd class="is-mono">{{ formatIdentityStatusSourceLabel(ownerIdentity.statusSnapshot.source) }}</dd>
             </div>
-            <div>
+            <div class="proof-list__wide">
               <dt>数据持有方</dt>
-              <dd>{{ dataset.proof.didHolder }}</dd>
+              <dd class="is-mono">{{ dataset.proof.didHolder }}</dd>
             </div>
             <div>
               <dt>DID 对齐</dt>
-              <dd>{{ proofMatchesOwnerDid ? '已对齐' : '未对齐' }}</dd>
+              <dd class="is-mono" :class="proofMatchesOwnerDid ? 'is-aligned' : 'is-misaligned'">{{ proofMatchesOwnerDid ? '已对齐' : '未对齐' }}</dd>
             </div>
           </dl>
           <p v-if="ownerIdentity.statusSnapshot.reason" class="compensation-note">
@@ -678,18 +696,18 @@ onMounted(loadAll)
           <div class="workspace-card__header">
             <div>
               <p class="section-kicker">销毁闭环</p>
-              <h2 class="section-title">销毁状态与执行入口</h2>
+              <h2 class="section-title">销毁状态</h2>
             </div>
           </div>
 
           <dl class="detail-list">
             <div>
               <dt>销毁状态</dt>
-              <dd>{{ formatDestructionStatusLabel(dataset.destructionStatus) }}</dd>
+              <dd class="is-mono">{{ formatDestructionStatusLabel(dataset.destructionStatus) }}</dd>
             </div>
             <div>
               <dt>销毁时间</dt>
-              <dd>{{ formatTime(dataset.destroyedAt) }}</dd>
+              <dd class="is-mono">{{ formatTime(dataset.destroyedAt) }}</dd>
             </div>
           </dl>
 
@@ -720,11 +738,11 @@ onMounted(loadAll)
           <dl class="proof-list">
             <div>
               <dt>链提供方</dt>
-              <dd>{{ formatSystemToken(dataset.proof.chainProvider) }}</dd>
+              <dd class="is-mono">{{ formatSystemToken(dataset.proof.chainProvider) }}</dd>
             </div>
             <div>
               <dt>链群组</dt>
-              <dd>{{ dataset.proof.chainGroup }}</dd>
+              <dd class="is-mono">{{ dataset.proof.chainGroup }}</dd>
             </div>
             <div>
               <dt>合约名称</dt>
@@ -732,27 +750,27 @@ onMounted(loadAll)
             </div>
             <div>
               <dt>合约地址</dt>
-              <dd>{{ dataset.proof.contractAddress }}</dd>
+              <dd class="is-mono">{{ dataset.proof.contractAddress }}</dd>
             </div>
-            <div>
+            <div class="proof-list__wide">
               <dt>SM3 哈希</dt>
-              <dd>{{ dataset.proof.sm3Hash }}</dd>
+              <dd class="is-mono is-hash">{{ dataset.proof.sm3Hash }}</dd>
             </div>
             <div>
               <dt>存储引用</dt>
-              <dd>{{ dataset.proof.offChainReference }}</dd>
+              <dd class="is-mono">{{ dataset.proof.offChainReference }}</dd>
             </div>
             <div>
               <dt>内容引用</dt>
-              <dd>{{ dataset.proof.ipfsCid }}</dd>
+              <dd class="is-mono">{{ dataset.proof.ipfsCid }}</dd>
             </div>
-            <div>
+            <div class="proof-list__wide">
               <dt>链上交易</dt>
-              <dd>{{ dataset.proof.chainTxHash }}</dd>
+              <dd class="is-mono is-hash">{{ dataset.proof.chainTxHash }}</dd>
             </div>
             <div>
               <dt>DID 持有方</dt>
-              <dd>{{ dataset.proof.didHolder }}</dd>
+              <dd class="is-mono">{{ dataset.proof.didHolder }}</dd>
             </div>
             <div>
               <dt>访问策略</dt>
@@ -778,7 +796,7 @@ onMounted(loadAll)
               <div class="chain-record__headline">
                 <div>
                   <strong>{{ formatChainEventLabel(record.eventType) }}</strong>
-                  <p>{{ record.referenceId }} · {{ record.actorId }} / {{ record.actorRole }}</p>
+                  <p><span class="is-mono">{{ record.referenceId }}</span> · <span class="is-mono">{{ record.actorId }}</span> / {{ record.actorRole }}</p>
                 </div>
                 <span
                   class="status-chip"
@@ -794,19 +812,19 @@ onMounted(loadAll)
               <dl class="chain-record__meta">
                 <div>
                   <dt>业务状态</dt>
-                  <dd>{{ formatRequestStatusLabel(record.businessStatus) }}</dd>
+                  <dd class="is-mono">{{ formatRequestStatusLabel(record.businessStatus) }}</dd>
                 </div>
                 <div>
                   <dt>链提供方</dt>
-                  <dd>{{ formatSystemToken(record.chainProvider) }}</dd>
+                  <dd class="is-mono">{{ formatSystemToken(record.chainProvider) }}</dd>
                 </div>
                 <div>
                   <dt>链群组</dt>
-                  <dd>{{ record.chainGroup || '暂无' }}</dd>
+                  <dd class="is-mono">{{ record.chainGroup || '暂无' }}</dd>
                 </div>
-                <div>
+                <div class="chain-record__meta-wide">
                   <dt>交易哈希</dt>
-                  <dd>{{ record.chainTxHash || '等待上链成功' }}</dd>
+                  <dd class="is-mono is-hash">{{ record.chainTxHash || '等待上链成功' }}</dd>
                 </div>
               </dl>
 
@@ -859,12 +877,64 @@ onMounted(loadAll)
 }
 
 .page-header {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
   gap: 18px;
   align-items: end;
   padding: var(--space-panel);
   border-radius: var(--radius-panel);
+  overflow: hidden;
+  animation: consoleRise 0.5s ease both;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2) 60%, transparent);
+  box-shadow: 0 0 16px rgba(52, 225, 214, 0.4);
+}
+
+.page-header::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(52, 225, 214, 0.12), transparent 68%);
+  pointer-events: none;
+}
+
+.page-header__lead {
+  position: relative;
+  z-index: 1;
+}
+
+.page-header__title-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-header__id {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line-warm);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .page-header__back {
@@ -883,6 +953,23 @@ onMounted(loadAll)
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.04em;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.page-header__back::before {
+  content: '←';
+  margin-right: 8px;
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+.page-header__back:hover {
+  border-color: var(--line-warm);
+  color: var(--text-strong);
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.16);
 }
 
 .page-header h1 {
@@ -933,8 +1020,81 @@ onMounted(loadAll)
 }
 
 .workspace-card {
+  position: relative;
   padding: 20px;
   border-radius: var(--radius-panel);
+  animation: consoleRise 0.5s ease both;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.content-layout__main .workspace-card:nth-child(1) {
+  animation-delay: 0.06s;
+}
+
+.content-layout__main .workspace-card:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.content-layout__side .workspace-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.content-layout__side .workspace-card:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.content-layout__side .workspace-card:nth-child(3) {
+  animation-delay: 0.26s;
+}
+
+.info-grid .workspace-card:nth-child(1) {
+  animation-delay: 0.08s;
+}
+
+.info-grid .workspace-card:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.info-grid .workspace-card:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+.info-grid .workspace-card:nth-child(4) {
+  animation-delay: 0.32s;
+}
+
+.info-grid .workspace-card:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+.info-grid .workspace-card:nth-child(6) {
+  animation-delay: 0.48s;
+}
+
+.workspace-card:hover {
+  border-color: var(--line-warm);
+  box-shadow:
+    var(--shadow-soft),
+    0 0 26px rgba(52, 225, 214, 0.1);
+}
+
+.workspace-card--violet::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  background: linear-gradient(90deg, var(--accent-2), transparent 70%);
+  opacity: 0.7;
+}
+
+.workspace-card--violet:hover {
+  border-color: rgba(160, 123, 255, 0.4);
+  box-shadow:
+    var(--shadow-soft),
+    0 0 26px rgba(160, 123, 255, 0.12);
 }
 
 .workspace-card__header {
@@ -943,6 +1103,11 @@ onMounted(loadAll)
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.section-kicker--violet::before {
+  background: var(--accent-2);
+  box-shadow: 0 0 8px rgba(160, 123, 255, 0.6);
 }
 
 .brain-visual-control {
@@ -965,22 +1130,25 @@ onMounted(loadAll)
 }
 
 .brain-visual-control__field span {
-  color: var(--text-muted);
-  font-size: 0.74rem;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .brain-visual-control__field input {
   width: 100%;
-  accent-color: color-mix(in srgb, var(--accent) 78%, #f2ba63 22%);
+  accent-color: color-mix(in srgb, var(--accent) 78%, var(--accent-2) 22%);
 }
 
 .brain-visual-control__value {
   min-width: 3.8rem;
-  color: var(--text-strong);
+  color: var(--accent-strong);
   text-align: right;
+  font-family: var(--mono);
   font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .brain-visual-control__reset {
@@ -995,12 +1163,30 @@ onMounted(loadAll)
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.brain-visual-control__reset:hover {
+  border-color: var(--line-warm);
+  color: var(--text-strong);
+  box-shadow: 0 0 16px rgba(52, 225, 214, 0.16);
 }
 
 .detail-list,
 .proof-list {
   display: grid;
-  gap: 12px;
+  gap: 10px;
+}
+
+.proof-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.proof-list__wide {
+  grid-column: 1 / -1;
 }
 
 .detail-list div,
@@ -1009,12 +1195,22 @@ onMounted(loadAll)
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
   background: var(--panel-soft-gradient);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.detail-list div:hover,
+.proof-list div:hover {
+  border-color: var(--line-strong);
+  background: var(--bg-panel-soft);
 }
 
 .detail-list dt,
 .proof-list dt {
   color: var(--text-faint);
-  font-size: 0.74rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -1026,43 +1222,83 @@ onMounted(loadAll)
   word-break: break-word;
 }
 
-.access-form__submit {
-  border: 1px solid var(--line-warm);
-  border-radius: var(--radius-pill);
-  min-height: var(--control-height);
-  padding: var(--space-button);
-  background: var(--button-warm-gradient);
+.detail-list dd.is-mono,
+.proof-list dd.is-mono,
+.chain-record__meta dd.is-mono {
   color: var(--text-strong);
-  font-family: var(--body);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  letter-spacing: 0.01em;
 }
 
+.is-hash {
+  font-size: 0.78rem !important;
+  color: var(--accent-strong) !important;
+  overflow-wrap: anywhere;
+}
+
+.is-aligned {
+  color: var(--accent) !important;
+}
+
+.is-misaligned {
+  color: var(--danger) !important;
+}
+
+span.is-mono {
+  font-family: var(--mono);
+  letter-spacing: 0.01em;
+}
+
+.access-form__submit,
 .retry-button {
-  min-height: var(--control-height);
-  padding: var(--space-button);
   border: 1px solid var(--line-warm);
   border-radius: var(--radius-pill);
+  min-height: var(--control-height);
+  padding: var(--space-button);
   background: var(--button-warm-gradient);
   color: var(--text-strong);
   font-family: var(--body);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(52, 225, 214, 0.14);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.access-form__submit:hover:not(:disabled),
+.retry-button:hover:not(:disabled) {
+  border-color: rgba(52, 225, 214, 0.6);
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.46),
+    0 0 28px rgba(52, 225, 214, 0.28);
+}
+
+.access-form__submit:disabled,
+.retry-button:disabled {
+  opacity: 0.58;
+  cursor: progress;
 }
 
 .compensation-note {
   margin-top: 14px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--radius-block);
   border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
   background: var(--bg-panel-soft);
   color: var(--text-muted);
 }
 
 .compensation-note--danger {
-  border-color: rgba(242, 126, 126, 0.28);
+  border-color: var(--danger-soft);
+  border-left-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--text-main);
 }
 
 .upload-flow {
@@ -1075,7 +1311,16 @@ onMounted(loadAll)
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
+  border-left: 2px solid var(--accent-soft);
   background: var(--panel-soft-gradient);
+  transition:
+    border-color 0.2s ease,
+    border-left-color 0.2s ease;
+}
+
+.upload-flow__item:hover {
+  border-color: var(--line-strong);
+  border-left-color: var(--accent);
 }
 
 .upload-flow__headline {
@@ -1085,8 +1330,27 @@ onMounted(loadAll)
   gap: 12px;
 }
 
-.upload-flow__headline span,
-.upload-flow time,
+.upload-flow__headline strong {
+  font-family: var(--body);
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.upload-flow__headline span {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.upload-flow time {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+}
+
 .upload-flow p {
   color: var(--text-muted);
 }
@@ -1109,7 +1373,7 @@ onMounted(loadAll)
 }
 
 .access-form span {
-  color: var(--text-muted);
+  color: var(--text-faint);
   font-size: var(--field-label-size);
   text-transform: uppercase;
   letter-spacing: var(--field-label-letter-spacing);
@@ -1127,9 +1391,12 @@ onMounted(loadAll)
 }
 
 .access-stage {
+  position: relative;
   padding: var(--space-card);
+  padding-left: calc(var(--space-card) + 4px);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
   background: var(--panel-soft-gradient);
 }
 
@@ -1137,12 +1404,18 @@ onMounted(loadAll)
   font-family: var(--body);
   font-weight: 700;
   letter-spacing: 0.02em;
+  color: var(--text-strong);
 }
 
 .access-stage p,
 .access-note {
   margin: 10px 0 0;
   color: var(--text-muted);
+}
+
+.access-note .is-mono {
+  color: var(--accent-strong);
+  font-size: 0.84rem;
 }
 
 .access-link {
@@ -1162,6 +1435,16 @@ onMounted(loadAll)
   letter-spacing: 0.04em;
   text-transform: uppercase;
   font-size: 0.8rem;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.access-link:hover {
+  border-color: var(--line-warm);
+  color: var(--text-strong);
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.14);
 }
 
 .access-actions {
@@ -1174,6 +1457,12 @@ onMounted(loadAll)
   border-color: var(--line-warm);
   background: var(--button-warm-gradient);
   color: var(--text-strong);
+  box-shadow: 0 0 20px rgba(52, 225, 214, 0.12);
+}
+
+.access-link--warm:hover {
+  border-color: rgba(52, 225, 214, 0.6);
+  box-shadow: 0 0 28px rgba(52, 225, 214, 0.26);
 }
 
 .request-preview {
@@ -1191,11 +1480,21 @@ onMounted(loadAll)
   border-radius: var(--radius-subpanel);
   background: var(--panel-soft-gradient);
   border: 1px solid var(--line);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.request-preview__item:hover {
+  border-color: var(--line-warm);
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.1);
 }
 
 .request-preview__item strong {
-  font-family: var(--body);
-  font-weight: 700;
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--text-strong);
+  font-size: 0.86rem;
 }
 
 .request-preview__item p {
@@ -1204,16 +1503,33 @@ onMounted(loadAll)
   font-size: 0.84rem;
 }
 
+.request-preview__item .is-mono {
+  color: var(--text-main);
+}
+
 .access-stage--granted {
-  border-color: var(--line-strong);
+  border-left-color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(52, 225, 214, 0.08);
+}
+
+.access-stage--granted strong {
+  color: var(--accent);
 }
 
 .access-stage--pending {
-  border-color: var(--line-warm);
+  border-left-color: var(--amber);
+}
+
+.access-stage--pending strong {
+  color: var(--amber);
 }
 
 .access-stage--denied {
-  border-color: rgba(242, 126, 126, 0.28);
+  border-left-color: var(--danger);
+}
+
+.access-stage--denied strong {
+  color: var(--danger);
 }
 
 .audit-timeline {
@@ -1231,7 +1547,18 @@ onMounted(loadAll)
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
+  border-left: 2px solid var(--accent-2-soft);
   background: var(--panel-soft-gradient);
+  transition:
+    border-color 0.2s ease,
+    border-left-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.chain-record:hover {
+  border-color: rgba(160, 123, 255, 0.32);
+  border-left-color: var(--accent-2);
+  box-shadow: 0 0 18px rgba(160, 123, 255, 0.1);
 }
 
 .chain-record__headline {
@@ -1244,6 +1571,7 @@ onMounted(loadAll)
 .chain-record__headline strong {
   font-family: var(--body);
   font-weight: 700;
+  color: var(--text-strong);
 }
 
 .chain-record__headline p,
@@ -1254,9 +1582,18 @@ onMounted(loadAll)
   color: var(--text-muted);
 }
 
+.chain-record__headline p .is-mono {
+  color: var(--text-main);
+  font-size: 0.84rem;
+}
+
 .chain-record__meta {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 14px;
+}
+
+.chain-record__meta-wide {
+  grid-column: 1 / -1;
 }
 
 .chain-record__meta div {
@@ -1268,7 +1605,8 @@ onMounted(loadAll)
 
 .chain-record__meta dt {
   color: var(--text-faint);
-  font-size: 0.74rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -1279,14 +1617,21 @@ onMounted(loadAll)
   word-break: break-word;
 }
 
+.chain-record__time {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+
 .chain-record__detail,
-.chain-record__time,
 .chain-record__error {
   display: block;
 }
 
 .chain-record__error {
   color: var(--danger);
+  font-size: 0.86rem;
 }
 
 .audit-timeline__item {
@@ -1307,7 +1652,7 @@ onMounted(loadAll)
   top: 8px;
   bottom: -18px;
   width: 1px;
-  background: linear-gradient(180deg, rgba(49, 87, 102, 0.24), transparent);
+  background: linear-gradient(180deg, var(--line-warm), transparent);
 }
 
 .audit-timeline__item:last-child .audit-timeline__rail::after {
@@ -1319,8 +1664,8 @@ onMounted(loadAll)
   height: 12px;
   margin-top: 6px;
   border-radius: 999px;
-  background: radial-gradient(circle, var(--amber), var(--accent));
-  box-shadow: 0 0 10px rgba(49, 87, 102, 0.18);
+  background: radial-gradient(circle, var(--accent), var(--accent-2));
+  box-shadow: 0 0 10px rgba(52, 225, 214, 0.45);
 }
 
 .audit-timeline__card {
@@ -1330,6 +1675,14 @@ onMounted(loadAll)
   border-radius: var(--radius-subpanel);
   background: var(--panel-soft-gradient);
   border: 1px solid var(--line);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.audit-timeline__card:hover {
+  border-color: var(--line-warm);
+  box-shadow: 0 0 16px rgba(52, 225, 214, 0.08);
 }
 
 .audit-timeline__headline {
@@ -1340,9 +1693,9 @@ onMounted(loadAll)
 }
 
 .audit-timeline__headline span {
-  color: var(--amber);
-  font-family: var(--body);
-  font-size: 0.78rem;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.74rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1351,6 +1704,7 @@ onMounted(loadAll)
 .audit-timeline__card strong {
   font-family: var(--body);
   font-weight: 700;
+  color: var(--text-strong);
 }
 
 .audit-timeline__card p {
@@ -1361,8 +1715,9 @@ onMounted(loadAll)
 
 .audit-timeline__card time {
   margin-top: 10px;
-  color: var(--text-muted);
-  font-size: 0.76rem;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 0.74rem;
   letter-spacing: 0.04em;
 }
 
@@ -1393,8 +1748,13 @@ onMounted(loadAll)
     flex-direction: column;
   }
 
-  .chain-record__meta {
+  .chain-record__meta,
+  .proof-list {
     grid-template-columns: 1fr;
+  }
+
+  .page-header__title-line {
+    align-items: flex-start;
   }
 }
 </style>

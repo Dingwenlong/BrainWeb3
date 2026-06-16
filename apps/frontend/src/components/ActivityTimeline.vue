@@ -70,22 +70,31 @@ function applyRange() {
         <p class="section-kicker">回放控制</p>
         <h2 class="section-title">信号时间轴</h2>
       </div>
-      <button class="timeline-panel__button" type="button" @click="emit('toggle-play')">
-        {{ playing ? '暂停' : '播放' }}
-      </button>
+      <div class="timeline-panel__heading-actions">
+        <span class="status-chip" :class="{ 'status-chip--warn': !playing }">
+          <span class="status-chip__dot" aria-hidden="true"></span>
+          {{ playing ? '回放中' : '已暂停' }}
+        </span>
+        <button class="timeline-panel__button" type="button" @click="emit('toggle-play')">
+          {{ playing ? '暂停' : '播放' }}
+        </button>
+      </div>
     </div>
 
     <div class="band-switch">
-      <button
-        v-for="band in bands"
-        :key="band"
-        type="button"
-        class="band-switch__item"
-        :class="{ 'band-switch__item--active': band === selectedBand }"
-        @click="emit('update:selectedBand', band)"
-      >
-        {{ formatBandLabel(band) }}
-      </button>
+      <p class="band-switch__label">频段</p>
+      <div class="band-switch__group">
+        <button
+          v-for="band in bands"
+          :key="band"
+          type="button"
+          class="band-switch__item"
+          :class="{ 'band-switch__item--active': band === selectedBand }"
+          @click="emit('update:selectedBand', band)"
+        >
+          {{ formatBandLabel(band) }}
+        </button>
+      </div>
     </div>
 
     <div class="parameter-grid">
@@ -148,9 +157,11 @@ function applyRange() {
           type="button"
           class="frame-ribbon__item"
           :class="{ 'frame-ribbon__item--active': index === frameIndex }"
+          :style="{ animationDelay: `${Math.min(index, 24) * 0.03}s` }"
           @click="emit('seek-frame', index)"
         >
-          {{ frame.timestamp.toFixed(1) }}
+          <span class="frame-ribbon__node" aria-hidden="true"></span>
+          <span class="frame-ribbon__time">{{ frame.timestamp.toFixed(1) }}</span>
         </button>
       </div>
     </template>
@@ -160,14 +171,21 @@ function applyRange() {
 <style scoped>
 .timeline-panel {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .timeline-panel__heading {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
+}
+
+.timeline-panel__heading-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .timeline-panel__button,
@@ -177,14 +195,42 @@ function applyRange() {
   border-radius: var(--radius-pill);
   padding: var(--space-button);
   background: var(--button-warm-gradient);
-  color: var(--text-main);
+  color: var(--text-strong);
   font-family: var(--body);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.36),
+    0 0 18px rgba(52, 225, 214, 0.12);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.timeline-panel__button:hover,
+.range-grid__button:hover {
+  border-color: rgba(52, 225, 214, 0.6);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.42),
+    0 0 26px rgba(52, 225, 214, 0.26);
 }
 
 .band-switch {
+  display: grid;
+  gap: 10px;
+}
+
+.band-switch__label {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.band-switch__group {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -194,16 +240,35 @@ function applyRange() {
   min-height: 38px;
   padding: 0 14px;
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(49, 87, 102, 0.16);
+  border: 1px solid var(--line);
   background: var(--button-soft-gradient);
   color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
   text-transform: capitalize;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.band-switch__item:hover {
+  color: var(--text-main);
+  border-color: rgba(52, 225, 214, 0.32);
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.1);
 }
 
 .band-switch__item--active {
-  color: var(--text-main);
-  border-color: rgba(49, 87, 102, 0.24);
-  box-shadow: inset 0 0 18px rgba(49, 87, 102, 0.08);
+  color: var(--text-strong);
+  border-color: rgba(52, 225, 214, 0.46);
+  background:
+    linear-gradient(180deg, rgba(52, 225, 214, 0.16), rgba(160, 123, 255, 0.08)),
+    var(--button-soft-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 225, 214, 0.2),
+    0 0 22px rgba(52, 225, 214, 0.16);
 }
 
 .parameter-grid,
@@ -232,7 +297,7 @@ function applyRange() {
 .parameter-grid span,
 .range-grid span,
 .timeline span {
-  color: var(--text-muted);
+  color: var(--text-faint);
   font-size: var(--field-label-size);
   text-transform: uppercase;
   letter-spacing: var(--field-label-letter-spacing);
@@ -247,6 +312,7 @@ function applyRange() {
   padding: var(--space-field-x);
   background: var(--bg-panel);
   color: var(--text-main);
+  font-family: var(--mono);
 }
 
 .timeline {
@@ -259,24 +325,118 @@ function applyRange() {
   accent-color: var(--accent);
 }
 
+/* metric cards — mono readouts */
+.timeline-panel__stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.timeline-panel__stats .metric-card {
+  animation: consoleRise 0.5s ease both;
+}
+
+.timeline-panel__stats .metric-card:nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+.timeline-panel__stats .metric-card:nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+.timeline-panel__stats .metric-card span {
+  font-family: var(--mono);
+  letter-spacing: 0.12em;
+}
+
+.timeline-panel__stats .metric-card strong {
+  font-family: var(--mono);
+  color: var(--text-strong);
+}
+
+/* event stream — cyan nodes on a connecting spine */
 .frame-ribbon {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 10px 14px;
+  padding: 14px 4px 4px;
+}
+
+.frame-ribbon::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 21px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--line-strong) 8%,
+    var(--line-strong) 92%,
+    transparent
+  );
+  pointer-events: none;
 }
 
 .frame-ribbon__item {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   min-height: 36px;
-  padding: 0 12px;
-  border-radius: var(--radius-control);
-  border: 1px solid rgba(49, 87, 102, 0.12);
-  background: var(--panel-soft-gradient);
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
   color: var(--text-muted);
+  cursor: pointer;
+  animation: consoleRise 0.42s ease both;
 }
 
-.frame-ribbon__item--active {
-  border-color: rgba(255, 187, 112, 0.26);
-  color: var(--amber);
+.frame-ribbon__node {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 0 0 3px var(--bg-page);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.frame-ribbon__time {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  transition: color 0.2s ease;
+}
+
+.frame-ribbon__item:hover .frame-ribbon__node {
+  border-color: rgba(52, 225, 214, 0.55);
+  box-shadow:
+    0 0 0 3px var(--bg-page),
+    0 0 12px rgba(52, 225, 214, 0.4);
+}
+
+.frame-ribbon__item:hover .frame-ribbon__time {
+  color: var(--text-main);
+}
+
+.frame-ribbon__item--active .frame-ribbon__node {
+  background: var(--accent);
+  border-color: var(--accent-strong);
+  transform: scale(1.18);
+  box-shadow:
+    0 0 0 3px var(--bg-page),
+    0 0 14px rgba(52, 225, 214, 0.6);
+}
+
+.frame-ribbon__item--active .frame-ribbon__time {
+  color: var(--accent);
 }
 
 .timeline-panel__message {
@@ -286,6 +446,12 @@ function applyRange() {
 @media (max-width: 1040px) {
   .parameter-grid,
   .range-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .timeline-panel__stats {
     grid-template-columns: 1fr;
   }
 }

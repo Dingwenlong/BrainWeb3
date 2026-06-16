@@ -278,8 +278,8 @@ onMounted(loadOverview)
 <template>
   <div class="overview-page">
     <PageHero
-      kicker="数据工作台"
-      title="把数据接入、授权治理和训练协同放进同一个清晰页面。"
+      kicker="总览"
+      title="数据工作台"
     >
       <template #actions>
         <RouterLink v-if="featuredDataset" class="hero-panel__primary" :to="`/datasets/${featuredDataset.id}`">
@@ -356,7 +356,7 @@ onMounted(loadOverview)
       </section>
 
       <section class="mission-grid">
-        <SurfaceCard kicker="常用入口" title="门户入口">
+        <SurfaceCard kicker="导航" title="常用入口" :style="{ animationDelay: '0.3s' }">
           <template #meta>
             <span class="status-chip">{{ formatRoleLabel(actorProfile.actorRole) }}</span>
           </template>
@@ -369,7 +369,7 @@ onMounted(loadOverview)
           </div>
         </SurfaceCard>
 
-        <SurfaceCard kicker="运行概览" title="当前待处理事项">
+        <SurfaceCard kicker="待办" title="待处理事项" :style="{ animationDelay: '0.37s' }">
 
           <div class="operation-grid">
             <div v-for="card in operationCards" :key="card.label" class="operation-card">
@@ -380,7 +380,7 @@ onMounted(loadOverview)
           </div>
         </SurfaceCard>
 
-        <SurfaceCard kicker="最近动态" title="任务与审计摘要">
+        <SurfaceCard kicker="动态" title="任务与审计" :style="{ animationDelay: '0.44s' }">
 
           <div class="activity-stack">
             <div class="activity-card">
@@ -412,8 +412,9 @@ onMounted(loadOverview)
       <section class="overview-layout">
         <div class="overview-layout__main">
           <SurfaceCard
-            kicker="数据目录"
-            title="数据资产清单"
+            kicker="目录"
+            title="数据资产"
+            :style="{ animationDelay: '0.51s' }"
           >
             <template #meta>
               <span class="status-chip">{{ datasets.length }} 条记录</span>
@@ -452,7 +453,7 @@ onMounted(loadOverview)
         </div>
 
         <aside class="overview-layout__side">
-          <SurfaceCard kicker="上传入口" title="上传新 EEG 数据">
+          <SurfaceCard kicker="上传" title="新增 EEG 数据" :style="{ animationDelay: '0.58s' }">
             <template #meta>
               <span class="status-chip">{{ formatSystemToken(systemStatus?.chain.mode ?? 'mock') }}</span>
             </template>
@@ -495,7 +496,7 @@ onMounted(loadOverview)
             </template>
           </SurfaceCard>
 
-          <SurfaceCard kicker="系统状态" title="链路摘要">
+          <SurfaceCard kicker="系统" title="链路状态" :style="{ animationDelay: '0.65s' }">
             <template #meta>
               <span class="status-chip">{{ formatApplicationLabel(systemStatus?.application) }}</span>
             </template>
@@ -567,7 +568,17 @@ onMounted(loadOverview)
   border: 1px solid var(--line-warm);
   background: var(--button-warm-gradient);
   color: var(--text-strong);
-  box-shadow: 0 12px 24px rgba(102, 84, 60, 0.08);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(52, 225, 214, 0.14);
+}
+
+.hero-panel__primary:hover,
+.form-grid__submit:hover {
+  border-color: rgba(52, 225, 214, 0.6);
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.46),
+    0 0 28px rgba(52, 225, 214, 0.28);
 }
 
 .hero-panel__secondary {
@@ -577,12 +588,6 @@ onMounted(loadOverview)
   border: 1px solid var(--line);
   background: var(--button-soft-gradient);
   color: var(--text-main);
-}
-
-.hero-protocol {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
 }
 
 .hero-role-card {
@@ -626,7 +631,6 @@ onMounted(loadOverview)
   color: var(--amber);
 }
 
-.hero-protocol__step,
 .hero-spotlight,
 .hero-status {
   padding: var(--space-card);
@@ -635,7 +639,6 @@ onMounted(loadOverview)
   background: var(--panel-gradient);
 }
 
-.hero-protocol__step strong,
 .hero-spotlight__headline strong,
 .hero-status__card strong,
 .dataset-glance__item strong {
@@ -643,25 +646,11 @@ onMounted(loadOverview)
   font-family: var(--body);
 }
 
-.hero-protocol__step strong {
-  font-size: 0.92rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.hero-protocol__step p {
-  margin: 8px 0 0;
-  color: var(--text-muted);
-  font-size: var(--supporting-text-size);
-  line-height: var(--supporting-text-line-height);
-}
-
 .hero-spotlight__kicker,
 .hero-spotlight__subject,
 .hero-status__card span,
 .hero-status__card small,
 .summary-strip__card small,
-.workspace-card__lede,
 .dataset-glance__item span,
 .module-highlight__item span,
 .dataset-row__meta small {
@@ -798,10 +787,34 @@ onMounted(loadOverview)
 .summary-strip__card {
   border-color: var(--line-warm);
   background: var(--warm-panel-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
+    0 0 26px rgba(52, 225, 214, 0.05);
+  animation: consoleRise 0.5s ease both;
+}
+
+.summary-strip__card:nth-child(1) {
+  animation-delay: 0.09s;
+}
+
+.summary-strip__card:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.summary-strip__card:nth-child(3) {
+  animation-delay: 0.23s;
 }
 
 .summary-strip__card strong {
+  font-family: var(--mono);
   font-size: clamp(1.8rem, 3vw, 2.5rem);
+  color: var(--text-strong);
+}
+
+.hero-status__card strong,
+.operation-card strong {
+  font-family: var(--mono);
+  color: var(--text-strong);
 }
 
 .overview-layout {
@@ -993,7 +1006,9 @@ onMounted(loadOverview)
 }
 
 .launch-card:hover {
-  border-color: rgba(156, 107, 54, 0.18);
+  border-color: rgba(52, 225, 214, 0.3);
+  box-shadow: 0 0 22px rgba(52, 225, 214, 0.08);
+  color: var(--text-strong);
 }
 
 .operation-grid {
@@ -1007,7 +1022,6 @@ onMounted(loadOverview)
     grid-template-columns: 1fr;
   }
 
-  .hero-protocol,
   .summary-strip,
   .dataset-glance,
   .module-highlight,

@@ -252,8 +252,8 @@ watch(
 <template>
   <div class="audits-page">
     <PageHero
-      kicker="审计中心"
-      title="把关键操作收进一条可追溯时间线。"
+      kicker="审计"
+      title="操作审计"
       layout="balanced"
     >
       <template #actions>
@@ -279,7 +279,7 @@ watch(
               </span>
             </div>
             <p class="hero-spotlight__context">
-              {{ (focusedModelAudit ?? spotlightEvent)?.actorId }} ·
+              <span class="mono-id">{{ (focusedModelAudit ?? spotlightEvent)?.actorId }}</span> ·
               {{ formatRoleLabel((focusedModelAudit ?? spotlightEvent)?.actorRole) }} ·
               {{ formatOrganizationLabel((focusedModelAudit ?? spotlightEvent)?.actorOrg) }}
             </p>
@@ -289,15 +289,15 @@ watch(
             <div class="hero-spotlight__meta">
               <div>
                 <span>对象</span>
-                <strong>{{ (focusedModelAudit ?? spotlightEvent)?.datasetId || '平台级事件' }}</strong>
+                <strong class="mono-id">{{ (focusedModelAudit ?? spotlightEvent)?.datasetId || '平台级事件' }}</strong>
               </div>
               <div>
                 <span>动作</span>
-                <strong>{{ (focusedModelAudit ?? spotlightEvent)?.action }}</strong>
+                <strong class="mono-id">{{ (focusedModelAudit ?? spotlightEvent)?.action }}</strong>
               </div>
               <div>
                 <span>时间</span>
-                <strong>{{ formatTime((focusedModelAudit ?? spotlightEvent)?.createdAt || '') }}</strong>
+                <strong class="mono-id">{{ formatTime((focusedModelAudit ?? spotlightEvent)?.createdAt || '') }}</strong>
               </div>
             </div>
           </template>
@@ -314,7 +314,7 @@ watch(
           <div class="hero-lane__steps">
             <div v-for="item in actionPreview" :key="item.action" class="hero-lane__step">
               <strong>{{ formatAuditActionLabel(item.action) }}</strong>
-              <p>{{ item.count }} 条事件</p>
+              <p><span class="mono-id">{{ item.count }}</span> 条事件</p>
             </div>
             <p v-if="!actionPreview.length" class="hero-lane__empty">暂无高频动作可展示。</p>
           </div>
@@ -328,7 +328,7 @@ watch(
     <template v-else>
       <section class="audits-layout">
         <aside class="audits-layout__side">
-          <SurfaceCard kicker="检索条件" title="过滤器">
+          <SurfaceCard kicker="检索" title="过滤器">
 
             <form class="form-grid" @submit.prevent="loadAudits">
               <label>
@@ -401,7 +401,7 @@ watch(
                 :to="trainingLinkFor(event)"
               >
                 <span>{{ formatAuditActionLabel(event.action) }}</span>
-                <strong>{{ extractTrainingJobId(event.detail) || event.datasetId || '训练任务' }}</strong>
+                <strong class="mono-id">{{ extractTrainingJobId(event.detail) || event.datasetId || '训练任务' }}</strong>
                 <small v-if="event.detail">{{ event.detail }}</small>
               </RouterLink>
             </div>
@@ -411,11 +411,11 @@ watch(
               <RouterLink
                 v-for="event in modelAuditRows"
                 :key="`model-${event.id}`"
-                class="training-preview__item"
+                class="training-preview__item training-preview__item--model"
                 :to="modelLinkFor(event)"
               >
                 <span>{{ formatAuditActionLabel(event.action) }}</span>
-                <strong>{{ extractModelId(event.detail) || event.datasetId || '模型记录' }}</strong>
+                <strong class="mono-id">{{ extractModelId(event.detail) || event.datasetId || '模型记录' }}</strong>
                 <small v-if="event.detail">{{ event.detail }}</small>
               </RouterLink>
             </div>
@@ -423,7 +423,7 @@ watch(
         </aside>
 
         <div class="audits-layout__main">
-          <SurfaceCard kicker="审计列表" title="审计事件流">
+          <SurfaceCard kicker="列表" title="审计事件流">
             <template #meta>
               <span class="status-chip">{{ auditRows.length }} 条记录</span>
             </template>
@@ -433,12 +433,16 @@ watch(
                 v-for="event in auditRows"
                 :key="event.id"
                 class="audit-card"
-                :class="{ 'audit-card--focus': focusModelId && extractModelId(event.detail) === focusModelId }"
+                :class="{
+                  'audit-card--focus': focusModelId && extractModelId(event.detail) === focusModelId,
+                  'audit-card--alert': event.status !== 'success',
+                }"
               >
+                <span class="audit-card__node" aria-hidden="true"></span>
                 <div class="audit-card__header">
                   <div>
                     <strong>{{ formatAuditActionLabel(event.action) }}</strong>
-                    <p>{{ event.actorId }} · {{ formatRoleLabel(event.actorRole) }}</p>
+                    <p><span class="mono-id">{{ event.actorId }}</span> · {{ formatRoleLabel(event.actorRole) }}</p>
                   </div>
                   <span class="status-chip" :class="{ 'status-chip--danger': event.status !== 'success' }">
                     {{ formatRequestStatusLabel(event.status) }}
@@ -452,15 +456,15 @@ watch(
                   </div>
                   <div>
                     <dt>对象</dt>
-                    <dd>{{ event.datasetId || '平台级事件' }}</dd>
+                    <dd class="mono-id">{{ event.datasetId || '平台级事件' }}</dd>
                   </div>
                   <div>
                     <dt>原始动作</dt>
-                    <dd>{{ event.action }}</dd>
+                    <dd class="mono-id">{{ event.action }}</dd>
                   </div>
                   <div>
                     <dt>发生时间</dt>
-                    <dd>{{ formatTime(event.createdAt) }}</dd>
+                    <dd class="mono-id">{{ formatTime(event.createdAt) }}</dd>
                   </div>
                 </dl>
 
@@ -522,48 +526,17 @@ watch(
 .audits-layout,
 .audits-layout__side,
 .audits-layout__main,
-.audit-list,
 .hero-lane__steps {
   display: grid;
   gap: var(--space-list);
 }
 
-.section-title {
-  margin: 0;
-  font-family: var(--display);
-}
-
-.hero-panel__guide {
-  display: grid;
-  gap: 8px;
-  max-width: 720px;
-  padding: var(--space-subpanel);
-  border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line-warm);
-  background: var(--panel-soft-gradient);
-}
-
-.hero-panel__hint {
-  margin: 0;
-  padding: var(--space-subpanel);
-  border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
-  color: var(--text-muted);
-  line-height: 1.7;
-}
-
-.hero-panel__guide span {
-  color: var(--text-faint);
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.hero-panel__guide strong {
-  font-family: var(--body);
-  font-size: 0.94rem;
-  line-height: 1.6;
+/* Mono data tokens: actor IDs, dataset IDs, raw action codes, timestamps */
+.mono-id {
+  font-family: var(--mono);
+  color: var(--text-strong);
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
 .audit-card__header,
@@ -590,6 +563,17 @@ watch(
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    color 0.22s ease;
+}
+
+.hero-panel__secondary:hover,
+.form-grid__secondary:hover {
+  border-color: var(--line-warm);
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.18);
+  color: var(--text-strong);
 }
 
 .quick-actions,
@@ -612,14 +596,40 @@ watch(
   background: var(--button-soft-gradient);
   color: var(--text-main);
   text-decoration: none;
-  font-family: var(--body);
+  font-family: var(--mono);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .quick-action {
   justify-content: flex-start;
+  position: relative;
+  padding-left: 30px;
+  font-size: 0.78rem;
+}
+
+.quick-action::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(52, 225, 214, 0.6);
+}
+
+.quick-action:hover,
+.audit-card__link:hover {
+  border-color: var(--line-warm);
+  box-shadow: 0 0 18px rgba(52, 225, 214, 0.18);
+  color: var(--text-strong);
 }
 
 .summary-strip {
@@ -636,9 +646,34 @@ watch(
   background: var(--panel-gradient);
 }
 
-.audit-card--focus {
-  border-color: rgba(156, 107, 54, 0.24);
-  box-shadow: inset 0 0 0 1px rgba(156, 107, 54, 0.08);
+/* Summary strip = primary signal surface (cyan) with staggered console boot */
+.summary-strip__card {
+  border-color: var(--line-warm);
+  background: var(--warm-panel-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
+    0 0 26px rgba(52, 225, 214, 0.05);
+  animation: consoleRise 0.5s ease both;
+}
+
+.summary-strip__card:nth-child(1) {
+  animation-delay: 0.08s;
+}
+
+.summary-strip__card:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.summary-strip__card:nth-child(3) {
+  animation-delay: 0.22s;
+}
+
+.summary-strip__card:nth-child(4) {
+  animation-delay: 0.29s;
+}
+
+.summary-strip__card:nth-child(5) {
+  animation-delay: 0.36s;
 }
 
 .summary-strip__card span,
@@ -647,6 +682,7 @@ watch(
 .audit-card dt {
   display: block;
   color: var(--text-faint);
+  font-family: var(--mono);
   font-size: 0.72rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -663,13 +699,34 @@ watch(
 
 .summary-strip__card strong {
   margin-top: 10px;
+  font-family: var(--mono);
   font-size: clamp(1.8rem, 3vw, 2.4rem);
+  color: var(--text-strong);
+  line-height: 1.05;
 }
 
 .hero-spotlight,
 .hero-lane {
   display: grid;
   gap: 14px;
+  animation: consoleRise 0.5s ease both;
+}
+
+.hero-spotlight {
+  border-color: var(--line-warm);
+  box-shadow:
+    inset 0 0 0 1px rgba(52, 225, 214, 0.05),
+    0 0 28px rgba(52, 225, 214, 0.05);
+  animation-delay: 0.1s;
+}
+
+.hero-lane {
+  animation-delay: 0.18s;
+}
+
+.hero-spotlight__kicker {
+  margin: 0;
+  color: var(--accent);
 }
 
 .hero-spotlight__headline {
@@ -677,6 +734,12 @@ watch(
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.hero-spotlight__headline strong {
+  font-size: 1.24rem;
+  line-height: 1.2;
+  color: var(--text-strong);
 }
 
 .hero-spotlight__context,
@@ -687,6 +750,21 @@ watch(
   color: var(--text-muted);
   font-size: var(--supporting-text-size);
   line-height: var(--supporting-text-line-height);
+}
+
+.hero-spotlight__reason {
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--line-warm);
+  background: var(--panel-soft-gradient);
+  color: var(--text-main);
+}
+
+.hero-spotlight__empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--supporting-text-size);
 }
 
 .hero-spotlight__meta,
@@ -700,6 +778,13 @@ watch(
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.hero-spotlight__meta strong {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
 .hero-spotlight__meta div,
 .audit-card__details div,
 .hero-lane__step {
@@ -709,8 +794,27 @@ watch(
   background: var(--panel-soft-gradient);
 }
 
+.hero-lane__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hero-lane__step strong {
+  font-family: var(--body);
+  color: var(--text-main);
+}
+
+.hero-lane__empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+}
+
 .audits-layout {
   grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
+  align-items: start;
 }
 
 .form-grid label {
@@ -720,6 +824,7 @@ watch(
 
 .form-grid span {
   color: var(--text-faint);
+  font-family: var(--mono);
   font-size: var(--field-label-size);
   letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
@@ -742,11 +847,116 @@ watch(
   border: 1px solid var(--line-warm);
   border-radius: var(--radius-pill);
   background: var(--button-warm-gradient);
-  color: var(--text-main);
+  color: var(--text-strong);
   font-family: var(--body);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(52, 225, 214, 0.14);
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.form-grid__submit:hover {
+  border-color: var(--accent);
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.46),
+    0 0 28px rgba(52, 225, 214, 0.28);
+}
+
+/* === Audit event stream: instrument log rhythm === */
+.audit-list {
+  display: grid;
+  gap: var(--space-list);
+  position: relative;
+  padding-left: 22px;
+}
+
+/* The vertical stream rail running through the log */
+.audit-list::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 5px;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--line-warm) 12%,
+    var(--line-warm) 88%,
+    transparent
+  );
+  opacity: 0.7;
+}
+
+.audit-card {
+  position: relative;
+  animation: consoleRise 0.5s ease both;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+}
+
+.audit-card:nth-child(1) { animation-delay: 0.06s; }
+.audit-card:nth-child(2) { animation-delay: 0.12s; }
+.audit-card:nth-child(3) { animation-delay: 0.18s; }
+.audit-card:nth-child(4) { animation-delay: 0.24s; }
+.audit-card:nth-child(5) { animation-delay: 0.3s; }
+.audit-card:nth-child(n + 6) { animation-delay: 0.36s; }
+
+.audit-card:hover {
+  border-color: var(--line-warm);
+  box-shadow: 0 0 22px rgba(52, 225, 214, 0.1);
+}
+
+/* Stream node connecting each card to the rail */
+.audit-card__node {
+  position: absolute;
+  top: 26px;
+  left: -19px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--bg-page);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 8px rgba(52, 225, 214, 0.55);
+}
+
+.audit-card--alert {
+  border-color: var(--amber-soft);
+}
+
+.audit-card--alert .audit-card__node {
+  border-color: var(--amber);
+  box-shadow: 0 0 8px rgba(242, 178, 89, 0.55);
+}
+
+.audit-card--alert:hover {
+  border-color: var(--amber);
+  box-shadow: 0 0 22px rgba(242, 178, 89, 0.16);
+}
+
+.audit-card--focus {
+  border-color: var(--accent-2-soft);
+  box-shadow:
+    inset 0 0 0 1px rgba(160, 123, 255, 0.18),
+    0 0 24px rgba(160, 123, 255, 0.12);
+}
+
+.audit-card--focus .audit-card__node {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 9px rgba(160, 123, 255, 0.55);
+}
+
+.audit-card__header strong {
+  font-size: 1.04rem;
+  line-height: 1.3;
+  color: var(--text-strong);
 }
 
 .audit-card__header p,
@@ -760,9 +970,24 @@ watch(
   margin-top: 14px;
 }
 
+.audit-card dd.mono-id {
+  word-break: break-word;
+  font-size: 0.86rem;
+}
+
 .audit-card__detail {
   margin-top: 14px;
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--line-warm);
+  background: var(--panel-soft-gradient);
+  color: var(--text-main);
   line-height: var(--supporting-text-line-height);
+}
+
+.audit-card--alert .audit-card__detail {
+  border-left-color: var(--amber);
 }
 
 .training-preview__item {
@@ -772,23 +997,44 @@ watch(
   min-height: unset;
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
+  border-left: 2px solid var(--line-warm);
   text-transform: none;
+}
+
+.training-preview__item--model {
+  border-left-color: var(--accent-2-soft);
+}
+
+.training-preview__item--model:hover {
+  border-color: var(--accent-2-soft);
+  box-shadow: 0 0 18px rgba(160, 123, 255, 0.16);
 }
 
 .training-preview__item span,
 .training-preview__item small {
   color: var(--text-muted);
+  font-family: var(--body);
   font-size: 0.82rem;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .training-preview__item strong {
-  font-family: var(--body);
-  color: var(--text-main);
+  color: var(--text-strong);
 }
 
 .audit-card__actions {
   grid-template-columns: repeat(2, minmax(0, max-content));
   margin-top: 14px;
+}
+
+.audit-card__link {
+  font-size: 0.76rem;
+}
+
+.audit-card__button:disabled {
+  opacity: 0.55;
+  cursor: progress;
 }
 
 @media (max-width: 1040px) {
@@ -803,6 +1049,10 @@ watch(
   .form-grid__actions {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .audit-card__actions {
+    grid-template-columns: 1fr;
   }
 }
 </style>

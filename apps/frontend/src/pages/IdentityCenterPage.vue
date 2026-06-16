@@ -174,10 +174,10 @@ onMounted(loadPage)
     <section class="hero-panel glass-panel">
       <div class="hero-panel__copy">
         <p class="section-kicker">身份中心</p>
-        <h1 class="page-main-heading">把身份凭证、治理状态和相关审计集中在一个页面。</h1>
+        <h1 class="page-main-heading">DID / VC 治理</h1>
 
         <div class="hero-panel__actions">
-          <span class="status-chip">{{ scopeLabel }}</span>
+          <span class="status-chip status-chip--ghost hero-panel__scope">{{ scopeLabel }}</span>
           <RouterLink class="hero-panel__secondary" to="/accounts">打开账户页</RouterLink>
           <RouterLink class="hero-panel__secondary" to="/audits?action=ACCOUNT_CREDENTIAL_STATUS_UPDATED">打开身份审计</RouterLink>
         </div>
@@ -191,38 +191,44 @@ onMounted(loadPage)
       </div>
 
       <div class="hero-panel__rail">
-        <article class="hero-spotlight">
+        <article class="hero-spotlight hero-spotlight--identity">
           <p class="hero-spotlight__kicker">我的身份</p>
           <template v-if="identity">
             <div class="hero-spotlight__headline">
               <strong>{{ identity.displayName }}</strong>
               <span
                 class="status-chip"
-                :class="{ 'status-chip--danger': (verification?.status ?? identity.credential.verificationStatus) !== 'verified' }"
+                :class="[
+                  (verification?.status ?? identity.credential.verificationStatus) === 'verified'
+                    ? ''
+                    : (verification?.status ?? identity.credential.verificationStatus) === 'suspended'
+                      ? 'status-chip--warn'
+                      : 'status-chip--danger',
+                ]"
               >
                 {{ formatIdentityStatusLabel(verification?.status ?? identity.credential.verificationStatus) }}
               </span>
             </div>
-            <p class="hero-spotlight__context">{{ identity.actorDid }}</p>
+            <p class="hero-spotlight__context hero-spotlight__did">{{ identity.actorDid }}</p>
             <p v-if="verification?.reason" class="hero-spotlight__reason">{{ verification.reason }}</p>
             <div class="hero-spotlight__meta">
               <div>
                 <span>凭证状态</span>
-                <strong>{{ formatIdentityStatusLabel(identity.credential.credentialStatus) }}</strong>
+                <strong class="mono">{{ formatIdentityStatusLabel(identity.credential.credentialStatus) }}</strong>
               </div>
               <div>
                 <span>机构 DID</span>
-                <strong>{{ identity.organizationDid }}</strong>
+                <strong class="mono">{{ identity.organizationDid }}</strong>
               </div>
               <div>
                 <span>到期时间</span>
-                <strong>{{ formatTime(identity.credential.expiresAt) }}</strong>
+                <strong class="mono">{{ formatTime(identity.credential.expiresAt) }}</strong>
               </div>
             </div>
           </template>
         </article>
 
-        <article class="hero-spotlight">
+        <article class="hero-spotlight hero-spotlight--audit">
           <p class="hero-spotlight__kicker">最新身份审计</p>
           <template v-if="spotlightAudit">
             <div class="hero-spotlight__headline">
@@ -232,22 +238,22 @@ onMounted(loadPage)
               </span>
             </div>
             <p class="hero-spotlight__context">
-              {{ spotlightAudit.actorId }} · {{ formatRoleLabel(spotlightAudit.actorRole) }} ·
+              <span class="mono">{{ spotlightAudit.actorId }}</span> · {{ formatRoleLabel(spotlightAudit.actorRole) }} ·
               {{ formatOrganizationLabel(spotlightAudit.actorOrg) }}
             </p>
             <p v-if="spotlightAudit.detail" class="hero-spotlight__reason">{{ spotlightAudit.detail }}</p>
             <div class="hero-spotlight__meta">
               <div>
                 <span>原始动作</span>
-                <strong>{{ spotlightAudit.action }}</strong>
+                <strong class="mono">{{ spotlightAudit.action }}</strong>
               </div>
               <div>
                 <span>对象</span>
-                <strong>{{ spotlightAudit.datasetId || '平台级事件' }}</strong>
+                <strong class="mono">{{ spotlightAudit.datasetId || '平台级事件' }}</strong>
               </div>
               <div>
                 <span>发生时间</span>
-                <strong>{{ formatTime(spotlightAudit.createdAt) }}</strong>
+                <strong class="mono">{{ formatTime(spotlightAudit.createdAt) }}</strong>
               </div>
             </div>
           </template>
@@ -262,11 +268,11 @@ onMounted(loadPage)
     <template v-else>
       <section class="identity-layout">
         <aside class="identity-layout__side">
-          <article v-if="identity" class="workspace-card glass-panel">
+          <article v-if="identity" class="workspace-card workspace-card--identity glass-panel">
             <div class="workspace-card__header">
               <div>
                 <p class="section-kicker">当前身份凭证</p>
-                <h2 class="section-title">当前操作者身份卡</h2>
+                <h2 class="section-title">操作者身份</h2>
               </div>
               <RouterLink class="workspace-card__link" to="/accounts">去账户治理</RouterLink>
             </div>
@@ -274,31 +280,43 @@ onMounted(loadPage)
             <dl class="identity-details">
               <div>
                 <dt>个人 DID</dt>
-                <dd>{{ identity.actorDid }}</dd>
+                <dd class="mono">{{ identity.actorDid }}</dd>
               </div>
               <div>
                 <dt>机构 DID</dt>
-                <dd>{{ identity.organizationDid }}</dd>
+                <dd class="mono">{{ identity.organizationDid }}</dd>
               </div>
               <div>
                 <dt>凭证类型</dt>
-                <dd>{{ identity.credential.type }}</dd>
+                <dd class="mono">{{ identity.credential.type }}</dd>
               </div>
               <div>
                 <dt>签发方</dt>
-                <dd>{{ identity.credential.issuerDid }}</dd>
+                <dd class="mono">{{ identity.credential.issuerDid }}</dd>
               </div>
             </dl>
 
             <p v-if="verification?.reason" class="workspace-card__note">{{ verification.reason }}</p>
           </article>
 
-          <article v-if="currentOrganization" class="workspace-card glass-panel">
+          <article v-if="currentOrganization" class="workspace-card workspace-card--identity glass-panel">
             <div class="workspace-card__header">
               <div>
                 <p class="section-kicker">当前机构凭证</p>
-                <h2 class="section-title">当前机构身份</h2>
+                <h2 class="section-title">机构身份</h2>
               </div>
+              <span
+                class="status-chip"
+                :class="[
+                  currentOrganization.statusSnapshot.effectiveStatus === 'issued'
+                    ? ''
+                    : currentOrganization.statusSnapshot.effectiveStatus === 'suspended'
+                      ? 'status-chip--warn'
+                      : 'status-chip--danger',
+                ]"
+              >
+                {{ formatIdentityStatusLabel(currentOrganization.statusSnapshot.effectiveStatus) }}
+              </span>
             </div>
 
             <dl class="identity-details">
@@ -308,11 +326,11 @@ onMounted(loadPage)
               </div>
               <div>
                 <dt>机构 DID</dt>
-                <dd>{{ currentOrganization.organizationDid }}</dd>
+                <dd class="mono">{{ currentOrganization.organizationDid }}</dd>
               </div>
               <div>
                 <dt>凭证状态</dt>
-                <dd>{{ formatIdentityStatusLabel(currentOrganization.statusSnapshot.effectiveStatus) }}</dd>
+                <dd class="mono">{{ formatIdentityStatusLabel(currentOrganization.statusSnapshot.effectiveStatus) }}</dd>
               </div>
               <div>
                 <dt>状态来源</dt>
@@ -330,9 +348,9 @@ onMounted(loadPage)
                 :key="`${currentOrganization.organizationName}-${entry.id ?? entry.createdAt ?? entry.nextStatus}`"
                 class="history-timeline__item"
               >
-                <strong>{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
+                <strong class="mono">{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
                 <p v-if="entry.reason">{{ entry.reason }}</p>
-                <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
+                <span class="mono">{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
               </div>
             </div>
           </article>
@@ -353,9 +371,18 @@ onMounted(loadPage)
                 <div class="identity-card__header">
                   <div>
                     <strong>{{ row.displayName }}</strong>
-                    <p>{{ row.actorId }} · {{ formatRoleLabel(row.actorRole) }}</p>
+                    <p><span class="mono">{{ row.actorId }}</span> · {{ formatRoleLabel(row.actorRole) }}</p>
                   </div>
-                  <span class="status-chip" :class="{ 'status-chip--danger': row.credentialStatus.effectiveStatus !== 'issued' }">
+                  <span
+                    class="status-chip"
+                    :class="[
+                      row.credentialStatus.effectiveStatus === 'issued'
+                        ? ''
+                        : row.credentialStatus.effectiveStatus === 'suspended'
+                          ? 'status-chip--warn'
+                          : 'status-chip--danger',
+                    ]"
+                  >
                     {{ formatIdentityStatusLabel(row.credentialStatus.effectiveStatus) }}
                   </span>
                 </div>
@@ -367,7 +394,7 @@ onMounted(loadPage)
                   </div>
                   <div>
                     <dt>账户状态</dt>
-                    <dd>{{ formatRequestStatusLabel(row.status) }}</dd>
+                    <dd class="mono">{{ formatRequestStatusLabel(row.status) }}</dd>
                   </div>
                   <div>
                     <dt>状态来源</dt>
@@ -375,7 +402,7 @@ onMounted(loadPage)
                   </div>
                   <div>
                     <dt>最近治理</dt>
-                    <dd>{{ formatTime(row.credentialStatus.updatedAt) }}</dd>
+                    <dd class="mono">{{ formatTime(row.credentialStatus.updatedAt) }}</dd>
                   </div>
                 </dl>
 
@@ -387,9 +414,9 @@ onMounted(loadPage)
                     :key="`${row.actorId}-${entry.id ?? entry.createdAt ?? entry.nextStatus}`"
                     class="history-timeline__item"
                   >
-                    <strong>{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
+                    <strong class="mono">{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
                     <p v-if="entry.reason">{{ entry.reason }}</p>
-                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
+                    <span class="mono">{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
                   </div>
                 </div>
               </article>
@@ -411,9 +438,18 @@ onMounted(loadPage)
                 <div class="identity-card__header">
                   <div>
                     <strong>{{ formatOrganizationLabel(row.organizationName) }}</strong>
-                    <p>{{ row.organizationDid }}</p>
+                    <p class="mono">{{ row.organizationDid }}</p>
                   </div>
-                  <span class="status-chip" :class="{ 'status-chip--danger': row.statusSnapshot.effectiveStatus !== 'issued' }">
+                  <span
+                    class="status-chip"
+                    :class="[
+                      row.statusSnapshot.effectiveStatus === 'issued'
+                        ? ''
+                        : row.statusSnapshot.effectiveStatus === 'suspended'
+                          ? 'status-chip--warn'
+                          : 'status-chip--danger',
+                    ]"
+                  >
                     {{ formatIdentityStatusLabel(row.statusSnapshot.effectiveStatus) }}
                   </span>
                 </div>
@@ -421,7 +457,7 @@ onMounted(loadPage)
                 <dl class="identity-card__details">
                   <div>
                     <dt>凭证类型</dt>
-                    <dd>{{ row.credential.type }}</dd>
+                    <dd class="mono">{{ row.credential.type }}</dd>
                   </div>
                   <div>
                     <dt>状态来源</dt>
@@ -429,11 +465,11 @@ onMounted(loadPage)
                   </div>
                   <div>
                     <dt>签发方</dt>
-                    <dd>{{ row.credential.issuerDid }}</dd>
+                    <dd class="mono">{{ row.credential.issuerDid }}</dd>
                   </div>
                   <div>
                     <dt>最近治理</dt>
-                    <dd>{{ formatTime(row.statusSnapshot.updatedAt) }}</dd>
+                    <dd class="mono">{{ formatTime(row.statusSnapshot.updatedAt) }}</dd>
                   </div>
                 </dl>
 
@@ -445,9 +481,9 @@ onMounted(loadPage)
                     :key="`${row.organizationName}-${entry.id ?? entry.createdAt ?? entry.nextStatus}`"
                     class="history-timeline__item"
                   >
-                    <strong>{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
+                    <strong class="mono">{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
                     <p v-if="entry.reason">{{ entry.reason }}</p>
-                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
+                    <span class="mono">{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
                   </div>
                 </div>
               </article>
@@ -455,7 +491,7 @@ onMounted(loadPage)
             <div v-else class="empty-state">{{ roleGuide.orgEmpty }}</div>
           </article>
 
-          <article class="workspace-card glass-panel">
+          <article class="workspace-card workspace-card--audit glass-panel">
             <div class="workspace-card__header">
               <div>
                 <p class="section-kicker">身份审计</p>
@@ -469,7 +505,7 @@ onMounted(loadPage)
                 <div class="audit-card__header">
                   <div>
                     <strong>{{ formatAuditActionLabel(event.action) }}</strong>
-                    <p>{{ event.actorId }} · {{ formatRoleLabel(event.actorRole) }}</p>
+                    <p><span class="mono">{{ event.actorId }}</span> · {{ formatRoleLabel(event.actorRole) }}</p>
                   </div>
                   <span class="status-chip" :class="{ 'status-chip--danger': event.status !== 'success' }">
                     {{ formatRequestStatusLabel(event.status) }}
@@ -483,15 +519,15 @@ onMounted(loadPage)
                   </div>
                   <div>
                     <dt>原始动作</dt>
-                    <dd>{{ event.action }}</dd>
+                    <dd class="mono">{{ event.action }}</dd>
                   </div>
                   <div>
                     <dt>对象</dt>
-                    <dd>{{ event.datasetId || '平台级事件' }}</dd>
+                    <dd class="mono">{{ event.datasetId || '平台级事件' }}</dd>
                   </div>
                   <div>
                     <dt>发生时间</dt>
-                    <dd>{{ formatTime(event.createdAt) }}</dd>
+                    <dd class="mono">{{ formatTime(event.createdAt) }}</dd>
                   </div>
                 </dl>
 
@@ -512,13 +548,36 @@ onMounted(loadPage)
   gap: 18px;
 }
 
+/* ---- Mono readouts: DID / VC ids, statuses, timestamps ---- */
+.mono {
+  font-family: var(--mono);
+  color: var(--text-strong);
+  letter-spacing: 0.01em;
+}
+
+/* ---- Hero: identity command banner ---- */
 .hero-panel {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   gap: 20px;
   padding: var(--space-hero);
   border-radius: var(--radius-hero);
-  background: var(--panel-gradient);
+  background:
+    radial-gradient(125% 130% at 0% 0%, rgba(160, 123, 255, 0.12), transparent 46%),
+    radial-gradient(120% 140% at 100% 100%, rgba(52, 225, 214, 0.08), transparent 50%),
+    var(--panel-gradient);
+  animation: consoleRise 0.55s ease both;
+}
+
+.hero-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  box-shadow: 0 0 16px rgba(160, 123, 255, 0.5);
 }
 
 .hero-panel__copy,
@@ -532,6 +591,12 @@ onMounted(loadPage)
 .history-timeline {
   display: grid;
   gap: var(--space-list);
+}
+
+.hero-panel__copy {
+  align-content: start;
+  position: relative;
+  z-index: 1;
 }
 
 .hero-panel h1,
@@ -549,7 +614,14 @@ onMounted(loadPage)
   text-wrap: balance;
 }
 
-.hero-panel__lede,
+.hero-panel__lede {
+  margin: 0;
+  max-width: 58ch;
+  color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
+}
+
 .workspace-card__note,
 .workspace-card__link {
   color: var(--text-muted);
@@ -566,6 +638,15 @@ onMounted(loadPage)
   gap: 12px;
 }
 
+.hero-panel__actions {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hero-panel__scope {
+  letter-spacing: 0.06em;
+}
+
 .hero-panel__secondary,
 .workspace-card__link {
   display: inline-flex;
@@ -579,34 +660,35 @@ onMounted(loadPage)
   color: var(--text-main);
   text-decoration: none;
   font-family: var(--body);
+  font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.hero-panel__guide {
-  display: grid;
-  gap: 8px;
-  max-width: 720px;
-  padding: var(--space-subpanel);
-  border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line-warm);
-  background: var(--panel-soft-gradient);
+.hero-panel__secondary:hover,
+.workspace-card__link:hover {
+  border-color: rgba(160, 123, 255, 0.45);
+  color: var(--text-strong);
+  box-shadow: 0 0 20px rgba(160, 123, 255, 0.16);
 }
 
-.hero-panel__guide span,
 .summary-strip__card span,
 .hero-spotlight__kicker,
 .hero-spotlight__meta span,
 .identity-card dt {
   display: block;
   color: var(--text-faint);
+  font-family: var(--mono);
   font-size: var(--field-label-size);
   letter-spacing: var(--field-label-letter-spacing);
   text-transform: uppercase;
 }
 
-.hero-panel__guide strong,
 .summary-strip__card strong,
 .hero-spotlight__headline strong,
 .hero-spotlight__meta strong,
@@ -617,16 +699,46 @@ onMounted(loadPage)
   font-family: var(--body);
 }
 
-.hero-panel__guide strong {
-  font-size: 0.94rem;
-  line-height: 1.6;
-}
-
+/* ---- Summary strip: signal metric tiles ---- */
 .summary-strip {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.summary-strip__card,
+.summary-strip__card {
+  padding: var(--space-card);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line-warm);
+  background: var(--warm-panel-gradient);
+  box-shadow:
+    inset 0 0 0 1px rgba(160, 123, 255, 0.06),
+    0 0 24px rgba(160, 123, 255, 0.05);
+  animation: consoleRise 0.5s ease both;
+}
+
+.summary-strip__card:nth-child(1) {
+  animation-delay: 0.08s;
+}
+
+.summary-strip__card:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.summary-strip__card:nth-child(3) {
+  animation-delay: 0.22s;
+}
+
+.summary-strip__card:nth-child(4) {
+  animation-delay: 0.29s;
+}
+
+.summary-strip__card strong {
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  color: var(--text-strong);
+}
+
+/* ---- Hero spotlight + workspace panels ---- */
 .hero-spotlight,
 .workspace-card,
 .identity-card,
@@ -637,15 +749,45 @@ onMounted(loadPage)
   background: var(--panel-gradient);
 }
 
-.summary-strip__card strong {
-  margin-top: 10px;
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
-}
-
 .hero-spotlight,
 .workspace-card {
   display: grid;
   gap: 14px;
+}
+
+.hero-spotlight {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-spotlight--identity {
+  border-color: rgba(160, 123, 255, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(160, 123, 255, 0.08),
+    0 0 26px rgba(160, 123, 255, 0.06);
+}
+
+.hero-spotlight--audit {
+  border-color: rgba(52, 225, 214, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(52, 225, 214, 0.07),
+    0 0 24px rgba(52, 225, 214, 0.05);
+}
+
+.hero-spotlight__kicker {
+  margin: 0;
+  font-weight: 600;
+}
+
+.hero-spotlight__headline strong {
+  font-size: 1.28rem;
+  line-height: 1.18;
+}
+
+.hero-spotlight__did {
+  font-family: var(--mono);
+  color: var(--accent-2);
+  word-break: break-all;
 }
 
 .hero-spotlight__context,
@@ -661,6 +803,14 @@ onMounted(loadPage)
   line-height: var(--supporting-text-line-height);
 }
 
+.hero-spotlight__reason {
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  border-left: 2px solid var(--accent-2);
+  background: var(--accent-2-soft);
+  color: var(--text-main);
+}
+
 .hero-spotlight__meta,
 .identity-details,
 .identity-card__details {
@@ -670,6 +820,12 @@ onMounted(loadPage)
 
 .hero-spotlight__meta {
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.hero-spotlight__meta strong {
+  margin-top: 8px;
+  font-size: 0.94rem;
+  line-height: 1.5;
 }
 
 .hero-spotlight__meta div,
@@ -683,6 +839,7 @@ onMounted(loadPage)
   background: var(--panel-soft-gradient);
 }
 
+/* ---- Layout columns ---- */
 .identity-layout {
   grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
 }
@@ -692,18 +849,146 @@ onMounted(loadPage)
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
-.workspace-card__note--inline {
-  margin-top: 10px;
+.identity-details dt,
+.identity-card dt {
+  margin: 0;
 }
 
+.identity-details dd,
+.identity-card__details dd {
+  margin: 6px 0 0;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* ---- Workspace cards: staggered console boot ---- */
+.workspace-card {
+  animation: consoleRise 0.5s ease both;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.identity-layout__side .workspace-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.identity-layout__side .workspace-card:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.identity-layout__main .workspace-card:nth-child(1) {
+  animation-delay: 0.16s;
+}
+
+.identity-layout__main .workspace-card:nth-child(2) {
+  animation-delay: 0.24s;
+}
+
+.identity-layout__main .workspace-card:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+.workspace-card--identity:hover {
+  border-color: rgba(160, 123, 255, 0.34);
+  box-shadow: 0 0 26px rgba(160, 123, 255, 0.1);
+}
+
+.workspace-card--audit:hover {
+  border-color: rgba(52, 225, 214, 0.3);
+  box-shadow: 0 0 26px rgba(52, 225, 214, 0.08);
+}
+
+.workspace-card__note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  border-left: 2px solid var(--accent-2);
+  background: var(--accent-2-soft);
+  color: var(--text-main);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
+}
+
+/* ---- Identity + audit cards: governed entities ---- */
+.identity-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.identity-card,
+.audit-card {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  background: var(--panel-soft-gradient);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.identity-card:hover {
+  border-color: rgba(160, 123, 255, 0.3);
+  box-shadow: 0 0 22px rgba(160, 123, 255, 0.08);
+}
+
+.audit-card:hover {
+  border-color: rgba(52, 225, 214, 0.28);
+  box-shadow: 0 0 22px rgba(52, 225, 214, 0.07);
+}
+
+.identity-card__header strong,
+.audit-card__header strong {
+  font-size: 1.04rem;
+  line-height: 1.3;
+  color: var(--text-strong);
+}
+
+.identity-card__header p,
+.audit-card__header p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.identity-card__hint {
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  border-left: 2px solid var(--line-strong);
+  background: var(--bg-panel-soft);
+  color: var(--text-main);
+}
+
+/* ---- History timeline: status transition readouts ---- */
+.history-timeline__item {
+  position: relative;
+  display: grid;
+  gap: 4px;
+}
+
+.history-timeline__item strong {
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: var(--text-strong);
+}
+
+.history-timeline__item span {
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+
+/* ---- Wrapping guards for long ids / hashes ---- */
 .hero-spotlight__headline > div,
 .identity-card__header > div,
 .audit-card__header > div,
 .hero-spotlight__context,
 .hero-spotlight__reason,
+.hero-spotlight__did,
 .hero-spotlight__meta strong,
 .identity-details dd,
 .identity-card__details dd,
+.identity-card__header p,
+.audit-card__header p,
 .workspace-card__note,
 .identity-card__hint,
 .history-timeline__item p,
@@ -725,7 +1010,6 @@ onMounted(loadPage)
     grid-template-columns: 1fr;
   }
 
-  .hero-panel__actions,
   .workspace-card__header,
   .hero-spotlight__headline,
   .identity-card__header,
