@@ -25,6 +25,8 @@ services:
       retries: 12
 
   eeg-service:
+    # Prebuilt image from GHCR (docker compose pull) OR built locally (--build).
+    image: ${IMAGE_BASE:-ghcr.io/dingwenlong/brainweb3}-eeg-service:${IMAGE_TAG:-latest}
     build:
       context: ./services/eeg-service
     restart: unless-stopped
@@ -32,6 +34,7 @@ services:
       - "8101"
 
   backend:
+    image: ${IMAGE_BASE:-ghcr.io/dingwenlong/brainweb3}-backend:${IMAGE_TAG:-latest}
     build:
       context: ./apps/backend
     restart: unless-stopped
@@ -64,6 +67,7 @@ services:
       - backend-storage:/opt/brainweb3/storage
 
   web:
+    image: ${IMAGE_BASE:-ghcr.io/dingwenlong/brainweb3}-web:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: deploy/web.Dockerfile
