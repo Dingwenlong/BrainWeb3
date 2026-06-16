@@ -1,0 +1,87 @@
+# BrainWeb3 — production "slim demo" stack.
+# Usage:
+#   cp .env.production.demo.example .env.production   # then fill in the secrets
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Scope: frontend + backend + eeg-service + MySQL. Blockchain is OFF (mock gateway),
+# storage is local disk. Demo password login is intentionally ENABLED so visitors can sign in.
+name: brainweb3-prod
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-brainweb3}
+      MYSQL_USER: ${MYSQL_USER:-brainweb3}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env.production}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env.production}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  eeg-service:
+    build:
+      context: ./services/eeg-service
+    restart: unless-stopped
+    expose:
+      - "8101"
+
+  backend:
+    build:
+      context: ./apps/backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eeg-service:
+        condition: service_started
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_STAGE: ${APP_STAGE:-production}
+      APP_PORT: "8080"
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-brainweb3}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?set SPRING_DATASOURCE_PASSWORD in .env.production}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?set a 32+ char AUTH_JWT_SECRET in .env.production}
+      AUTH_TOKEN_TTL_HOURS: ${AUTH_TOKEN_TTL_HOURS:-12}
+      AUTH_REFRESH_TOKEN_TTL_DAYS: ${AUTH_REFRESH_TOKEN_TTL_DAYS:-14}
+      AUTH_DEMO_PASSWORD: ${AUTH_DEMO_PASSWORD:-brainweb3-demo}
+      AUTH_ALLOW_DEMO_BOOTSTRAP: ${AUTH_ALLOW_DEMO_BOOTSTRAP:-true}
+      AUTH_ALLOW_DEMO_PASSWORD_LOGIN: ${AUTH_ALLOW_DEMO_PASSWORD_LOGIN:-true}
+      IDENTITY_ISSUER_DID: ${IDENTITY_ISSUER_DID:-did:brainweb3:issuer:demo}
+      IDENTITY_CREDENTIAL_SECRET: ${IDENTITY_CREDENTIAL_SECRET:?set a 32+ char IDENTITY_CREDENTIAL_SECRET in .env.production}
+      IDENTITY_CREDENTIAL_TTL_DAYS: ${IDENTITY_CREDENTIAL_TTL_DAYS:-365}
+      EEG_SERVICE_BASE_URL: ${EEG_SERVICE_BASE_URL:-http://eeg-service:8101}
+      CHAIN_ENABLED: ${CHAIN_ENABLED:-false}
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      STORAGE_LOCAL_ROOT: ${STORAGE_LOCAL_ROOT:-/opt/brainweb3/storage}
+    volumes:
+      - backend-storage:/opt/brainweb3/storage
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      # Real domain -> auto HTTPS. For a first IP-only test set SITE_ADDRESS=:80
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  mysql-data:
+  backend-storage:
+  caddy-data:
+  caddy-config:

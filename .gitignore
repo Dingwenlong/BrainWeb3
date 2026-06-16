@@ -15,10 +15,15 @@ __pycache__/
 # Environment
 .env
 .env.local
+.env.production
+.env.production.local
 
 # IDE
 .idea/
 .vscode/
+
+# Claude Code (local)
+.claude/
 
 # OS
 Thumbs.db

@@ -1,0 +1,20 @@
+# Single-origin entrypoint: serve the SPA and reverse-proxy /api to the backend.
+# SITE_ADDRESS is injected by docker-compose:
+#   - a real domain (e.g. demo.example.com) -> automatic HTTPS via Let's Encrypt
+#   - ":80"                                 -> plain HTTP on the server IP (first test only)
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	root * /srv
+
+	# API calls keep their /api/v1/... path (no prefix stripping) — same origin, no CORS.
+	@api path /api/*
+	handle @api {
+		reverse_proxy backend:8080
+	}
+
+	# Everything else is the SPA: fall back to index.html for client-side routing.
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+}

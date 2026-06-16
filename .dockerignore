@@ -1,0 +1,19 @@
+# Keep the web/backend build contexts small and free of secrets.
+.git
+.github
+node_modules
+**/node_modules
+**/target
+**/dist
+.codex-temp
+.pytest_cache
+**/__pycache__
+.brainweb3-storage
+.brainweb3-samples
+.fisco
+artifacts
+docs
+*.log
+.env
+.env.*
+!.env.production.demo.example
