@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="'Microsoft YaHei','Segoe UI',sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#475569"/>
+    </marker>
+    <style>
+      .lbl{fill:#475569;font-size:12px}
+      .node{stroke-width:1.5;rx:10}
+      .ttl{font-size:14px;font-weight:700;fill:#0f172a}
+      .sub{font-size:11px;fill:#64748b}
+      .edge{stroke:#475569;stroke-width:1.4;fill:none}
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#ffffff"/>
+  <text x="28" y="36" font-size="18" font-weight="700" fill="#0f172a">BrainWeb3 系统架构 / 单源反向代理</text>
+  <text x="28" y="56" class="sub">浏览器 → Caddy（前端 + /api 反代）→ Spring Boot 后端 → 数据库 / EEG / 可插拔链 &amp; 存储网关</text>
+
+  <!-- Browser -->
+  <rect x="350" y="78" width="180" height="48" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+  <text x="440" y="100" text-anchor="middle" class="ttl">浏览器 / 用户</text>
+  <text x="440" y="117" text-anchor="middle" class="sub">研究员 · 归属方 · 审批人 · 管理员</text>
+
+  <!-- Caddy edge -->
+  <rect x="300" y="166" width="280" height="62" rx="10" fill="#e6fbf9" stroke="#14b8a6" stroke-width="1.6"/>
+  <text x="440" y="190" text-anchor="middle" class="ttl">web · Caddy (80 / 443)</text>
+  <text x="440" y="208" text-anchor="middle" class="sub">/ → 静态 SPA　·　/api/* → 反代后端（同源,无 CORS）</text>
+  <text x="600" y="201" class="lbl">自动 HTTPS</text>
+
+  <!-- Backend -->
+  <rect x="300" y="268" width="280" height="68" rx="10" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.8"/>
+  <text x="440" y="294" text-anchor="middle" class="ttl">backend · Spring Boot (8080)</text>
+  <text x="440" y="313" text-anchor="middle" class="sub">鉴权 JWT · 业务编排 · 审计 · 网关抽象</text>
+  <text x="440" y="328" text-anchor="middle" class="sub">JPA / Flyway · DID-VC · 链策略</text>
+
+  <!-- Dependencies row -->
+  <rect x="40" y="392" width="180" height="64" rx="10" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
+  <text x="130" y="416" text-anchor="middle" class="ttl">MySQL 8</text>
+  <text x="130" y="434" text-anchor="middle" class="sub">业务持久化</text>
+  <text x="130" y="449" text-anchor="middle" class="sub">Flyway V1–V14</text>
+
+  <rect x="240" y="392" width="180" height="64" rx="10" fill="#e6fbf9" stroke="#14b8a6" stroke-width="1.5"/>
+  <text x="330" y="416" text-anchor="middle" class="ttl">eeg-service (8101)</text>
+  <text x="330" y="434" text-anchor="middle" class="sub">Flask + numpy + mne</text>
+  <text x="330" y="449" text-anchor="middle" class="sub">元数据 / 脑活跃度</text>
+
+  <rect x="460" y="392" width="180" height="64" rx="10" fill="#efeaff" stroke="#7c5cff" stroke-width="1.5"/>
+  <text x="550" y="413" text-anchor="middle" class="ttl">ChainGateway</text>
+  <text x="550" y="431" text-anchor="middle" class="sub">FISCO BCOS 3.x</text>
+  <text x="550" y="446" text-anchor="middle" class="sub">↔ MockChainGateway</text>
+
+  <rect x="660" y="392" width="180" height="64" rx="10" fill="#fff7ed" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="750" y="413" text-anchor="middle" class="ttl">StorageGateway</text>
+  <text x="750" y="431" text-anchor="middle" class="sub">MinIO（对象存储）</text>
+  <text x="750" y="446" text-anchor="middle" class="sub">↔ 本地磁盘</text>
+
+  <!-- optional deps note -->
+  <rect x="660" y="268" width="180" height="68" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.3" stroke-dasharray="4 3"/>
+  <text x="750" y="291" text-anchor="middle" class="sub" font-weight="700" fill="#475569">外部 / 可选</text>
+  <text x="750" y="309" text-anchor="middle" class="sub">IPFS（CID 归档）</text>
+  <text x="750" y="324" text-anchor="middle" class="sub">Redis（预留未用）</text>
+
+  <!-- Edges -->
+  <path class="edge" d="M440,126 L440,166" marker-end="url(#arr)"/>
+  <text x="450" y="150" class="lbl">HTTPS</text>
+  <path class="edge" d="M440,228 L440,268" marker-end="url(#arr)"/>
+  <text x="450" y="252" class="lbl">/api 反代</text>
+
+  <path class="edge" d="M360,336 L150,392" marker-end="url(#arr)"/>
+  <text x="205" y="372" class="lbl">JDBC</text>
+  <path class="edge" d="M400,336 L335,392" marker-end="url(#arr)"/>
+  <text x="345" y="372" class="lbl">REST</text>
+  <path class="edge" d="M480,336 L545,392" marker-end="url(#arr)"/>
+  <text x="520" y="372" class="lbl">存证</text>
+  <path class="edge" d="M520,336 L735,392" marker-end="url(#arr)"/>
+  <text x="650" y="372" class="lbl">读写</text>
+</svg>

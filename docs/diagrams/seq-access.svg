@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" font-family="'Microsoft YaHei','Segoe UI',sans-serif">
+  <defs>
+    <marker id="a2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#334155"/></marker>
+    <style>
+      .ll{stroke:#cbd5e1;stroke-width:1.2;stroke-dasharray:4 4}
+      .actor{rx:9;stroke-width:1.6}
+      .an{font-size:13px;font-weight:700;fill:#0f172a;text-anchor:middle}
+      .call{stroke:#334155;stroke-width:1.4}
+      .ret{stroke:#334155;stroke-width:1.2;stroke-dasharray:5 4}
+      .m{font-size:11.5px;fill:#1f2937;text-anchor:middle}
+      .note{fill:#eef2ff;stroke:#4f46e5;stroke-width:1.2;rx:6}
+      .nt{font-size:11px;fill:#3730a3;text-anchor:middle}
+    </style>
+  </defs>
+  <rect width="1000" height="620" fill="#ffffff"/>
+  <text x="28" y="32" font-size="17" font-weight="700" fill="#0f172a">时序图 2 · 访问治理（申请 → 审批 → 上链 → 读取脑活跃度）</text>
+
+  <!-- lifelines -->
+  <line class="ll" x1="110" y1="78" x2="110" y2="588"/>
+  <line class="ll" x1="300" y1="78" x2="300" y2="588"/>
+  <line class="ll" x1="510" y1="78" x2="510" y2="588"/>
+  <line class="ll" x1="710" y1="78" x2="710" y2="588"/>
+  <line class="ll" x1="890" y1="78" x2="890" y2="588"/>
+
+  <!-- actors -->
+  <rect class="actor" x="45" y="46" width="130" height="34" fill="#e6fbf9" stroke="#14b8a6"/><text class="an" x="110" y="68">研究员</text>
+  <rect class="actor" x="235" y="46" width="130" height="34" fill="#efeaff" stroke="#7c5cff"/><text class="an" x="300" y="68">审批人</text>
+  <rect class="actor" x="445" y="46" width="130" height="34" fill="#eef2ff" stroke="#4f46e5"/><text class="an" x="510" y="68">Backend</text>
+  <rect class="actor" x="645" y="46" width="130" height="34" fill="#efeaff" stroke="#7c5cff"/><text class="an" x="710" y="68">ChainGateway</text>
+  <rect class="actor" x="825" y="46" width="130" height="34" fill="#e6fbf9" stroke="#14b8a6"/><text class="an" x="890" y="68">eeg-service</text>
+
+  <!-- 1 researcher -> backend create -->
+  <line class="call" x1="110" y1="116" x2="508" y2="116" marker-end="url(#a2)"/>
+  <text class="m" x="309" y="110">POST /api/v1/access-requests（status=pending）</text>
+  <!-- 2 return -->
+  <line class="ret" x1="510" y1="148" x2="112" y2="148" marker-end="url(#a2)"/>
+  <text class="m" x="311" y="142">201（pending）</text>
+  <!-- 3 approver -> backend approve -->
+  <line class="call" x1="300" y1="190" x2="508" y2="190" marker-end="url(#a2)"/>
+  <text class="m" x="404" y="184">POST /{id}/approve</text>
+  <!-- note approved -->
+  <rect class="note" x="400" y="204" width="220" height="26"/>
+  <text class="nt" x="510" y="221">status=approved · 设 expiresAt · 写审计</text>
+  <!-- 5 backend -> chain -->
+  <line class="call" x1="510" y1="260" x2="708" y2="260" marker-end="url(#a2)"/>
+  <text class="m" x="609" y="254">ACCESS_APPROVED 上链</text>
+  <!-- 6 return -->
+  <line class="ret" x1="710" y1="292" x2="512" y2="292" marker-end="url(#a2)"/>
+  <text class="m" x="611" y="286">txHash</text>
+  <!-- 7 backend -> approver -->
+  <line class="ret" x1="510" y1="324" x2="302" y2="324" marker-end="url(#a2)"/>
+  <text class="m" x="406" y="318">200（approved）</text>
+  <!-- 8 researcher -> backend brain-activity -->
+  <line class="call" x1="110" y1="370" x2="508" y2="370" marker-end="url(#a2)"/>
+  <text class="m" x="309" y="364">GET /datasets/{id}/brain-activity</text>
+  <!-- note canAccess -->
+  <rect class="note" x="405" y="384" width="210" height="26"/>
+  <text class="nt" x="510" y="401">canAccessDataset() 校验通过</text>
+  <!-- 10 backend -> eeg -->
+  <line class="call" x1="510" y1="440" x2="888" y2="440" marker-end="url(#a2)"/>
+  <text class="m" x="699" y="434">取脑活跃度（band / window / step）</text>
+  <!-- 11 eeg -> backend -->
+  <line class="ret" x1="890" y1="472" x2="512" y2="472" marker-end="url(#a2)"/>
+  <text class="m" x="701" y="466">脑区频段聚合数据</text>
+  <!-- 12 backend -> researcher -->
+  <line class="ret" x1="510" y1="504" x2="112" y2="504" marker-end="url(#a2)"/>
+  <text class="m" x="311" y="498">200（脑活跃度）</text>
+</svg>

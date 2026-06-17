@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580" font-family="'Microsoft YaHei','Segoe UI',sans-serif">
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#334155"/></marker>
+    <style>
+      .ll{stroke:#cbd5e1;stroke-width:1.2;stroke-dasharray:4 4}
+      .actor{rx:9;stroke-width:1.6}
+      .an{font-size:13px;font-weight:700;fill:#0f172a;text-anchor:middle}
+      .call{stroke:#334155;stroke-width:1.4}
+      .ret{stroke:#334155;stroke-width:1.2;stroke-dasharray:5 4}
+      .m{font-size:11.5px;fill:#1f2937;text-anchor:middle}
+      .note{fill:#fffbeb;stroke:#f59e0b;stroke-width:1.2;rx:6}
+      .nt{font-size:11px;fill:#92400e;text-anchor:middle}
+    </style>
+  </defs>
+  <rect width="1000" height="580" fill="#ffffff"/>
+  <text x="28" y="32" font-size="17" font-weight="700" fill="#0f172a">时序图 1 · 数据上传与链上存证</text>
+
+  <!-- lifelines -->
+  <line class="ll" x1="110" y1="78" x2="110" y2="548"/>
+  <line class="ll" x1="305" y1="78" x2="305" y2="548"/>
+  <line class="ll" x1="500" y1="78" x2="500" y2="548"/>
+  <line class="ll" x1="695" y1="78" x2="695" y2="548"/>
+  <line class="ll" x1="890" y1="78" x2="890" y2="548"/>
+
+  <!-- actors -->
+  <rect class="actor" x="40" y="46" width="140" height="34" fill="#f1f5f9" stroke="#64748b"/><text class="an" x="110" y="68">前端 SPA</text>
+  <rect class="actor" x="235" y="46" width="140" height="34" fill="#eef2ff" stroke="#4f46e5"/><text class="an" x="305" y="68">Backend</text>
+  <rect class="actor" x="425" y="46" width="150" height="34" fill="#fff7ed" stroke="#f59e0b"/><text class="an" x="500" y="68">StorageGateway</text>
+  <rect class="actor" x="625" y="46" width="140" height="34" fill="#e6fbf9" stroke="#14b8a6"/><text class="an" x="695" y="68">eeg-service</text>
+  <rect class="actor" x="815" y="46" width="150" height="34" fill="#efeaff" stroke="#7c5cff"/><text class="an" x="890" y="68">ChainGateway</text>
+
+  <!-- 1 -->
+  <line class="call" x1="110" y1="116" x2="303" y2="116" marker-end="url(#a)"/>
+  <text class="m" x="207" y="110">POST /api/v1/datasets（EEG 文件）</text>
+  <!-- note: create -->
+  <rect class="note" x="180" y="130" width="250" height="26"/>
+  <text class="nt" x="305" y="147">建 dataset · received / pending-storage</text>
+  <!-- 3 -->
+  <line class="call" x1="305" y1="186" x2="498" y2="186" marker-end="url(#a)"/>
+  <text class="m" x="402" y="180">persist(file)</text>
+  <!-- 4 return -->
+  <line class="ret" x1="500" y1="218" x2="307" y2="218" marker-end="url(#a)"/>
+  <text class="m" x="402" y="212">receipt（storageUri, key）</text>
+  <!-- 5 -->
+  <line class="call" x1="305" y1="250" x2="693" y2="250" marker-end="url(#a)"/>
+  <text class="m" x="499" y="244">GET /eeg/metadata（sourceUri）</text>
+  <!-- 6 return -->
+  <line class="ret" x1="695" y1="282" x2="307" y2="282" marker-end="url(#a)"/>
+  <text class="m" x="499" y="276">采样率 / 通道数 / 时长</text>
+  <!-- note storage-persisted -->
+  <rect class="note" x="195" y="296" width="220" height="26"/>
+  <text class="nt" x="305" y="313">proofStatus = storage-persisted</text>
+  <!-- 8 -->
+  <line class="call" x1="305" y1="352" x2="888" y2="352" marker-end="url(#a)"/>
+  <text class="m" x="596" y="346">registerDataAsset（SHA-256 指纹）</text>
+  <!-- 9 return -->
+  <line class="ret" x1="890" y1="384" x2="307" y2="384" marker-end="url(#a)"/>
+  <text class="m" x="596" y="378">回执：SM3/HASH · IPFS CID · txHash</text>
+  <!-- note notarized -->
+  <rect class="note" x="150" y="400" width="310" height="40"/>
+  <text class="nt" x="305" y="416">proof = notarized · readiness = authorized-ready</text>
+  <text class="nt" x="305" y="431">写审计事件 + 链业务记录（CHAIN_REGISTERED）</text>
+  <!-- 11 return to frontend -->
+  <line class="ret" x1="305" y1="470" x2="112" y2="470" marker-end="url(#a)"/>
+  <text class="m" x="208" y="464">201 Created（dataset）</text>
+</svg>
