@@ -400,37 +400,35 @@ async function handlePasswordResetConfirm() {
     </section>
 
     <Teleport to="body">
-      <Transition name="painpoints">
-        <div
-          v-if="painPointsOpen"
-          class="painpoints-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="painpoints-title"
-          @click.self="closePainPoints"
-        >
-          <div class="painpoints-dialog">
-            <div class="painpoints-dialog__head">
-              <div class="painpoints-dialog__heading">
-                <p class="section-kicker">为什么需要它</p>
-                <h2 id="painpoints-title" class="painpoints-dialog__title">脑数据，到底卡在哪儿？</h2>
-              </div>
-              <button type="button" class="painpoints-dialog__close" aria-label="关闭" @click="closePainPoints">×</button>
+      <div
+        v-if="painPointsOpen"
+        class="painpoints-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="painpoints-title"
+        @click.self="closePainPoints"
+      >
+        <div class="painpoints-dialog">
+          <div class="painpoints-dialog__head">
+            <div class="painpoints-dialog__heading">
+              <p class="section-kicker">为什么需要它</p>
+              <h2 id="painpoints-title" class="painpoints-dialog__title">脑数据，到底卡在哪儿？</h2>
             </div>
-
-            <ol class="painpoints-list">
-              <li v-for="point in painPoints" :key="point.id" class="painpoint">
-                <span class="painpoint__no">{{ point.id }}</span>
-                <div class="painpoint__body">
-                  <strong class="painpoint__title">{{ point.title }}</strong>
-                  <p class="painpoint__pain">{{ point.pain }}</p>
-                  <p class="painpoint__fix"><span class="painpoint__fix-tag">解</span>{{ point.fix }}</p>
-                </div>
-              </li>
-            </ol>
+            <button type="button" class="painpoints-dialog__close" aria-label="关闭" @click="closePainPoints">×</button>
           </div>
+
+          <ol class="painpoints-list">
+            <li v-for="point in painPoints" :key="point.id" class="painpoint">
+              <span class="painpoint__no">{{ point.id }}</span>
+              <div class="painpoint__body">
+                <strong class="painpoint__title">{{ point.title }}</strong>
+                <p class="painpoint__pain">{{ point.pain }}</p>
+                <p class="painpoint__fix"><span class="painpoint__fix-tag">解</span>{{ point.fix }}</p>
+              </div>
+            </li>
+          </ol>
         </div>
-      </Transition>
+      </div>
     </Teleport>
   </div>
 </template>
@@ -987,7 +985,6 @@ async function handlePasswordResetConfirm() {
   border-radius: var(--radius-panel);
   border: 1px solid var(--line-strong);
   background: var(--bg-panel);
-  animation: consoleRise 0.4s ease both;
 }
 
 .painpoints-dialog::after {
@@ -1130,17 +1127,6 @@ async function handlePasswordResetConfirm() {
   font-weight: 600;
   letter-spacing: 0.08em;
   vertical-align: 1px;
-}
-
-/* Modal transition */
-.painpoints-enter-active,
-.painpoints-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.painpoints-enter-from,
-.painpoints-leave-to {
-  opacity: 0;
 }
 
 @media (max-width: 1040px) {
