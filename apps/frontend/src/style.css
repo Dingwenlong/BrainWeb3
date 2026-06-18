@@ -45,6 +45,11 @@
   --control-height: 40px;
   --field-height: 42px;
 
+  /* App shell: the sticky header's resting height on desktop. Sticky page
+     sub-rails (e.g. the audit filter rail) offset against this so they pin
+     just below the header instead of sliding under it. */
+  --app-header-height: 82px;
+
   /* ---- Type scale (app-grade, not marketing-hero) ---- */
   --page-heading-size: clamp(1.85rem, 3.1vw, 2.5rem);
   --page-heading-size-mobile: clamp(1.7rem, 7vw, 2.2rem);

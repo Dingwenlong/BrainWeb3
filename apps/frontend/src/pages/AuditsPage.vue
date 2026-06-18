@@ -807,6 +807,31 @@ watch(
   align-items: start;
 }
 
+/* The audit stream can run thousands of px tall; pin the filter/training rail
+   just below the sticky header so the filters stay reachable and don't slide
+   under the header (and strand an empty gutter) as the stream scrolls.
+   Offsets derive from --app-header-height (+14px top gap, +24px bottom gap) so
+   the rail tracks the header automatically. z-index stays under the header (20). */
+.audits-layout__side {
+  position: sticky;
+  top: calc(var(--app-header-height) + 14px);
+  align-self: start;
+  max-height: calc(100dvh - var(--app-header-height) - 38px);
+  overflow-y: auto;
+  z-index: 19;
+}
+
+/* At <=1080px the app header stacks (and grows past --app-header-height) and the
+   shell collapses to one column, so un-pin the rail and let it scroll inline —
+   otherwise it would pin under a now-taller header and occlude the stream. */
+@media (max-width: 1080px) {
+  .audits-layout__side {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 .form-grid label {
   display: grid;
   gap: 8px;

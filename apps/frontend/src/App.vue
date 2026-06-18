@@ -164,6 +164,7 @@ async function handleLogout() {
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 24px;
+  min-height: var(--app-header-height);
   padding: 16px 24px;
   border-bottom: 1px solid var(--line);
   background: var(--bg-panel);
