@@ -81,6 +81,12 @@ const roleGuide = computed(() => {
   }
 })
 
+const pageLede = computed(() =>
+  isAdmin.value
+    ? '账户与凭证管理：改登录密码、查看数字身份（DID），并管理全机构的账户与机构凭证。'
+    : '你的账户页：改登录密码、查看你的数字身份（DID）与凭证状态。账户与机构管理仅管理员可见。',
+)
+
 function formatTime(value: string | null) {
   if (!value) {
     return '暂无'
@@ -314,8 +320,9 @@ onMounted(loadPage)
       kicker="账户"
       title="账户与凭证"
       layout="balanced"
+      :lede="pageLede"
     >
-      <div class="summary-strip">
+      <div v-if="isAdmin" class="summary-strip">
         <article v-for="stat in accountStats" :key="stat.label" class="summary-strip__card">
           <span>{{ stat.label }}</span>
           <strong>{{ stat.value }}</strong>
@@ -364,7 +371,7 @@ onMounted(loadPage)
     <div v-else-if="error" class="error-state">{{ error }}</div>
 
     <template v-else>
-      <section class="accounts-layout">
+      <section class="accounts-layout" :class="{ 'accounts-layout--solo': !isAdmin }">
         <aside class="accounts-layout__side">
           <SurfaceCard kicker="安全设置" title="修改密码" :style="{ animationDelay: '0.08s' }">
             <template #meta>
@@ -465,7 +472,7 @@ onMounted(loadPage)
           </SurfaceCard>
         </aside>
 
-        <div class="accounts-layout__main">
+        <div v-if="isAdmin" class="accounts-layout__main">
           <SurfaceCard kicker="账户目录" :title="isAdmin ? '账户管理台' : '我的账户记录'" :style="{ animationDelay: '0.18s' }">
             <template #meta>
               <span class="status-chip">{{ accountRows.length }} 条记录</span>
@@ -823,6 +830,16 @@ onMounted(loadPage)
 /* === Layout === */
 .accounts-layout {
   grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
+}
+
+/* Researcher view: no admin fleet column — two own-account cards side by side */
+.accounts-layout--solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.accounts-layout--solo .accounts-layout__side {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  align-items: start;
 }
 
 .panel-link {
