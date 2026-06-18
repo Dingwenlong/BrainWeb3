@@ -30,6 +30,8 @@ import {
   formatRequestStatusLabel,
   formatVerificationStatusLabel,
 } from '../utils/labels'
+import HashValue from '../components/HashValue.vue'
+import InfoHint from '../components/InfoHint.vue'
 import { canInspectChainRecords } from '../utils/permissions'
 
 const route = useRoute()
@@ -497,7 +499,7 @@ watch(
               {{ formatVerificationStatusLabel(focusedRecord.verificationStatus) }}
             </span>
             <span v-if="focusedRecord.latestResultHash" class="evidence-banner__hash">
-              结果哈希 {{ focusedRecord.latestResultHash.slice(0, 16) }}…
+              结果哈希 <HashValue :value="focusedRecord.latestResultHash" :head="12" :tail="6" />
             </span>
             <span v-else class="evidence-banner__hint">质量声明尚无可验证证据</span>
           </div>
@@ -514,7 +516,7 @@ watch(
           <div class="record-card__timeline">
             <span>归属机构：{{ formatOrganizationLabel(focusedRecord.actorOrg) }}</span>
             <span>最近治理人：{{ focusedRecord.lastGovernedBy || '暂无' }}</span>
-            <span>{{ transitionGuideFor(focusedRecord) }}</span>
+            <span>治理流转 <InfoHint :text="transitionGuideFor(focusedRecord)" /></span>
           </div>
 
           <div v-if="versionComparison" class="version-compare">
@@ -646,7 +648,7 @@ watch(
 
           <div v-if="timelineLoading" class="empty-state">评测证据正在加载...</div>
           <div v-else-if="!evaluations.length" class="empty-state">
-            尚无评测证据 · 模型质量仍是自我声明。提交一次带测试集 / 脚本指纹的评测，即可生成结果哈希并锚定上链。
+            尚无评测证据 <InfoHint text="模型质量仍是自我声明。提交一次带测试集 / 脚本指纹的评测，即可生成结果哈希并锚定上链，升级为可验证证据。" />
           </div>
           <div v-else class="governance-lane__events">
             <article v-for="evaluation in evaluations" :key="evaluation.id" class="governance-event">
@@ -657,8 +659,9 @@ watch(
                 </span>
               </div>
               <p>评测方：{{ formatOrganizationLabel(evaluation.evaluatorOrg) }} · {{ evaluation.evaluatorActorId }}</p>
-              <p class="evidence-hash">测试集 {{ evaluation.testSetHash }} · 脚本 {{ evaluation.evalScriptHash }}</p>
-              <p class="evidence-hash">结果哈希 {{ evaluation.resultHash }}</p>
+              <p class="evidence-hash">测试集 <HashValue :value="evaluation.testSetHash" :head="16" /></p>
+              <p class="evidence-hash">脚本 <HashValue :value="evaluation.evalScriptHash" :head="16" /></p>
+              <p class="evidence-hash">结果哈希 <HashValue :value="evaluation.resultHash" :head="12" :tail="6" /></p>
               <small>{{ formatTime(evaluation.createdAt) }}<template v-if="evaluation.notes"> · {{ evaluation.notes }}</template></small>
             </article>
           </div>
@@ -773,7 +776,7 @@ watch(
           </div>
 
           <div class="record-card__notes">
-            <p><strong>验证状态：</strong>{{ formatVerificationStatusLabel(record.verificationStatus) }}<template v-if="record.latestResultHash"> · 哈希 {{ record.latestResultHash.slice(0, 12) }}…</template></p>
+            <p><strong>验证状态：</strong>{{ formatVerificationStatusLabel(record.verificationStatus) }}<template v-if="record.latestResultHash"> · 哈希 <HashValue :value="record.latestResultHash" :head="12" /></template></p>
             <p v-if="record.metricSummary"><strong>指标摘要：</strong>{{ record.metricSummary }}</p>
             <p v-if="record.resultSummary"><strong>结果说明：</strong>{{ record.resultSummary }}</p>
             <p><strong>模型引用：</strong>{{ record.artifactRef }}</p>
@@ -787,7 +790,7 @@ watch(
           </div>
 
           <p v-if="canGovern(record)" class="record-card__transition-guide">
-            {{ transitionGuideFor(record) }}
+            治理流转 <InfoHint :text="transitionGuideFor(record)" />
           </p>
 
           <div class="record-card__links">
@@ -1024,6 +1027,7 @@ watch(
   color: var(--text-muted);
   font-size: var(--supporting-text-size);
   line-height: var(--supporting-text-line-height);
+  overflow-wrap: anywhere;
 }
 
 /* IDs / hashes / timestamps -> mono readouts */

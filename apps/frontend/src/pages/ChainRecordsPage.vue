@@ -5,6 +5,7 @@ import { ApiError, getChainPolicy, getChainRecords, retryChainRecord, updateMode
 import { toErrorMessage, useAsyncView } from '../composables/useAsyncView'
 import { useActorProfile } from '../composables/useActorProfile'
 import { useToast } from '../composables/useToast'
+import HashValue from '../components/HashValue.vue'
 import type { ChainBusinessRecord, ChainPolicyRule } from '../types/api'
 import {
   formatChainEventLabel,
@@ -329,7 +330,7 @@ watch(
               </div>
               <div class="hero-spotlight__meta-wide">
                 <span>交易</span>
-                <strong class="mono-value mono-value--hash">{{ (focusedModelRecord ?? spotlightRecord)?.chainTxHash || '等待上链成功' }}</strong>
+                <strong class="mono-value mono-value--hash"><HashValue :value="(focusedModelRecord ?? spotlightRecord)?.chainTxHash || '等待上链成功'" :head="16" :tail="6" /></strong>
               </div>
               <div>
                 <span>时间</span>
@@ -530,15 +531,15 @@ watch(
                   </div>
                   <div>
                     <dt>合约地址</dt>
-                    <dd class="chain-card__value chain-card__value--hash">{{ record.contractAddress || '暂无' }}</dd>
+                    <dd class="chain-card__value chain-card__value--hash"><HashValue :value="record.contractAddress || '暂无'" :head="18" /></dd>
                   </div>
                   <div class="chain-card__details-wide">
                     <dt>交易哈希</dt>
-                    <dd class="chain-card__value chain-card__value--hash">{{ record.chainTxHash || '等待上链成功' }}</dd>
+                    <dd class="chain-card__value chain-card__value--hash"><HashValue :value="record.chainTxHash || '等待上链成功'" :head="18" :tail="8" /></dd>
                   </div>
                   <div class="chain-card__details-wide">
                     <dt>事件哈希</dt>
-                    <dd class="chain-card__value chain-card__value--hash">{{ record.eventHash || '暂无' }}</dd>
+                    <dd class="chain-card__value chain-card__value--hash"><HashValue :value="record.eventHash || '暂无'" :head="18" :tail="8" /></dd>
                   </div>
                 </dl>
 

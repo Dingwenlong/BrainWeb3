@@ -12,6 +12,7 @@ import {
 } from '../api/client'
 import ActivityTimeline from '../components/ActivityTimeline.vue'
 import RegionMetricsPanel from '../components/RegionMetricsPanel.vue'
+import HashValue from '../components/HashValue.vue'
 import { useDatasetAccessWorkflow } from '../composables/useDatasetAccessWorkflow'
 import { useDatasetActivity } from '../composables/useDatasetActivity'
 import { toErrorMessage, useAsyncView } from '../composables/useAsyncView'
@@ -756,7 +757,7 @@ onMounted(loadAll)
             </div>
             <div class="proof-list__wide">
               <dt>SM3 哈希</dt>
-              <dd class="is-mono is-hash">{{ dataset.proof.sm3Hash }}</dd>
+              <dd class="is-mono is-hash"><HashValue :value="dataset.proof.sm3Hash" :head="18" :tail="8" /></dd>
             </div>
             <div>
               <dt>存储引用</dt>
@@ -764,11 +765,11 @@ onMounted(loadAll)
             </div>
             <div>
               <dt>内容引用</dt>
-              <dd class="is-mono">{{ dataset.proof.ipfsCid }}</dd>
+              <dd class="is-mono"><HashValue :value="dataset.proof.ipfsCid" :head="18" /></dd>
             </div>
             <div class="proof-list__wide">
               <dt>链上交易</dt>
-              <dd class="is-mono is-hash">{{ dataset.proof.chainTxHash }}</dd>
+              <dd class="is-mono is-hash"><HashValue :value="dataset.proof.chainTxHash" :head="18" :tail="8" /></dd>
             </div>
             <div>
               <dt>DID 持有方</dt>
