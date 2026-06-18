@@ -61,7 +61,8 @@ public class DatasetController {
       @RequestParam String title,
       @RequestParam(required = false) String description,
       @RequestParam String ownerOrganization,
-      @RequestParam(required = false) String tags
+      @RequestParam(required = false) String tags,
+      @RequestParam(required = false) String signalSource
   ) {
     DatasetUploadResult result = datasetCatalogService.uploadDataset(
         file,
@@ -69,7 +70,8 @@ public class DatasetController {
         title,
         description,
         ownerOrganization,
-        tags
+        tags,
+        signalSource
     );
 
     return new DatasetUploadResponse(

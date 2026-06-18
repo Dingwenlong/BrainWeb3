@@ -9,6 +9,7 @@ public record CreateTrainingJobRequest(
     @NotBlank String modelName,
     @NotBlank String objective,
     String algorithm,
-    @Min(1) @Max(20) Integer requestedRounds
+    @Min(1) @Max(20) Integer requestedRounds,
+    String decodeParadigm
 ) {
 }

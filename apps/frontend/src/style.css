@@ -356,6 +356,12 @@ a {
   border-color: var(--line);
 }
 
+.status-chip--accent {
+  color: var(--accent);
+  border-color: rgba(52, 225, 214, 0.34);
+  background: rgba(52, 225, 214, 0.08);
+}
+
 /* ---- Metric cards: numeric readouts ---- */
 .metric-grid {
   display: grid;

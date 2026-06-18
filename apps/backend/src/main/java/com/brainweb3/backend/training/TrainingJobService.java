@@ -82,6 +82,7 @@ public class TrainingJobService {
     job.setAlgorithm(normalizeAlgorithm(request.algorithm()));
     job.setModelName(request.modelName().trim());
     job.setObjective(request.objective().trim());
+    job.setDecodeParadigm(normalizeParadigm(request.decodeParadigm()));
     job.setRequestedRounds(request.requestedRounds() == null ? 6 : request.requestedRounds());
     job.setCompletedRounds(0);
     job.setStatus("running");
@@ -253,8 +254,16 @@ public class TrainingJobService {
         job.getCreatedAt(),
         job.getUpdatedAt(),
         job.getStartedAt(),
-        job.getCompletedAt()
+        job.getCompletedAt(),
+        valueOrEmpty(job.getDecodeParadigm())
     );
+  }
+
+  private String normalizeParadigm(String value) {
+    if (value == null || value.isBlank()) {
+      return "motor-imagery";
+    }
+    return value.trim().toLowerCase(Locale.ROOT);
   }
 
   private String valueOrEmpty(String value) {

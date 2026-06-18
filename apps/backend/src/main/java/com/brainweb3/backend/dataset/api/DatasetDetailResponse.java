@@ -13,6 +13,7 @@ public record DatasetDetailResponse(
     long fileSizeBytes,
     String ownerOrganization,
     String format,
+    String signalSource,
     String uploadStatus,
     String proofStatus,
     String trainingReadiness,

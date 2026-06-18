@@ -167,7 +167,8 @@ public class DatasetCatalogService {
       String title,
       String description,
       String ownerOrganization,
-      String tagsCsv
+      String tagsCsv,
+      String signalSource
   ) {
     validateUpload(file, subjectCode, title, ownerOrganization);
 
@@ -197,7 +198,8 @@ public class DatasetCatalogService {
         normalizedTags,
         uploadedAt,
         proofFingerprint,
-        traceId
+        traceId,
+        signalSource
     );
 
     try {
@@ -409,7 +411,8 @@ public class DatasetCatalogService {
             "did:brainweb3:org-huaxi",
             "owner-approved research-only",
             "indexed",
-            Instant.parse("2026-04-20T01:30:00Z")
+            Instant.parse("2026-04-20T01:30:00Z"),
+            "non-invasive-eeg"
         ),
         seedDataset(
             "ds-205",
@@ -443,7 +446,8 @@ public class DatasetCatalogService {
             "approval-in-flight",
             "awaiting-chain-write",
             "c6da1c4f97b2f5d52d8fa2e4a5012048c6da1c4f97b2f5d52d8fa2e4a5012048",
-            Instant.parse("2026-04-19T09:10:00Z")
+            Instant.parse("2026-04-19T09:10:00Z"),
+            "semi-invasive-ecog"
         )
     ));
   }
@@ -455,6 +459,7 @@ public class DatasetCatalogService {
         dataset.getTitle(),
         dataset.getOwnerOrganization(),
         dataset.getFormat(),
+        dataset.getSignalSource(),
         dataset.getUploadStatus(),
         dataset.getProofStatus(),
         dataset.getTrainingReadiness(),
@@ -474,6 +479,7 @@ public class DatasetCatalogService {
         dataset.getFileSizeBytes(),
         dataset.getOwnerOrganization(),
         dataset.getFormat(),
+        dataset.getSignalSource(),
         dataset.getUploadStatus(),
         dataset.getProofStatus(),
         dataset.getTrainingReadiness(),
@@ -523,7 +529,8 @@ public class DatasetCatalogService {
       List<String> normalizedTags,
       Instant uploadedAt,
       String proofFingerprint,
-      String traceId
+      String traceId,
+      String signalSource
   ) {
     DatasetEntity dataset = new DatasetEntity();
     dataset.setId(datasetId);
@@ -536,6 +543,7 @@ public class DatasetCatalogService {
     dataset.setFileSizeBytes(file.getSize());
     dataset.setOwnerOrganization(ownerOrganization.trim());
     dataset.setFormat(normalizedFormat);
+    dataset.setSignalSource(normalizeSignalSource(signalSource));
     dataset.setUploadStatus("received");
     dataset.setProofStatus("pending-storage");
     dataset.setTrainingReadiness("review-required");
@@ -683,7 +691,8 @@ public class DatasetCatalogService {
       String didHolder,
       String accessPolicy,
       String auditState,
-      Instant updatedAt
+      Instant updatedAt,
+      String signalSource
   ) {
     DatasetEntity dataset = new DatasetEntity();
     dataset.setId(datasetId);
@@ -694,6 +703,7 @@ public class DatasetCatalogService {
     dataset.setFileSizeBytes(fileSizeBytes);
     dataset.setOwnerOrganization(ownerOrganization);
     dataset.setFormat(format);
+    dataset.setSignalSource(signalSource);
     dataset.setUploadStatus(uploadStatus);
     dataset.setProofStatus(proofStatus);
     dataset.setTrainingReadiness(trainingReadiness);
@@ -748,6 +758,13 @@ public class DatasetCatalogService {
     return value == null ? "" : value;
   }
 
+  private String normalizeSignalSource(String value) {
+    if (value == null || value.isBlank()) {
+      return "non-invasive-eeg";
+    }
+    return value.trim().toLowerCase(Locale.ROOT);
+  }
+
   private UploadAuditResponse toUploadAudit(UploadAuditEntity audit) {
     return new UploadAuditResponse(
         audit.getAction(),
@@ -773,7 +790,8 @@ public class DatasetCatalogService {
       List<String> normalizedTags,
       Instant uploadedAt,
       String proofFingerprint,
-      String traceId
+      String traceId,
+      String signalSource
   ) {
     transactionTemplate.executeWithoutResult(status -> {
       DatasetEntity uploadedDataset = createPendingDataset(
@@ -791,7 +809,8 @@ public class DatasetCatalogService {
           normalizedTags,
           uploadedAt,
           proofFingerprint,
-          traceId
+          traceId,
+          signalSource
       );
       datasetRepository.save(uploadedDataset);
       recordAudit(uploadedDataset, "UPLOAD_ACCEPTED", "accepted", "EEG upload accepted for processing.", traceId);

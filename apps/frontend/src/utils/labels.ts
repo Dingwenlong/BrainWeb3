@@ -89,6 +89,26 @@ const TRAINING_READINESS_LABELS: Record<string, string> = {
   blocked: '已阻断',
 }
 
+const SIGNAL_SOURCE_LABELS: Record<string, string> = {
+  'non-invasive-eeg': '非侵入 · 头皮 EEG',
+  'semi-invasive-ecog': '半侵入 · 皮层 ECoG',
+  'invasive-spike-lfp': '侵入 · 微电极 Spike/LFP',
+}
+
+const SIGNAL_SOURCE_TIER_LABELS: Record<string, string> = {
+  'non-invasive-eeg': '非侵入',
+  'semi-invasive-ecog': '半侵入',
+  'invasive-spike-lfp': '侵入',
+}
+
+const DECODE_PARADIGM_LABELS: Record<string, string> = {
+  'motor-imagery': '运动想象',
+  'motor-execution': '运动执行',
+  'gait-rehab': '步态康复',
+  'speech-decoding': '语言解码',
+  'cursor-control': '光标控制',
+}
+
 const BAND_LABELS: Record<string, string> = {
   delta: '德尔塔',
   theta: '西塔',
@@ -265,6 +285,18 @@ export function formatUploadStatusLabel(status: string | null | undefined) {
 
 export function formatTrainingReadinessLabel(status: string | null | undefined) {
   return mapLabel(TRAINING_READINESS_LABELS, status)
+}
+
+export function formatSignalSourceLabel(value: string | null | undefined) {
+  return mapLabel(SIGNAL_SOURCE_LABELS, value)
+}
+
+export function formatSignalSourceTier(value: string | null | undefined) {
+  return mapLabel(SIGNAL_SOURCE_TIER_LABELS, value)
+}
+
+export function formatDecodeParadigmLabel(value: string | null | undefined) {
+  return mapLabel(DECODE_PARADIGM_LABELS, value)
 }
 
 export function formatBandLabel(band: string | null | undefined) {

@@ -133,6 +133,7 @@ export function uploadDataset(payload: {
   description: string
   ownerOrganization: string
   tags: string
+  signalSource?: string
 }) {
   const formData = new FormData()
   formData.append('file', payload.file)
@@ -140,6 +141,10 @@ export function uploadDataset(payload: {
   formData.append('title', payload.title)
   formData.append('description', payload.description)
   formData.append('ownerOrganization', payload.ownerOrganization)
+
+  if (payload.signalSource?.trim()) {
+    formData.append('signalSource', payload.signalSource)
+  }
 
   if (payload.tags.trim()) {
     formData.append('tags', payload.tags)
@@ -432,6 +437,7 @@ export function createTrainingJob(
     modelName: string
     objective: string
     algorithm: string
+    decodeParadigm?: string
     requestedRounds: number
   },
 ) {

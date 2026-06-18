@@ -23,6 +23,8 @@ import {
   formatProofStatusLabel,
   formatRequestStatusLabel,
   formatRoleLabel,
+  formatSignalSourceLabel,
+  formatSignalSourceTier,
   formatSystemToken,
   formatTrainingReadinessLabel,
 } from '../utils/labels'
@@ -48,8 +50,15 @@ const uploadForm = reactive({
   title: '样板上传会话',
   description: '通过公开数据上传链路进入系统的新 EEG 资产。',
   ownerOrganization: 'Sichuan Brain Lab',
+  signalSource: 'non-invasive-eeg',
   tags: 'uploaded, public-validation, demo',
 })
+
+const SIGNAL_SOURCE_OPTIONS = [
+  { value: 'non-invasive-eeg', label: '非侵入 · 头皮 EEG' },
+  { value: 'semi-invasive-ecog', label: '半侵入 · 皮层 ECoG' },
+  { value: 'invasive-spike-lfp', label: '侵入 · 微电极 Spike/LFP' },
+] as const
 
 const featuredDataset = computed(() => datasets.value[0] ?? null)
 const recentDatasets = computed(() => datasets.value.slice(0, 4))
@@ -196,6 +205,7 @@ function toSummary(dataset: DatasetDetail): DatasetSummary {
     title: dataset.title,
     ownerOrganization: dataset.ownerOrganization,
     format: dataset.format,
+    signalSource: dataset.signalSource,
     uploadStatus: dataset.uploadStatus,
     proofStatus: dataset.proofStatus,
     trainingReadiness: dataset.trainingReadiness,
@@ -259,6 +269,7 @@ async function submitUpload() {
       title: uploadForm.title,
       description: uploadForm.description,
       ownerOrganization: uploadForm.ownerOrganization,
+      signalSource: uploadForm.signalSource,
       tags: uploadForm.tags,
     })
 
@@ -308,8 +319,8 @@ onMounted(loadOverview)
             </p>
             <div class="hero-spotlight__meta">
               <div>
-                <span>格式</span>
-                <strong>{{ featuredDataset.format }}</strong>
+                <span>信号源</span>
+                <strong>{{ formatSignalSourceLabel(featuredDataset.signalSource) }}</strong>
               </div>
               <div>
                 <span>训练态</span>
@@ -432,7 +443,7 @@ onMounted(loadOverview)
                   <p>{{ dataset.subjectCode }} · {{ formatOrganizationLabel(dataset.ownerOrganization) }}</p>
                 </div>
                 <div class="dataset-row__meta">
-                  <span>{{ dataset.format }}</span>
+                  <span>{{ formatSignalSourceTier(dataset.signalSource) }}</span>
                   <span>{{ formatTrainingReadinessLabel(dataset.trainingReadiness) }}</span>
                   <small>{{ formatUpdatedAt(dataset.updatedAt) }}</small>
                 </div>
@@ -470,6 +481,14 @@ onMounted(loadOverview)
               <label>
                 <span>归属机构</span>
                 <input v-model="uploadForm.ownerOrganization" type="text" required />
+              </label>
+              <label class="form-grid__wide">
+                <span>信号源 · 侵入程度</span>
+                <select v-model="uploadForm.signalSource">
+                  <option v-for="option in SIGNAL_SOURCE_OPTIONS" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
               </label>
               <label class="form-grid__wide">
                 <span>描述</span>

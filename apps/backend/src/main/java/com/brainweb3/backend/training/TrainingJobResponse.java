@@ -23,6 +23,7 @@ public record TrainingJobResponse(
     Instant createdAt,
     Instant updatedAt,
     Instant startedAt,
-    Instant completedAt
+    Instant completedAt,
+    String decodeParadigm
 ) {
 }

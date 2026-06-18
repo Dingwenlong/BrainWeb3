@@ -6,10 +6,12 @@ import { useActorProfile } from '../composables/useActorProfile'
 import { useToast } from '../composables/useToast'
 import type { DatasetSummary, ModelRecord, TrainingJob } from '../types/api'
 import {
+  formatDecodeParadigmLabel,
   formatModelGovernanceStatusLabel,
   formatOrganizationLabel,
   formatRequestStatusLabel,
   formatRoleLabel,
+  formatSignalSourceLabel,
   formatTrainingReadinessLabel,
 } from '../utils/labels'
 import { canInspectChainRecords } from '../utils/permissions'
@@ -30,8 +32,17 @@ const form = reactive({
   modelName: 'Motor Intent Decoder',
   objective: 'cross-site rehearsal',
   algorithm: 'hetero-logistic-regression',
+  decodeParadigm: 'motor-imagery',
   requestedRounds: 6,
 })
+
+const PARADIGM_OPTIONS = [
+  { value: 'motor-imagery', label: '运动想象' },
+  { value: 'motor-execution', label: '运动执行' },
+  { value: 'gait-rehab', label: '步态康复' },
+  { value: 'speech-decoding', label: '语言解码' },
+  { value: 'cursor-control', label: '光标控制' },
+] as const
 
 const selectedDataset = computed(() => datasets.value.find((item) => item.id === form.datasetId) ?? null)
 const eligibleDatasets = computed(() => datasets.value.filter((item) => item.trainingReadiness.toLowerCase().includes('ready')))
@@ -67,6 +78,7 @@ function applyRoutePrefill() {
   const modelName = typeof route.query.modelName === 'string' ? route.query.modelName : ''
   const objective = typeof route.query.objective === 'string' ? route.query.objective : ''
   const algorithm = typeof route.query.algorithm === 'string' ? route.query.algorithm : ''
+  const decodeParadigm = typeof route.query.decodeParadigm === 'string' ? route.query.decodeParadigm : ''
   const requestedRounds = typeof route.query.requestedRounds === 'string' ? Number(route.query.requestedRounds) : NaN
 
   if (datasetId) {
@@ -80,6 +92,9 @@ function applyRoutePrefill() {
   }
   if (algorithm) {
     form.algorithm = algorithm
+  }
+  if (decodeParadigm && PARADIGM_OPTIONS.some((option) => option.value === decodeParadigm)) {
+    form.decodeParadigm = decodeParadigm
   }
   if (Number.isFinite(requestedRounds) && requestedRounds >= 1 && requestedRounds <= 20) {
     form.requestedRounds = requestedRounds
@@ -150,6 +165,7 @@ async function submitTrainingJob() {
       modelName: form.modelName,
       objective: form.objective,
       algorithm: form.algorithm,
+      decodeParadigm: form.decodeParadigm,
       requestedRounds: form.requestedRounds,
     })
     jobs.value = [job, ...jobs.value]
@@ -221,10 +237,10 @@ watch(
     <header class="training-hero glass-panel">
       <div class="training-hero__copy">
         <div class="training-hero__masthead">
-          <p class="section-kicker">训练任务</p>
+          <p class="section-kicker">神经解码</p>
           <span class="training-hero__stamp">{{ roleGuide.title }}</span>
         </div>
-        <h1 class="page-main-heading">联邦训练工作台</h1>
+        <h1 class="page-main-heading">神经解码训练台</h1>
       </div>
 
       <div class="training-hero__stats">
@@ -248,7 +264,7 @@ watch(
         <div class="panel-head">
           <div>
             <p class="section-kicker">新建任务</p>
-            <h2>发起训练任务</h2>
+            <h2>发起解码训练</h2>
           </div>
           <button type="button" class="ghost-button" :disabled="loading" @click="loadPage">
             刷新数据
@@ -273,6 +289,15 @@ watch(
           <label>
             <span>目标说明</span>
             <input v-model="form.objective" type="text" required />
+          </label>
+
+          <label>
+            <span>解码范式</span>
+            <select v-model="form.decodeParadigm">
+              <option v-for="option in PARADIGM_OPTIONS" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
           </label>
 
           <label>
@@ -305,6 +330,10 @@ watch(
             <div>
               <span>训练就绪度</span>
               <strong>{{ formatTrainingReadinessLabel(selectedDataset.trainingReadiness) }}</strong>
+            </div>
+            <div>
+              <span>信号源</span>
+              <strong>{{ formatSignalSourceLabel(selectedDataset.signalSource) }}</strong>
             </div>
             <div>
               <span>存证状态</span>
@@ -362,6 +391,10 @@ watch(
               <div>
                 <span>发起人</span>
                 <strong>{{ job.actorId }} / {{ formatRoleLabel(job.actorRole) }}</strong>
+              </div>
+              <div>
+                <span>解码范式</span>
+                <strong>{{ formatDecodeParadigmLabel(job.decodeParadigm) }}</strong>
               </div>
               <div>
                 <span>编排层</span>

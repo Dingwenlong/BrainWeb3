@@ -41,6 +41,9 @@ public class TrainingJobEntity {
   @Column(nullable = false, length = 255)
   private String objective;
 
+  @Column(name = "decode_paradigm", length = 60)
+  private String decodeParadigm;
+
   @Column(name = "requested_rounds", nullable = false)
   private int requestedRounds;
 
@@ -152,6 +155,14 @@ public class TrainingJobEntity {
 
   public void setObjective(String objective) {
     this.objective = objective;
+  }
+
+  public String getDecodeParadigm() {
+    return decodeParadigm;
+  }
+
+  public void setDecodeParadigm(String decodeParadigm) {
+    this.decodeParadigm = decodeParadigm;
   }
 
   public int getRequestedRounds() {

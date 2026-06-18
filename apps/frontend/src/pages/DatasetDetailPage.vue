@@ -37,6 +37,7 @@ import {
   formatProofStatusLabel,
   formatRequestStatusLabel,
   formatSecondsLabel,
+  formatSignalSourceLabel,
   formatSystemToken,
   formatUploadStatusLabel,
 } from '../utils/labels'
@@ -342,6 +343,7 @@ onMounted(loadAll)
             {{ formatAccessStateLabel(accessState) }}
           </span>
           <span class="status-chip">{{ dataset.format }}</span>
+          <span class="status-chip status-chip--accent">{{ formatSignalSourceLabel(dataset.signalSource) }}</span>
           <span class="status-chip status-chip--ghost">{{ loadedRangeLabel }}</span>
         </div>
       </div>

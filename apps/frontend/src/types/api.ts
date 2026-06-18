@@ -24,6 +24,7 @@ export interface DatasetSummary {
   title: string
   ownerOrganization: string
   format: string
+  signalSource: string
   uploadStatus: string
   proofStatus: string
   trainingReadiness: string
@@ -311,6 +312,7 @@ export interface TrainingJob {
   algorithm: string
   modelName: string
   objective: string
+  decodeParadigm: string
   requestedRounds: number
   completedRounds: number
   status: string

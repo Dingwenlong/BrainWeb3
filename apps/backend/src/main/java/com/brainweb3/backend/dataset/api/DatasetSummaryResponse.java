@@ -8,6 +8,7 @@ public record DatasetSummaryResponse(
     String title,
     String ownerOrganization,
     String format,
+    String signalSource,
     String uploadStatus,
     String proofStatus,
     String trainingReadiness,

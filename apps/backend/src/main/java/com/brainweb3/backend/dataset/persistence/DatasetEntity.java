@@ -45,6 +45,9 @@ public class DatasetEntity {
   @Column(nullable = false, length = 16)
   private String format;
 
+  @Column(name = "signal_source", nullable = false, length = 40)
+  private String signalSource = "non-invasive-eeg";
+
   @Column(name = "upload_status", nullable = false, length = 40)
   private String uploadStatus;
 
@@ -178,6 +181,14 @@ public class DatasetEntity {
 
   public void setFormat(String format) {
     this.format = format;
+  }
+
+  public String getSignalSource() {
+    return signalSource;
+  }
+
+  public void setSignalSource(String signalSource) {
+    this.signalSource = signalSource;
   }
 
   public String getUploadStatus() {
