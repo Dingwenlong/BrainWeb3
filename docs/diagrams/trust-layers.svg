@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 600" font-family="'Microsoft YaHei','Segoe UI',sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#475569"/>
+    </marker>
+    <marker id="arrG" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#10b981"/>
+    </marker>
+    <style>
+      .ttl{font-size:14px;font-weight:700;fill:#0f172a}
+      .lyr{font-size:15px;font-weight:700}
+      .sub{font-size:11px;fill:#64748b}
+      .cap{font-size:11.5px;fill:#334155}
+      .tag{font-size:10px;font-weight:700;fill:#047857}
+      .edge{stroke:#10b981;stroke-width:1.6;fill:none}
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="600" fill="#ffffff"/>
+  <text x="28" y="36" font-size="18" font-weight="700" fill="#0f172a">BrainWeb3 资产权威性三层模型</text>
+  <text x="28" y="56" class="sub">链证明「谁拥有 / 谁决定 / 没篡改」(L1·L2)，但证明不了「模型真的有那么好」——L3 领域验证为本次新增</text>
+
+  <!-- ===== Left: three authority bands ===== -->
+  <!-- L1 -->
+  <rect x="28" y="84" width="470" height="116" rx="10" fill="#e6fbf9" stroke="#14b8a6" stroke-width="1.6"/>
+  <text x="48" y="112" class="lyr" fill="#0f766e">L1 · 密码学权威</text>
+  <text x="48" y="133" class="cap">证明：没篡改 · 归属清楚 · 转移有效</text>
+  <text x="48" y="155" class="cap">SHA-256 上传指纹 · SM3/链哈希 · 销毁证据 hash · chainTxHash 锚定</text>
+  <text x="48" y="176" class="sub">代码：DatasetCatalogService.createFingerprint · ChainBusinessRecordService</text>
+  <text x="48" y="192" class="sub">成熟度：机制齐全（默认 Mock 链，开 FISCO BCOS 即真链）</text>
+
+  <!-- L2 -->
+  <rect x="28" y="212" width="470" height="116" rx="10" fill="#efeaff" stroke="#7c5cff" stroke-width="1.6"/>
+  <text x="48" y="240" class="lyr" fill="#5b3fd6">L2 · 身份 / 信誉权威</text>
+  <text x="48" y="261" class="cap">证明：谁发布 · 谁评测 · 凭证是否有效</text>
+  <text x="48" y="283" class="cap">DID · 可验证凭证 VC · 状态治理(issued/suspended/revoked) · 不可变历史</text>
+  <text x="48" y="304" class="sub">代码：IdentityService · IdentityCredentialGovernanceService</text>
+  <text x="48" y="320" class="sub">成熟度：框架完整（评测方机构以 DID 署名背书的桥已就绪）</text>
+
+  <!-- L3 highlighted -->
+  <rect x="28" y="340" width="470" height="232" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2.6"/>
+  <rect x="404" y="352" width="82" height="22" rx="11" fill="#10b981"/>
+  <text x="445" y="367" text-anchor="middle" class="tag" fill="#ffffff">本次新增</text>
+  <text x="48" y="372" class="lyr" fill="#047857">L3 · 领域验证权威</text>
+  <text x="48" y="394" class="cap">证明：模型真的有那么好（可复现 · 第三方 · 锚定固定测试集）</text>
+  <text x="48" y="418" class="cap" font-weight="700" fill="#0f172a">核心：把「质量=自填文本」升级为「质量=可验证证据」</text>
+  <text x="48" y="440" class="cap">· EvaluationRun 评测三元组 → SHA-256 结果哈希（防篡改）</text>
+  <text x="48" y="461" class="cap">· 评测方机构 ≠ 模型归属机构 → 自动判「第三方已验证」</text>
+  <text x="48" y="482" class="cap">· MODEL_EVALUATED 锚定上链，与链侧 hash 可对账</text>
+  <text x="48" y="503" class="cap">· ModelRecord 验证徽标：未验证 → 自报 → 第三方已验证</text>
+  <text x="48" y="527" class="sub">代码：EvaluationRun(实体/迁移 V16) · ModelRecordService.createEvaluation</text>
+  <text x="48" y="545" class="sub">前端：模型治理「评测证据」面板 + 模型卡验证徽标</text>
+  <text x="48" y="563" class="sub">下一步：可复现 eval harness · zkML/TEE · 第三方评测 VC 上链</text>
+
+  <!-- ===== Right: L3 evaluation-evidence pipeline ===== -->
+  <text x="544" y="100" class="ttl" fill="#047857">L3 评测证据闭环 · EvaluationRun</text>
+
+  <!-- inputs -->
+  <rect x="544" y="116" width="308" height="86" rx="10" fill="#f8fafc" stroke="#10b981" stroke-width="1.5"/>
+  <text x="560" y="138" class="cap" font-weight="700" fill="#0f172a">① 评测输入（provenance）</text>
+  <text x="560" y="159" class="cap">测试集指纹　testSetHash</text>
+  <text x="560" y="178" class="cap">评测脚本指纹　evalScriptHash</text>
+  <text x="560" y="197" class="cap">指标　metricsJson（如 AUC / F1）</text>
+
+  <path class="edge" d="M698,202 L698,228" marker-end="url(#arrG)"/>
+  <text x="708" y="220" class="sub" fill="#047857">SHA-256</text>
+
+  <!-- result hash -->
+  <rect x="544" y="230" width="308" height="58" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.6"/>
+  <text x="560" y="252" class="cap" font-weight="700" fill="#0f172a">② 结果哈希　resultHash</text>
+  <text x="560" y="272" class="sub">对 模型×数据集×测试集×脚本×指标×评测方×时间 取摘要</text>
+
+  <path class="edge" d="M698,288 L698,314" marker-end="url(#arrG)"/>
+
+  <!-- chain anchor -->
+  <rect x="544" y="316" width="308" height="58" rx="10" fill="#efeaff" stroke="#7c5cff" stroke-width="1.6"/>
+  <text x="560" y="338" class="cap" font-weight="700" fill="#0f172a">③ MODEL_EVALUATED 锚定上链</text>
+  <text x="560" y="358" class="sub">审计事件 + 链业务记录（chainTxHash），不可抵赖</text>
+
+  <path class="edge" d="M698,374 L698,400" marker-end="url(#arrG)"/>
+
+  <!-- badge -->
+  <rect x="544" y="402" width="308" height="74" rx="10" fill="#f8fafc" stroke="#14b8a6" stroke-width="1.5"/>
+  <text x="560" y="424" class="cap" font-weight="700" fill="#0f172a">④ 模型验证徽标（按证据自动升级）</text>
+  <rect x="560" y="436" width="74" height="24" rx="12" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.2"/>
+  <text x="597" y="452" text-anchor="middle" class="sub" fill="#475569">未验证</text>
+  <rect x="646" y="436" width="74" height="24" rx="12" fill="#fff7ed" stroke="#f59e0b" stroke-width="1.2"/>
+  <text x="683" y="452" text-anchor="middle" class="sub" fill="#b45309">自报指标</text>
+  <rect x="732" y="436" width="104" height="24" rx="12" fill="#ecfdf5" stroke="#10b981" stroke-width="1.4"/>
+  <text x="784" y="452" text-anchor="middle" class="sub" fill="#047857">第三方已验证</text>
+
+  <!-- footnote -->
+  <text x="544" y="506" class="sub">L1/L2 是基座：哈希保证证据不被改、DID/VC 保证「谁评的」可追责；</text>
+  <text x="544" y="522" class="sub">L3 把「好不好」变成可被陌生人独立核验、并锚定到链的证据。</text>
+  <text x="544" y="538" class="sub">REST：GET/POST /api/v1/model-records/&#123;id&#125;/evaluations</text>
+</svg>
