@@ -71,7 +71,7 @@ async function handleLogout() {
           <span class="app-brand__mark">BW</span>
           <span class="app-brand__copy">
             <strong>BrainWeb3</strong>
-            <small>脑数据治理平台</small>
+            <small>神经数据资产链</small>
           </span>
         </RouterLink>
 

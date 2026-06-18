@@ -195,7 +195,7 @@ async function handlePasswordResetConfirm() {
           <p class="section-kicker">登录入口</p>
           <span class="login-copy__stamp">JWT 会话</span>
         </div>
-        <h1 class="page-main-heading">BrainWeb3 脑数据治理平台</h1>
+        <h1 class="page-main-heading">BrainWeb3 神经数据资产链</h1>
         <p class="page-main-lede login-copy__lede">演示身份默认密码：<code>brainweb3-demo</code></p>
 
         <div class="login-accounts__header">
