@@ -398,6 +398,7 @@ watch(
       <div>
         <p class="section-kicker">模型注册表</p>
         <h1 class="page-main-heading">模型治理</h1>
+        <p class="page-main-lede">管理训练产出的模型版本（候选 → 激活 → 归档），并查看其评测证据（L3 可信验证）与链上治理记录。</p>
       </div>
 
       <div class="model-hero__stats">

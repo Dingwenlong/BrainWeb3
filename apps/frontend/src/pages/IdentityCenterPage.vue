@@ -178,6 +178,9 @@ onMounted(loadPage)
       <div class="hero-panel__copy">
         <p class="section-kicker">身份中心</p>
         <h1 class="page-main-heading">DID / VC 治理</h1>
+        <p class="page-main-lede">
+          查看你与所属机构的去中心化身份（DID）和可验证凭证（VC）状态。简单说：DID 是你在平台的唯一身份标识，VC 是一张可被验证的「数字证件」；管理员可在此挂起 / 吊销凭证。
+        </p>
 
         <div class="hero-panel__actions">
           <span class="status-chip status-chip--ghost hero-panel__scope">{{ scopeLabel }}</span>
@@ -781,6 +784,7 @@ onMounted(loadPage)
   color: var(--text-muted);
   font-size: var(--supporting-text-size);
   line-height: var(--supporting-text-line-height);
+  overflow-wrap: anywhere;
 }
 
 .hero-spotlight__reason {

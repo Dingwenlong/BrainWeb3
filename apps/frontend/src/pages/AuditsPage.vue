@@ -254,6 +254,7 @@ watch(
     <PageHero
       kicker="审计"
       title="操作审计"
+      lede="平台上所有关键操作（上传、授权、训练、销毁、上链等）的时间线，可按数据集 / 操作 / 状态筛选，用于合规核验与问题追溯。"
       layout="balanced"
     >
       <template #actions>
@@ -737,6 +738,7 @@ watch(
   color: var(--text-muted);
   font-size: var(--supporting-text-size);
   line-height: var(--supporting-text-line-height);
+  overflow-wrap: anywhere;
 }
 
 .hero-spotlight__reason {
@@ -746,6 +748,7 @@ watch(
   border-left: 2px solid var(--line-warm);
   background: var(--bg-panel-soft);
   color: var(--text-main);
+  overflow-wrap: anywhere;
 }
 
 .hero-spotlight__empty {

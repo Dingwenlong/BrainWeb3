@@ -291,6 +291,7 @@ onMounted(loadOverview)
     <PageHero
       kicker="总览"
       title="数据工作台"
+      lede="工作台首页：一览你的数据资产、训练任务、待办与链路状态。点下方卡片进入对应模块开始工作。"
     >
       <template #actions>
         <RouterLink v-if="featuredDataset" class="hero-panel__primary" :to="`/datasets/${featuredDataset.id}`">
