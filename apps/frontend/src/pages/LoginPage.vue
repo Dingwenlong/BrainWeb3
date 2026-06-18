@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { confirmPasswordReset, requestPasswordResetTicket } from '../api/client'
 import { useActorProfile } from '../composables/useActorProfile'
@@ -26,6 +26,45 @@ const demoAccounts = [
     actorOrg: 'Huaxi Medical Union',
     description: '专注处理审批流与权限决策，验证门禁是否生效。',
   },
+  {
+    actorId: 'admin-01',
+    actorRole: 'admin',
+    actorOrg: 'Huaxi Medical Union',
+    description: '平台管理员：可跨机构审批访问申请（含无本地审批人的数据集，如 ds-205）、全局审计与模型治理。',
+  },
+]
+
+const painPoints = [
+  {
+    id: '01',
+    title: '数据烂在硬盘里',
+    pain: '脑数据贵、敏感、稀缺，一旦发出去就失控——于是各家宁可锁在自己硬盘，谁的样本都不够，模型训不动。',
+    fix: '登记成可确权资产，共享走「申请→审批→到期」，谁用了什么、用到何时，全程上链留痕。',
+  },
+  {
+    id: '02',
+    title: '真假难辨',
+    pain: '拿到一份数据、一个模型，凭什么信它是真的、没被人动过手脚？',
+    fix: 'SHA-256 指纹 + 链上存证，改一个字节就对不上——一改就露馅。',
+  },
+  {
+    id: '03',
+    title: '身份冒名',
+    pain: '对面这家「机构」、这个「研究员」，是真的吗？中心账号说是就是，冒名几乎零成本。',
+    fix: '去中心化身份（DID）+ 可验证凭证，签发方、有效期、是否吊销，谁都能独立校验。',
+  },
+  {
+    id: '04',
+    title: '模型黑箱',
+    pain: '模型号称「准确率 95%」，可评测是它自己说的、数据可能泄漏、结果没人能复现。',
+    fix: '评测证据上链（MODEL_EVALUATED）——在哪个数据集、什么指标、什么结果，可验证、可追溯。',
+  },
+  {
+    id: '05',
+    title: '说删了，删了吗？',
+    pain: '脑数据牵着伦理与知情同意，监管要全程留痕；一句「已销毁」，证据在哪？',
+    fix: '采集→授权→训练→评测→销毁，每一步留痕，连销毁都走流程、上链存证。',
+  },
 ]
 
 const router = useRouter()
@@ -50,6 +89,7 @@ const forgotForm = reactive({
   nextPassword: 'brainweb3-reset',
 })
 
+const painPointsOpen = ref(false)
 const submitting = ref(false)
 const registerSubmitting = ref(false)
 const forgotSubmitting = ref(false)
@@ -62,6 +102,23 @@ const forgotTicket = ref<PasswordResetTicket | null>(null)
 function applyAccount(actorId: string) {
   form.actorId = actorId
 }
+
+function openPainPoints() {
+  painPointsOpen.value = true
+}
+
+function closePainPoints() {
+  painPointsOpen.value = false
+}
+
+function handlePainPointsKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && painPointsOpen.value) {
+    closePainPoints()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', handlePainPointsKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', handlePainPointsKeydown))
 
 async function handleLogin() {
   submitting.value = true
@@ -222,6 +279,14 @@ async function handlePasswordResetConfirm() {
             <span class="login-accounts__state">{{ account.actorId === form.actorId ? '当前已选' : '点击套用' }}</span>
           </button>
         </div>
+
+        <button type="button" class="login-painpoints-trigger" @click="openPainPoints">
+          <span class="login-painpoints-trigger__copy">
+            <span class="section-kicker">为什么需要它</span>
+            <strong>脑数据，到底卡在哪儿？</strong>
+          </span>
+          <span class="login-painpoints-trigger__cue">5 个痛点</span>
+        </button>
       </div>
 
       <div class="login-column">
@@ -333,6 +398,40 @@ async function handlePasswordResetConfirm() {
         </section>
       </div>
     </section>
+
+    <Teleport to="body">
+      <Transition name="painpoints">
+        <div
+          v-if="painPointsOpen"
+          class="painpoints-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="painpoints-title"
+          @click.self="closePainPoints"
+        >
+          <div class="painpoints-dialog">
+            <div class="painpoints-dialog__head">
+              <div class="painpoints-dialog__heading">
+                <p class="section-kicker">为什么需要它</p>
+                <h2 id="painpoints-title" class="painpoints-dialog__title">脑数据，到底卡在哪儿？</h2>
+              </div>
+              <button type="button" class="painpoints-dialog__close" aria-label="关闭" @click="closePainPoints">×</button>
+            </div>
+
+            <ol class="painpoints-list">
+              <li v-for="point in painPoints" :key="point.id" class="painpoint">
+                <span class="painpoint__no">{{ point.id }}</span>
+                <div class="painpoint__body">
+                  <strong class="painpoint__title">{{ point.title }}</strong>
+                  <p class="painpoint__pain">{{ point.pain }}</p>
+                  <p class="painpoint__fix"><span class="painpoint__fix-tag">解</span>{{ point.fix }}</p>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -791,6 +890,257 @@ async function handlePasswordResetConfirm() {
   border-radius: var(--radius-control);
   background: #0e1013;
   border: 1px dashed var(--amber-soft);
+}
+
+/* === Pain-points trigger (login left column) === */
+.login-painpoints-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: var(--radius-block);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    border-color 0.22s ease,
+    background 0.22s ease;
+}
+
+.login-painpoints-trigger::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--accent);
+}
+
+.login-painpoints-trigger:hover {
+  border-color: var(--line-warm);
+  background: var(--bg-panel-muted);
+}
+
+.login-painpoints-trigger__copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.login-painpoints-trigger__copy strong {
+  color: var(--text-strong);
+  font-family: var(--display);
+  font-size: 1.04rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.login-painpoints-trigger__cue {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line-strong);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.login-painpoints-trigger__cue::after {
+  content: '→';
+  transition: transform 0.2s ease;
+}
+
+.login-painpoints-trigger:hover .login-painpoints-trigger__cue::after {
+  transform: translateX(3px);
+}
+
+/* === Pain-points modal === */
+.painpoints-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 4vw, 48px);
+  background: rgba(4, 7, 12, 0.78);
+  overflow-y: auto;
+}
+
+.painpoints-dialog {
+  position: relative;
+  overflow: hidden auto;
+  width: min(100%, 760px);
+  max-height: min(86vh, 780px);
+  padding: clamp(22px, 3vw, 32px);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line-strong);
+  background: var(--bg-panel);
+  animation: consoleRise 0.4s ease both;
+}
+
+.painpoints-dialog::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, var(--line) 1px, transparent 1px),
+    linear-gradient(var(--line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(120% 90% at 100% 0%, black, transparent 58%);
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+.painpoints-dialog > * {
+  position: relative;
+  z-index: 1;
+}
+
+.painpoints-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.painpoints-dialog__heading {
+  display: grid;
+  gap: 8px;
+}
+
+.painpoints-dialog__title {
+  margin: 0;
+  color: var(--text-strong);
+  font-family: var(--display);
+  font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+  font-weight: 600;
+  line-height: 1.18;
+}
+
+.painpoints-dialog__close {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
+  color: var(--text-muted);
+  font-size: 1.32rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.painpoints-dialog__close:hover {
+  border-color: var(--line-warm);
+  color: var(--text-strong);
+}
+
+.painpoints-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.painpoint {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: var(--radius-block);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
+  transition: border-color 0.2s ease;
+}
+
+.painpoint:hover {
+  border-color: var(--line-strong);
+}
+
+.painpoint__no {
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  padding-top: 1px;
+}
+
+.painpoint__body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.painpoint__title {
+  color: var(--text-strong);
+  font-family: var(--body);
+  font-size: 1.04rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.painpoint__pain {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.painpoint__fix {
+  margin: 2px 0 0;
+  color: var(--text-main);
+  font-size: var(--supporting-text-size);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.painpoint__fix-tag {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 9px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line-warm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  vertical-align: 1px;
+}
+
+/* Modal transition */
+.painpoints-enter-active,
+.painpoints-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.painpoints-enter-from,
+.painpoints-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 1040px) {
