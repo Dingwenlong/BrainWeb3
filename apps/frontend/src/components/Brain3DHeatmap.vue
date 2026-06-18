@@ -2,7 +2,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import {
   ACESFilmicToneMapping,
-  AdditiveBlending,
   AmbientLight,
   Box3,
   CircleGeometry,
@@ -289,13 +288,13 @@ function createHeatShaderUniforms(): HeatShaderUniformSet {
       value: 0,
     },
     uHeatCool: {
-      value: new Color('#1b3b7a'),
+      value: new Color('#1a2127'),
     },
     uHeatWarm: {
-      value: new Color('#2fd4e0'),
+      value: new Color('#2fcebd'),
     },
     uHeatHot: {
-      value: new Color('#e85cff'),
+      value: new Color('#cfe8e3'),
     },
     uHeatContrast: {
       value: 1,
@@ -580,8 +579,8 @@ async function createViewerRuntime() {
   const ambient = new AmbientLight('#9fb3d6', 0.6)
   const sky = new HemisphereLight('#bcd0f2', '#0a1020', 0.45)
   const key = new DirectionalLight('#e6f0ff', 1.42)
-  const rim = new DirectionalLight('#5ce0e6', 0.7)
-  const fill = new PointLight('#9a7bef', 0.34, 18, 2)
+  const rim = new DirectionalLight('#2fcebd', 0.7)
+  const fill = new PointLight('#8b93a0', 0.34, 18, 2)
 
   key.position.set(3.4, 4.8, 5.2)
   key.castShadow = true
@@ -594,10 +593,9 @@ async function createViewerRuntime() {
   const floorGlow = new Mesh(
     new CircleGeometry(3.1, 96),
     new MeshBasicMaterial({
-      color: '#5ed5db',
+      color: '#1a1d23',
       transparent: true,
       opacity: 0.05,
-      blending: AdditiveBlending,
     }),
   )
   floorGlow.rotation.x = -Math.PI / 2
@@ -607,7 +605,7 @@ async function createViewerRuntime() {
   const orbitRing = new Mesh(
     new TorusGeometry(3.25, 0.028, 18, 180),
     new MeshBasicMaterial({
-      color: '#6adce2',
+      color: '#2fcebd',
       transparent: true,
       opacity: 0.07,
     }),
@@ -838,12 +836,10 @@ onBeforeUnmount(() => {
 .heatmap__viewport-shell {
   position: relative;
   min-height: 520px;
-  border-radius: 24px;
+  border-radius: var(--radius-panel);
   overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(199, 245, 246, 0.12), transparent 26%),
-    radial-gradient(circle at 50% 100%, rgba(94, 213, 219, 0.16), transparent 40%),
-    linear-gradient(180deg, rgba(5, 16, 22, 0.98), rgba(2, 7, 11, 0.98));
+  border: 1px solid var(--line);
+  background: var(--bg-page);
 }
 
 .heatmap__viewport {
@@ -872,12 +868,12 @@ onBeforeUnmount(() => {
 }
 
 .heatmap__overlay span {
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(119, 235, 237, 0.12);
-  background: rgba(2, 12, 16, 0.56);
+  padding: 6px 10px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
   color: var(--text-muted);
-  font-family: var(--display);
+  font-family: var(--mono);
   font-size: 0.72rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;

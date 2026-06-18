@@ -1,97 +1,99 @@
 /* =====================================================================
-   BrainWeb3 — "Neural Console"
-   A dark, instrument-grade design system. Deep space canvas, bioluminescent
-   cyan/violet signal accents, monospace data readouts. Token names are kept
-   stable so every page/component cascades into the dark theme automatically.
+   BrainWeb3 — "Acquisition Console"
+   A flat, instrument-grade dark UI. Graphite surfaces, a hairline scope
+   graticule, monospace data readouts, and a single live-signal accent.
+   No glassmorphism, no glow, no gradient fills — depth comes from value
+   steps and 1px rules, the way a real acquisition instrument is built.
+   Token names are kept stable so every page/component cascades.
    ===================================================================== */
 
 :root {
-  /* ---- Canvas ---- */
-  --bg-page: #060a14;
-  --bg-page-alt: #0a1020;
+  /* ---- Canvas (neutral graphite, not blue-black) ---- */
+  --bg-page: #0b0c0e;
+  --bg-page-alt: #0c0e10;
 
-  /* ---- Surfaces (cool slate glass) ---- */
-  --bg-surface: rgba(19, 28, 47, 0.72);
-  --bg-panel: rgba(15, 23, 40, 0.82);
-  --bg-panel-soft: rgba(21, 31, 51, 0.64);
-  --bg-panel-muted: rgba(27, 39, 61, 0.5);
-  --surface-gradient: linear-gradient(180deg, rgba(23, 34, 56, 0.82), rgba(12, 19, 34, 0.86));
-  --panel-gradient: linear-gradient(180deg, rgba(19, 29, 49, 0.86), rgba(11, 17, 31, 0.9));
-  --panel-soft-gradient: linear-gradient(180deg, rgba(24, 36, 58, 0.7), rgba(14, 22, 39, 0.74));
-  /* "warm" tokens repurposed as the cyan signal surface/accent */
-  --warm-panel-gradient: linear-gradient(180deg, rgba(28, 78, 86, 0.4), rgba(16, 44, 57, 0.5));
-  --button-soft-gradient: linear-gradient(180deg, rgba(27, 39, 61, 0.92), rgba(18, 28, 46, 0.94));
-  --button-warm-gradient: linear-gradient(180deg, rgba(52, 225, 214, 0.16), rgba(160, 123, 255, 0.18));
+  /* ---- Surfaces (flat, opaque, value-stepped) ---- */
+  --bg-surface: #131519;
+  --bg-panel: #131519;
+  --bg-panel-soft: #16181d;
+  --bg-panel-muted: #1a1d23;
+  /* legacy "gradient" tokens flattened to solid fills for cascade safety */
+  --surface-gradient: #131519;
+  --panel-gradient: #15171c;
+  --panel-soft-gradient: #16181d;
+  --warm-panel-gradient: #11201e;
+  --button-soft-gradient: #1a1d23;
+  --button-warm-gradient: rgba(47, 206, 189, 0.12);
 
-  /* ---- Radii (tightened for a technical feel) ---- */
-  --radius-hero: 22px;
-  --radius-panel: 18px;
-  --radius-block: 15px;
-  --radius-subpanel: 13px;
-  --radius-control: 11px;
-  --radius-pill: 999px;
+  /* ---- Radii (sharp, technical) ---- */
+  --radius-hero: 4px;
+  --radius-panel: 4px;
+  --radius-block: 3px;
+  --radius-subpanel: 3px;
+  --radius-control: 3px;
+  --radius-pill: 2px;
 
   /* ---- Spacing ---- */
-  --space-hero: 26px;
-  --space-panel: 22px 24px;
+  --space-hero: 24px;
+  --space-panel: 20px 22px;
   --space-card: 18px;
   --space-subpanel: 14px 16px;
   --space-button: 0 18px;
   --space-field-x: 0 14px;
   --space-list: 14px;
   --space-list-tight: 10px;
-  --control-height: 44px;
-  --field-height: 46px;
+  --control-height: 40px;
+  --field-height: 42px;
 
-  /* ---- Type scale ---- */
-  --page-heading-size: clamp(2.2rem, 4vw, 3.2rem);
-  --page-heading-size-mobile: clamp(2rem, 8vw, 2.7rem);
-  --page-heading-line-height: 1.08;
-  --page-heading-letter-spacing: 0.005em;
-  --page-lede-size: clamp(0.98rem, 1.2vw, 1.06rem);
-  --page-lede-line-height: 1.75;
-  --section-title-size: clamp(1.16rem, 1.45vw, 1.4rem);
-  --section-title-line-height: 1.28;
-  --card-title-size: clamp(1.02rem, 1.12vw, 1.16rem);
+  /* ---- Type scale (app-grade, not marketing-hero) ---- */
+  --page-heading-size: clamp(1.85rem, 3.1vw, 2.5rem);
+  --page-heading-size-mobile: clamp(1.7rem, 7vw, 2.2rem);
+  --page-heading-line-height: 1.12;
+  --page-heading-letter-spacing: -0.01em;
+  --page-lede-size: clamp(0.95rem, 1.15vw, 1.02rem);
+  --page-lede-line-height: 1.7;
+  --section-title-size: clamp(1.08rem, 1.3vw, 1.26rem);
+  --section-title-line-height: 1.3;
+  --card-title-size: clamp(1rem, 1.1vw, 1.12rem);
   --card-title-line-height: 1.3;
-  --field-label-size: 0.72rem;
-  --field-label-letter-spacing: 0.16em;
-  --supporting-text-size: clamp(0.93rem, 1.05vw, 0.98rem);
-  --supporting-text-line-height: 1.72;
+  --field-label-size: 0.7rem;
+  --field-label-letter-spacing: 0.14em;
+  --supporting-text-size: clamp(0.92rem, 1.02vw, 0.97rem);
+  --supporting-text-line-height: 1.7;
 
-  /* ---- Hairlines (cyan-tinted) ---- */
-  --line: rgba(124, 196, 232, 0.1);
-  --line-strong: rgba(134, 204, 236, 0.2);
-  --line-warm: rgba(52, 225, 214, 0.34);
+  /* ---- Hairlines (neutral graphite rules) ---- */
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --line-warm: rgba(47, 206, 189, 0.42);
 
-  /* ---- Text (cool, high-contrast) ---- */
-  --text-main: #c4d3e5;
-  --text-strong: #eef5fc;
-  --text-muted: #8696ac;
-  --text-faint: #8492aa;
+  /* ---- Text (neutral, high-contrast) ---- */
+  --text-main: #c9ccd2;
+  --text-strong: #f1f2f4;
+  --text-muted: #888d96;
+  --text-faint: #5f636b;
 
-  /* ---- Signal accents (bioluminescent) ---- */
-  --accent: #34e1d6;
-  --accent-strong: #6cf3e8;
-  --accent-soft: rgba(52, 225, 214, 0.12);
-  --accent-2: #a07bff;
-  --accent-2-soft: rgba(160, 123, 255, 0.14);
-  --amber: #f2b259;
-  --amber-soft: rgba(242, 178, 89, 0.14);
-  --danger: #ff6173;
-  --danger-soft: rgba(255, 97, 115, 0.14);
+  /* ---- Signal: one live accent + functional caution/alarm ---- */
+  --accent: #2fcebd;          /* live / active / data — used sparingly, never glows */
+  --accent-strong: #57e0d0;
+  --accent-soft: rgba(47, 206, 189, 0.1);
+  --accent-2: #8b93a0;        /* was violet → now a quiet neutral label tone */
+  --accent-2-soft: rgba(139, 147, 160, 0.1);
+  --amber: #e0a942;           /* caution */
+  --amber-soft: rgba(224, 169, 66, 0.12);
+  --danger: #f0524f;          /* alarm */
+  --danger-soft: rgba(240, 82, 79, 0.12);
 
-  /* ---- Glow ---- */
-  --glow-cyan: 0 0 0 1px rgba(52, 225, 214, 0.45), 0 0 24px rgba(52, 225, 214, 0.26);
-  --glow-violet: 0 0 0 1px rgba(160, 123, 255, 0.45), 0 0 24px rgba(160, 123, 255, 0.24);
+  /* ---- "Glow" tokens flattened to 1px rings (no blur) ---- */
+  --glow-cyan: 0 0 0 1px rgba(47, 206, 189, 0.5);
+  --glow-violet: 0 0 0 1px var(--line-strong);
 
-  /* ---- Shadows (deep for dark depth) ---- */
-  --shadow-soft: 0 28px 54px rgba(0, 0, 0, 0.52);
-  --shadow-crisp: 0 14px 28px rgba(0, 0, 0, 0.46);
+  /* ---- Shadows: instruments are flat ---- */
+  --shadow-soft: none;
+  --shadow-crisp: none;
 
-  /* ---- Typography families ---- */
-  --display: 'Chakra Petch', 'Noto Sans SC', sans-serif;
-  --body: 'Noto Sans SC', 'Chakra Petch', sans-serif;
+  /* ---- Type families: monospace-forward ---- */
+  --display: 'JetBrains Mono', 'Noto Sans SC', ui-monospace, monospace;
+  --body: 'Noto Sans SC', 'JetBrains Mono', sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Code', 'Noto Sans SC', monospace;
 
   color: var(--text-main);
@@ -111,27 +113,27 @@
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(52, 225, 214, 0.32) transparent;
+  scrollbar-color: #2c2f36 transparent;
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
 }
 
 ::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  border: 2px solid transparent;
+  border-radius: 2px;
+  border: 3px solid transparent;
   background-clip: padding-box;
-  background-color: rgba(76, 158, 178, 0.42);
+  background-color: #2c2f36;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(52, 225, 214, 0.55);
+  background-color: #3a3e47;
 }
 
 ::selection {
-  background: rgba(52, 225, 214, 0.28);
+  background: rgba(47, 206, 189, 0.22);
   color: var(--text-strong);
 }
 
@@ -145,27 +147,23 @@ body {
   min-width: 320px;
   min-height: 100vh;
   color: var(--text-main);
-  background:
-    radial-gradient(1100px 620px at 12% -8%, rgba(52, 225, 214, 0.11), transparent 60%),
-    radial-gradient(1000px 600px at 92% 2%, rgba(160, 123, 255, 0.11), transparent 58%),
-    radial-gradient(900px 720px at 78% 110%, rgba(52, 225, 214, 0.06), transparent 60%),
-    linear-gradient(180deg, var(--bg-page), var(--bg-page-alt));
-  background-attachment: fixed;
+  background: var(--bg-page);
 }
 
-/* Faint instrument grid + edge vignette for depth */
+/* Hairline scope graticule — fine minor grid + coarser major lines, like
+   real oscilloscope / EEG chart paper. This is the room texture, flat. */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 0;
   background-image:
-    linear-gradient(rgba(124, 200, 232, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 200, 232, 0.035) 1px, transparent 1px);
-  background-size: 40px 40px;
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px);
+  background-size: 32px 32px, 32px 32px, 160px 160px, 160px 160px;
   pointer-events: none;
-  opacity: 0.5;
-  mask-image: radial-gradient(circle at 50% 0%, black, transparent 78%);
 }
 
 button,
@@ -178,33 +176,23 @@ textarea {
 button {
   cursor: pointer;
   transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    background-color 0.18s ease,
-    box-shadow 0.18s ease,
-    color 0.18s ease;
-}
-
-button:hover {
-  transform: translateY(-1px);
-}
-
-button:active {
-  transform: translateY(0);
+    border-color 0.14s ease,
+    background-color 0.14s ease,
+    color 0.14s ease;
 }
 
 a {
   color: inherit;
   transition:
-    color 0.18s ease,
-    opacity 0.18s ease,
-    border-color 0.18s ease;
+    color 0.14s ease,
+    opacity 0.14s ease,
+    border-color 0.14s ease;
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 0;
 }
 
 #app {
@@ -213,27 +201,23 @@ a {
   min-height: 100vh;
 }
 
-/* ---- Entrance motion ---- */
+/* ---- Entrance motion (minimal: a short fade, no theatrical rise) ---- */
 @keyframes consoleRise {
   from {
     opacity: 0;
-    transform: translateY(16px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @keyframes signalPulse {
   0%,
   100% {
-    opacity: 0.55;
-    transform: scale(1);
+    opacity: 0.5;
   }
   50% {
     opacity: 1;
-    transform: scale(1.35);
   }
 }
 
@@ -243,45 +227,40 @@ a {
   }
 }
 
-/* ---- Glass panels ---- */
+/* ---- Panels: flat instrument enclosures (class name kept stable) ---- */
 .glass-panel {
   position: relative;
-  background: var(--surface-gradient);
+  background: var(--bg-panel);
   border: 1px solid var(--line);
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(14px) saturate(118%);
-  -webkit-backdrop-filter: blur(14px) saturate(118%);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .glass-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 1px solid rgba(150, 215, 240, 0.06);
-  background: linear-gradient(180deg, rgba(160, 220, 245, 0.05), transparent 28%);
-  pointer-events: none;
+  content: none;
 }
 
 /* ---- Section labels: monospace instrument voice ---- */
 .section-kicker {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   margin: 0 0 8px;
   color: var(--accent);
   font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .section-kicker::before {
   content: '';
-  width: 14px;
-  height: 1px;
-  background: linear-gradient(90deg, var(--accent), transparent);
+  width: 9px;
+  height: 9px;
+  border: 1px solid currentColor;
+  background: transparent;
 }
 
 .section-title {
@@ -291,7 +270,7 @@ a {
   font-size: var(--section-title-size);
   font-weight: 600;
   line-height: var(--section-title-line-height);
-  letter-spacing: 0.005em;
+  letter-spacing: -0.005em;
   text-wrap: balance;
 }
 
@@ -300,7 +279,7 @@ a {
   color: var(--text-strong);
   font-family: var(--display);
   font-size: var(--page-heading-size);
-  font-weight: 600;
+  font-weight: 700;
   line-height: var(--page-heading-line-height);
   letter-spacing: var(--page-heading-letter-spacing);
   text-wrap: balance;
@@ -308,47 +287,46 @@ a {
 
 .page-main-lede {
   margin: 0;
-  max-width: 60ch;
+  max-width: 64ch;
   color: var(--text-muted);
   font-size: var(--page-lede-size);
   line-height: var(--page-lede-line-height);
 }
 
-/* ---- Status chips: signal readouts ---- */
+/* ---- Status chips: flat instrument readouts (rectangular, no glow) ---- */
 .status-chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 2px;
   border: 1px solid var(--line-strong);
-  background: rgba(18, 28, 47, 0.7);
+  background: var(--bg-panel-muted);
   color: var(--accent);
   font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .status-chip::before {
   content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
   background: currentColor;
-  box-shadow: 0 0 9px currentColor;
 }
 
 .status-chip--warn {
   color: var(--amber);
-  border-color: rgba(242, 178, 89, 0.32);
+  border-color: rgba(224, 169, 66, 0.4);
 }
 
 .status-chip--danger {
   color: var(--danger);
-  border-color: rgba(255, 97, 115, 0.32);
+  border-color: rgba(240, 82, 79, 0.4);
 }
 
 .status-chip--ghost {
@@ -358,30 +336,30 @@ a {
 
 .status-chip--accent {
   color: var(--accent);
-  border-color: rgba(52, 225, 214, 0.34);
-  background: rgba(52, 225, 214, 0.08);
+  border-color: var(--line-warm);
+  background: var(--accent-soft);
 }
 
 /* ---- Metric cards: numeric readouts ---- */
 .metric-grid {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
 .metric-card {
-  padding: 14px 16px;
+  padding: 13px 15px;
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--panel-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .metric-card span {
   display: block;
   color: var(--text-faint);
   font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
+  font-size: 0.7rem;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
@@ -390,28 +368,29 @@ a {
   margin-top: 8px;
   color: var(--text-strong);
   font-family: var(--mono);
-  font-size: 1.16rem;
+  font-size: 1.18rem;
   font-weight: 700;
   line-height: 1.15;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- Async states ---- */
 .loading-state,
 .error-state,
 .empty-state {
-  padding: 20px;
+  padding: 18px;
   border-radius: var(--radius-subpanel);
   border: 1px dashed var(--line-strong);
-  background: rgba(18, 27, 45, 0.6);
+  background: var(--bg-panel-soft);
   color: var(--text-muted);
   font-size: var(--supporting-text-size);
   line-height: var(--supporting-text-line-height);
 }
 
 .error-state {
-  border-color: rgba(255, 97, 115, 0.4);
+  border: 1px solid rgba(240, 82, 79, 0.4);
   background: var(--danger-soft);
-  color: #ffb3bc;
+  color: #f3a3a1;
 }
 
 .loading-state {
@@ -423,7 +402,7 @@ a {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(52, 225, 214, 0.08), transparent);
+  background: linear-gradient(90deg, transparent, rgba(47, 206, 189, 0.06), transparent);
   transform: translateX(-100%);
   animation: loadingSweep 1.4s ease-in-out infinite;
 }
@@ -439,31 +418,30 @@ input,
 select,
 textarea {
   outline: none;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
-  background: rgba(10, 17, 31, 0.8);
+  background: #0e1013;
   color: var(--text-main);
   transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    background-color 0.18s ease;
+    border-color 0.14s ease,
+    box-shadow 0.14s ease;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #8b9ab1;
+  color: #6b7079;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: rgba(52, 225, 214, 0.55);
-  box-shadow: 0 0 0 3px rgba(52, 225, 214, 0.14);
-  background: rgba(12, 20, 36, 0.92);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft);
+  background: #0e1013;
 }
 
 select option {
-  background: #0c1424;
+  background: #131519;
   color: var(--text-main);
 }
 
@@ -489,7 +467,6 @@ kbd {
     scroll-behavior: auto !important;
   }
 
-  /* Wires fully drawn; hide the travelling current pulses */
   .login-trace__wire,
   .page-hero__trace path {
     stroke-dashoffset: 0 !important;

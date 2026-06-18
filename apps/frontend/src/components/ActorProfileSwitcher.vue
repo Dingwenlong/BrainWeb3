@@ -76,8 +76,8 @@ async function openAccounts() {
 .switcher__summary-card,
 .switcher__preset {
   padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(110, 222, 227, 0.1);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
   background: var(--bg-panel-soft);
 }
 
@@ -105,8 +105,7 @@ async function openAccounts() {
 }
 
 .switcher__preset--active {
-  border-color: var(--line-strong);
-  box-shadow: inset 0 0 0 1px rgba(110, 222, 227, 0.12);
+  border-color: var(--line-warm);
 }
 
 .switcher__preset p {
@@ -125,9 +124,9 @@ async function openAccounts() {
   min-height: 42px;
   padding: 0 16px;
   border: 1px solid var(--line-warm);
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 180, 108, 0.22), rgba(255, 180, 108, 0.12));
-  color: var(--text-main);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel-soft);
+  color: var(--text-strong);
   font-family: var(--display);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -137,8 +136,8 @@ async function openAccounts() {
   min-height: 42px;
   padding: 0 16px;
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(12, 24, 32, 0.92);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel-muted);
   color: var(--text-main);
   font-family: var(--display);
   letter-spacing: 0.08em;

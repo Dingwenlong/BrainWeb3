@@ -573,7 +573,7 @@ onMounted(loadOverview)
   justify-content: center;
   min-height: var(--control-height);
   padding: var(--space-button);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   text-decoration: none;
   font-family: var(--body);
   font-size: 0.82rem;
@@ -585,27 +585,22 @@ onMounted(loadOverview)
 .hero-panel__primary,
 .form-grid__submit {
   border: 1px solid var(--line-warm);
-  background: var(--button-warm-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-strong);
-  box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(52, 225, 214, 0.14);
 }
 
 .hero-panel__primary:hover,
 .form-grid__submit:hover {
-  border-color: rgba(52, 225, 214, 0.6);
-  box-shadow:
-    0 16px 32px rgba(0, 0, 0, 0.46),
-    0 0 28px rgba(52, 225, 214, 0.28);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .hero-panel__secondary {
   min-height: var(--control-height);
   padding: var(--space-button);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   border: 1px solid var(--line);
-  background: var(--button-soft-gradient);
+  background: var(--bg-panel-muted);
   color: var(--text-main);
 }
 
@@ -616,7 +611,7 @@ onMounted(loadOverview)
   padding: var(--space-subpanel);
   border-radius: var(--radius-block);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .hero-role-card span,
@@ -655,7 +650,7 @@ onMounted(loadOverview)
   padding: var(--space-card);
   border-radius: var(--radius-panel);
   border: 1px solid var(--line);
-  background: var(--panel-gradient);
+  background: var(--bg-panel);
 }
 
 .hero-spotlight__headline strong,
@@ -720,7 +715,7 @@ onMounted(loadOverview)
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .hero-spotlight__meta span {
@@ -766,7 +761,7 @@ onMounted(loadOverview)
   padding: 16px;
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .hero-status__card span,
@@ -805,10 +800,7 @@ onMounted(loadOverview)
 
 .summary-strip__card {
   border-color: var(--line-warm);
-  background: var(--warm-panel-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
-    0 0 26px rgba(52, 225, 214, 0.05);
+  background: var(--bg-panel-soft);
   animation: consoleRise 0.5s ease both;
 }
 
@@ -860,7 +852,7 @@ onMounted(loadOverview)
   padding: var(--space-subpanel);
   border-radius: var(--radius-block);
   border: 1px solid var(--line);
-  background: var(--panel-gradient);
+  background: var(--bg-panel);
   text-decoration: none;
 }
 
@@ -899,7 +891,7 @@ onMounted(loadOverview)
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .dataset-glance__item span {
@@ -940,7 +932,7 @@ onMounted(loadOverview)
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  background: var(--bg-panel);
+  background: #0e1013;
   color: var(--text-main);
 }
 
@@ -1007,7 +999,7 @@ onMounted(loadOverview)
   padding: 16px;
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .launch-card {
@@ -1025,8 +1017,7 @@ onMounted(loadOverview)
 }
 
 .launch-card:hover {
-  border-color: rgba(52, 225, 214, 0.3);
-  box-shadow: 0 0 22px rgba(52, 225, 214, 0.08);
+  border-color: var(--line-warm);
   color: var(--text-strong);
 }
 

@@ -192,28 +192,23 @@ function applyRange() {
 .range-grid__button {
   min-height: var(--control-height);
   border: 1px solid var(--line-warm);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   padding: var(--space-button);
-  background: var(--button-warm-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-strong);
   font-family: var(--body);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.36),
-    0 0 18px rgba(52, 225, 214, 0.12);
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    background 0.2s ease;
 }
 
 .timeline-panel__button:hover,
 .range-grid__button:hover {
-  border-color: rgba(52, 225, 214, 0.6);
-  box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.42),
-    0 0 26px rgba(52, 225, 214, 0.26);
+  border-color: var(--accent);
+  background: var(--bg-panel-muted);
 }
 
 .band-switch {
@@ -239,9 +234,9 @@ function applyRange() {
 .band-switch__item {
   min-height: 38px;
   padding: 0 14px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   border: 1px solid var(--line);
-  background: var(--button-soft-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-muted);
   font-family: var(--mono);
   font-size: 0.82rem;
@@ -250,25 +245,18 @@ function applyRange() {
   transition:
     color 0.2s ease,
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
     background 0.2s ease;
 }
 
 .band-switch__item:hover {
   color: var(--text-main);
-  border-color: rgba(52, 225, 214, 0.32);
-  box-shadow: 0 0 18px rgba(52, 225, 214, 0.1);
+  border-color: var(--line-strong);
 }
 
 .band-switch__item--active {
   color: var(--text-strong);
-  border-color: rgba(52, 225, 214, 0.46);
-  background:
-    linear-gradient(180deg, rgba(52, 225, 214, 0.16), rgba(160, 123, 255, 0.08)),
-    var(--button-soft-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.2),
-    0 0 22px rgba(52, 225, 214, 0.16);
+  border-color: var(--accent);
+  background: var(--bg-panel-muted);
 }
 
 .parameter-grid,
@@ -310,7 +298,7 @@ function applyRange() {
   border-radius: var(--radius-control);
   min-height: var(--field-height);
   padding: var(--space-field-x);
-  background: var(--bg-panel);
+  background: #0e1013;
   color: var(--text-main);
   font-family: var(--mono);
 }
@@ -394,16 +382,15 @@ function applyRange() {
 }
 
 .frame-ribbon__node {
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
   background: var(--bg-panel);
   border: 1px solid var(--line-strong);
   box-shadow: 0 0 0 3px var(--bg-page);
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
     transform 0.2s ease;
 }
 
@@ -416,10 +403,8 @@ function applyRange() {
 }
 
 .frame-ribbon__item:hover .frame-ribbon__node {
-  border-color: rgba(52, 225, 214, 0.55);
-  box-shadow:
-    0 0 0 3px var(--bg-page),
-    0 0 12px rgba(52, 225, 214, 0.4);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--bg-page);
 }
 
 .frame-ribbon__item:hover .frame-ribbon__time {
@@ -428,11 +413,9 @@ function applyRange() {
 
 .frame-ribbon__item--active .frame-ribbon__node {
   background: var(--accent);
-  border-color: var(--accent-strong);
-  transform: scale(1.18);
-  box-shadow:
-    0 0 0 3px var(--bg-page),
-    0 0 14px rgba(52, 225, 214, 0.6);
+  border-color: var(--accent);
+  transform: none;
+  box-shadow: 0 0 0 3px var(--bg-page);
 }
 
 .frame-ribbon__item--active .frame-ribbon__time {

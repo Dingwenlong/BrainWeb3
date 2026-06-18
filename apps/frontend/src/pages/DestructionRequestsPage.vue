@@ -558,10 +558,7 @@ watch(
   padding: var(--space-hero);
   border-radius: var(--radius-hero);
   border: 1px solid var(--line-strong);
-  background:
-    radial-gradient(120% 130% at 0% 0%, rgba(255, 97, 115, 0.1), transparent 46%),
-    radial-gradient(120% 140% at 100% 100%, rgba(160, 123, 255, 0.08), transparent 52%),
-    var(--panel-gradient);
+  background: var(--bg-panel);
   animation: consoleRise 0.55s ease both;
 }
 
@@ -569,9 +566,8 @@ watch(
   content: '';
   position: absolute;
   inset: 0 0 auto;
-  height: 3px;
-  background: linear-gradient(90deg, var(--danger), var(--accent-2) 70%, transparent);
-  box-shadow: 0 0 16px rgba(255, 97, 115, 0.5);
+  height: 2px;
+  background: var(--danger);
 }
 
 .hero-panel__copy,
@@ -605,7 +601,7 @@ watch(
   padding: 0 12px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--danger-soft);
-  background: rgba(255, 97, 115, 0.08);
+  background: var(--danger-soft);
   color: var(--danger);
   font-family: var(--mono);
   font-size: 0.68rem;
@@ -700,14 +696,12 @@ watch(
   text-transform: uppercase;
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
     color 0.2s ease;
 }
 
 .hero-panel__secondary:hover,
 .form-grid__secondary:hover {
-  border-color: var(--line-warm);
-  box-shadow: 0 0 18px rgba(52, 225, 214, 0.14);
+  border-color: var(--line-strong);
   color: var(--text-strong);
 }
 
@@ -754,11 +748,8 @@ watch(
 }
 
 .summary-strip__card {
-  border-color: var(--line-warm);
-  background: var(--warm-panel-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
-    0 0 24px rgba(52, 225, 214, 0.05);
+  border-color: var(--line);
+  background: var(--bg-panel-soft);
   animation: consoleRise 0.5s ease both;
 }
 
@@ -791,12 +782,7 @@ watch(
 
 .summary-strip__card--warn {
   border-color: var(--amber-soft);
-  background:
-    linear-gradient(180deg, rgba(242, 178, 89, 0.08), rgba(242, 178, 89, 0.015)),
-    var(--panel-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(242, 178, 89, 0.08),
-    0 0 24px rgba(242, 178, 89, 0.05);
+  background: var(--bg-panel-soft);
 }
 
 .summary-strip__card--warn strong {
@@ -805,12 +791,7 @@ watch(
 
 .summary-strip__card--danger {
   border-color: var(--danger-soft);
-  background:
-    linear-gradient(180deg, rgba(255, 97, 115, 0.09), rgba(255, 97, 115, 0.02)),
-    var(--panel-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 97, 115, 0.1),
-    0 0 26px rgba(255, 97, 115, 0.06);
+  background: var(--bg-panel-soft);
 }
 
 .summary-strip__card--danger strong {
@@ -954,20 +935,12 @@ watch(
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.36),
-    0 0 18px rgba(52, 225, 214, 0.12);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .form-grid__submit:hover:not(:disabled),
 .decision-form__primary:hover:not(:disabled) {
-  border-color: rgba(52, 225, 214, 0.6);
-  box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.42),
-    0 0 26px rgba(52, 225, 214, 0.26);
+  border-color: var(--accent);
 }
 
 .form-grid__submit:disabled,
@@ -1006,9 +979,7 @@ watch(
   display: grid;
   gap: 12px;
   animation: consoleRise 0.5s ease both;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .request-card::before {
@@ -1042,27 +1013,22 @@ watch(
 
 .request-card:hover {
   border-color: var(--line-strong);
-  box-shadow: 0 0 22px rgba(52, 225, 214, 0.08);
 }
 
 .request-card--warn::before {
-  background: linear-gradient(180deg, var(--amber), transparent);
-  box-shadow: 0 0 12px rgba(242, 178, 89, 0.35);
+  background: var(--amber);
 }
 
 .request-card--warn:hover {
   border-color: var(--amber-soft);
-  box-shadow: 0 0 22px rgba(242, 178, 89, 0.1);
 }
 
 .request-card--danger::before {
-  background: linear-gradient(180deg, var(--danger), transparent);
-  box-shadow: 0 0 12px rgba(255, 97, 115, 0.4);
+  background: var(--danger);
 }
 
 .request-card--danger:hover {
   border-color: var(--danger-soft);
-  box-shadow: 0 0 22px rgba(255, 97, 115, 0.1);
 }
 
 .request-card__header strong {
@@ -1087,8 +1053,7 @@ watch(
 }
 
 .request-card__link:hover {
-  border-color: var(--line-warm);
-  box-shadow: 0 0 16px rgba(52, 225, 214, 0.14);
+  border-color: var(--line-strong);
   color: var(--text-strong);
 }
 
@@ -1119,28 +1084,16 @@ watch(
 /* Destructive: reject / execute / purge — must read as serious */
 .decision-form__danger {
   border: 1px solid var(--danger-soft);
-  background:
-    linear-gradient(180deg, rgba(255, 97, 115, 0.14), rgba(255, 97, 115, 0.04)),
-    var(--button-soft-gradient);
+  background: var(--button-soft-gradient);
   color: var(--danger);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 97, 115, 0.08),
-    0 10px 22px rgba(0, 0, 0, 0.3);
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
     background 0.2s ease;
 }
 
 .decision-form__danger:hover:not(:disabled) {
   border-color: var(--danger);
-  background:
-    linear-gradient(180deg, rgba(255, 97, 115, 0.22), rgba(255, 97, 115, 0.06)),
-    var(--button-soft-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 97, 115, 0.18),
-    0 12px 26px rgba(0, 0, 0, 0.4),
-    0 0 22px rgba(255, 97, 115, 0.28);
+  background: var(--danger-soft);
 }
 
 .empty-state {

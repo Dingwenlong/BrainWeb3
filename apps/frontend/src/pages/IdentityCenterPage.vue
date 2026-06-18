@@ -564,10 +564,7 @@ onMounted(loadPage)
   gap: 20px;
   padding: var(--space-hero);
   border-radius: var(--radius-hero);
-  background:
-    radial-gradient(125% 130% at 0% 0%, rgba(160, 123, 255, 0.12), transparent 46%),
-    radial-gradient(120% 140% at 100% 100%, rgba(52, 225, 214, 0.08), transparent 50%),
-    var(--panel-gradient);
+  background: var(--bg-panel);
   animation: consoleRise 0.55s ease both;
 }
 
@@ -575,9 +572,8 @@ onMounted(loadPage)
   content: '';
   position: absolute;
   inset: 0 0 auto;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent-2), var(--accent));
-  box-shadow: 0 0 16px rgba(160, 123, 255, 0.5);
+  height: 2px;
+  background: var(--line-strong);
 }
 
 .hero-panel__copy,
@@ -666,15 +662,13 @@ onMounted(loadPage)
   text-transform: uppercase;
   transition:
     border-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
+    color 0.2s ease;
 }
 
 .hero-panel__secondary:hover,
 .workspace-card__link:hover {
-  border-color: rgba(160, 123, 255, 0.45);
+  border-color: var(--line-strong);
   color: var(--text-strong);
-  box-shadow: 0 0 20px rgba(160, 123, 255, 0.16);
 }
 
 .summary-strip__card span,
@@ -709,9 +703,6 @@ onMounted(loadPage)
   border-radius: var(--radius-panel);
   border: 1px solid var(--line-warm);
   background: var(--warm-panel-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(160, 123, 255, 0.06),
-    0 0 24px rgba(160, 123, 255, 0.05);
   animation: consoleRise 0.5s ease both;
 }
 
@@ -761,17 +752,11 @@ onMounted(loadPage)
 }
 
 .hero-spotlight--identity {
-  border-color: rgba(160, 123, 255, 0.22);
-  box-shadow:
-    inset 0 1px 0 rgba(160, 123, 255, 0.08),
-    0 0 26px rgba(160, 123, 255, 0.06);
+  border-color: var(--line);
 }
 
 .hero-spotlight--audit {
-  border-color: rgba(52, 225, 214, 0.18);
-  box-shadow:
-    inset 0 1px 0 rgba(52, 225, 214, 0.07),
-    0 0 24px rgba(52, 225, 214, 0.05);
+  border-color: var(--line);
 }
 
 .hero-spotlight__kicker {
@@ -786,7 +771,7 @@ onMounted(loadPage)
 
 .hero-spotlight__did {
   font-family: var(--mono);
-  color: var(--accent-2);
+  color: var(--text-muted);
   word-break: break-all;
 }
 
@@ -806,8 +791,8 @@ onMounted(loadPage)
 .hero-spotlight__reason {
   padding: 10px 12px;
   border-radius: var(--radius-control);
-  border-left: 2px solid var(--accent-2);
-  background: var(--accent-2-soft);
+  border-left: 2px solid var(--line-strong);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
 }
 
@@ -891,21 +876,19 @@ onMounted(loadPage)
 }
 
 .workspace-card--identity:hover {
-  border-color: rgba(160, 123, 255, 0.34);
-  box-shadow: 0 0 26px rgba(160, 123, 255, 0.1);
+  border-color: var(--line-strong);
 }
 
 .workspace-card--audit:hover {
-  border-color: rgba(52, 225, 214, 0.3);
-  box-shadow: 0 0 26px rgba(52, 225, 214, 0.08);
+  border-color: var(--line-strong);
 }
 
 .workspace-card__note {
   margin: 0;
   padding: 10px 12px;
   border-radius: var(--radius-control);
-  border-left: 2px solid var(--accent-2);
-  background: var(--accent-2-soft);
+  border-left: 2px solid var(--line-strong);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   font-size: var(--supporting-text-size);
   line-height: var(--supporting-text-line-height);
@@ -928,13 +911,11 @@ onMounted(loadPage)
 }
 
 .identity-card:hover {
-  border-color: rgba(160, 123, 255, 0.3);
-  box-shadow: 0 0 22px rgba(160, 123, 255, 0.08);
+  border-color: var(--line-strong);
 }
 
 .audit-card:hover {
-  border-color: rgba(52, 225, 214, 0.28);
-  box-shadow: 0 0 22px rgba(52, 225, 214, 0.07);
+  border-color: var(--line-strong);
 }
 
 .identity-card__header strong,

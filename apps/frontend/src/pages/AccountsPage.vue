@@ -673,7 +673,7 @@ onMounted(loadPage)
   gap: var(--space-list);
 }
 
-/* === Hero summary strip — cyan signal readouts === */
+/* === Hero summary strip — signal readouts === */
 .summary-strip {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -685,28 +685,20 @@ onMounted(loadPage)
   padding: var(--space-card);
   border-radius: var(--radius-panel);
   border: 1px solid var(--line);
-  background: var(--panel-gradient);
+  background: var(--bg-panel);
 }
 
 .summary-strip__card {
   overflow: hidden;
   border-color: var(--line-warm);
-  background: var(--warm-panel-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
-    0 0 26px rgba(52, 225, 214, 0.05);
+  background: var(--bg-panel-soft);
   animation: consoleRise 0.5s ease both;
 }
 
-/* Governance / org-side stats lean into the violet system domain */
+/* Governance / org-side stats stay neutral */
 .summary-strip__card--secondary {
-  border-color: rgba(160, 123, 255, 0.28);
-  background:
-    linear-gradient(180deg, rgba(160, 123, 255, 0.08), rgba(160, 123, 255, 0.02)),
-    var(--panel-soft-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(160, 123, 255, 0.06),
-    0 0 26px rgba(160, 123, 255, 0.05);
+  border-color: var(--line);
+  background: var(--bg-panel-soft);
 }
 
 .summary-strip__card::before {
@@ -714,11 +706,11 @@ onMounted(loadPage)
   position: absolute;
   inset: 0 auto 0 0;
   width: 2px;
-  background: linear-gradient(180deg, var(--accent), transparent);
+  background: var(--accent);
 }
 
 .summary-strip__card--secondary::before {
-  background: linear-gradient(180deg, var(--accent-2), transparent);
+  background: var(--line-strong);
 }
 
 .summary-strip__card:nth-child(1) {
@@ -768,7 +760,7 @@ onMounted(loadPage)
 }
 
 .summary-strip__card--secondary strong {
-  color: var(--accent-2);
+  color: var(--text-strong);
 }
 
 /* === Hero spotlight — current account readout === */
@@ -818,7 +810,7 @@ onMounted(loadPage)
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .hero-spotlight__meta strong {
@@ -845,17 +837,16 @@ onMounted(loadPage)
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--accent);
-  transition: color 0.2s ease, text-shadow 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .panel-link::before {
   content: '↳';
-  color: var(--accent-2);
+  color: var(--text-muted);
 }
 
 .panel-link:hover {
   color: var(--accent-strong);
-  text-shadow: 0 0 12px rgba(52, 225, 214, 0.4);
 }
 
 .panel-note {
@@ -888,7 +879,7 @@ onMounted(loadPage)
   padding: var(--space-field-x);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  background: var(--bg-panel);
+  background: #0e1013;
   color: var(--text-main);
 }
 
@@ -897,8 +888,8 @@ onMounted(loadPage)
   min-height: var(--control-height);
   padding: var(--space-button);
   border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--button-soft-gradient);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   font-family: var(--body);
   font-weight: 600;
@@ -906,13 +897,11 @@ onMounted(loadPage)
   text-transform: uppercase;
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
     color 0.2s ease;
 }
 
 .account-card__actions button:not(:disabled):hover {
-  border-color: rgba(52, 225, 214, 0.4);
-  box-shadow: 0 0 18px rgba(52, 225, 214, 0.12);
+  border-color: var(--line-warm);
   color: var(--text-strong);
 }
 
@@ -923,26 +912,18 @@ onMounted(loadPage)
 
 .form-grid__submit {
   border-color: var(--line-warm);
-  background: var(--button-warm-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-strong);
-  box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(52, 225, 214, 0.14);
 }
 
 .form-grid__submit:hover {
-  border-color: rgba(52, 225, 214, 0.6);
-  box-shadow:
-    0 16px 32px rgba(0, 0, 0, 0.46),
-    0 0 28px rgba(52, 225, 214, 0.28);
+  border-color: var(--accent);
 }
 
 /* === Account / org cards === */
 .account-card {
   animation: consoleRise 0.5s ease both;
-  transition:
-    border-color 0.22s ease,
-    box-shadow 0.22s ease;
+  transition: border-color 0.22s ease;
 }
 
 .account-card:nth-child(1) { animation-delay: 0.04s; }
@@ -952,14 +933,12 @@ onMounted(loadPage)
 .account-card:nth-child(5) { animation-delay: 0.28s; }
 
 .account-card:hover {
-  border-color: rgba(52, 225, 214, 0.2);
-  box-shadow: var(--shadow-soft), 0 0 26px rgba(52, 225, 214, 0.05);
+  border-color: var(--line-strong);
 }
 
-/* Org governance cards belong to the violet system domain */
+/* Org governance cards stay neutral */
 .org-card .account-card:hover {
-  border-color: rgba(160, 123, 255, 0.24);
-  box-shadow: var(--shadow-soft), 0 0 26px rgba(160, 123, 255, 0.06);
+  border-color: var(--line-strong);
 }
 
 .account-card__header strong {
@@ -995,7 +974,7 @@ onMounted(loadPage)
   margin-top: 12px;
   border-radius: var(--radius-control);
   border: 1px solid var(--amber-soft);
-  background: rgba(242, 178, 89, 0.05);
+  background: var(--bg-panel-soft);
   color: var(--text-muted);
 }
 
@@ -1034,7 +1013,7 @@ onMounted(loadPage)
   padding: 12px 14px 12px 18px;
   border-radius: var(--radius-control);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .history-timeline__item::before {
@@ -1043,7 +1022,7 @@ onMounted(loadPage)
   inset: 12px auto 12px 0;
   width: 2px;
   border-radius: 2px;
-  background: linear-gradient(180deg, var(--accent-2), transparent);
+  background: var(--line-strong);
 }
 
 .history-timeline__item strong {
@@ -1066,17 +1045,15 @@ onMounted(loadPage)
   color: var(--text-faint);
 }
 
-/* === Credential governance form — violet system domain === */
+/* === Credential governance form === */
 .credential-form {
   display: grid;
   gap: 10px;
   margin-top: 14px;
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
-  border: 1px solid rgba(160, 123, 255, 0.22);
-  background:
-    linear-gradient(180deg, rgba(160, 123, 255, 0.05), rgba(160, 123, 255, 0)),
-    var(--panel-soft-gradient);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
 }
 
 .credential-form label {
@@ -1100,26 +1077,24 @@ onMounted(loadPage)
   padding: var(--space-field-x);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  background: var(--bg-panel);
+  background: #0e1013;
   color: var(--text-main);
 }
 
 .credential-form__submit {
   min-height: var(--control-height);
-  border-color: rgba(160, 123, 255, 0.4);
-  background: linear-gradient(180deg, rgba(160, 123, 255, 0.24), rgba(52, 225, 214, 0.2));
+  border-color: var(--line-warm);
+  background: var(--bg-panel-soft);
   color: var(--text-strong);
   font-family: var(--body);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  box-shadow: 0 0 18px rgba(160, 123, 255, 0.12);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .credential-form__submit:not(:disabled):hover {
-  border-color: rgba(160, 123, 255, 0.62);
-  box-shadow: 0 0 26px rgba(160, 123, 255, 0.26);
+  border-color: var(--accent);
 }
 
 .credential-form__submit:disabled {
@@ -1134,8 +1109,7 @@ onMounted(loadPage)
 }
 
 .account-card__danger:not(:disabled):hover {
-  border-color: rgba(255, 97, 115, 0.55) !important;
-  box-shadow: 0 0 18px rgba(255, 97, 115, 0.16) !important;
+  border-color: var(--danger) !important;
   color: var(--danger) !important;
 }
 

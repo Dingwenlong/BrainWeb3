@@ -32,16 +32,14 @@ defineProps<{
 .surface-card {
   padding: 20px;
   border-radius: var(--radius-panel);
-  background: var(--panel-gradient);
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
   animation: consoleRise 0.5s ease both;
-  transition:
-    border-color 0.22s ease,
-    box-shadow 0.22s ease;
+  transition: border-color 0.22s ease;
 }
 
 .surface-card:hover {
-  border-color: rgba(52, 225, 214, 0.2);
-  box-shadow: var(--shadow-soft), 0 0 30px rgba(52, 225, 214, 0.05);
+  border-color: var(--line-strong);
 }
 
 .surface-card__header {

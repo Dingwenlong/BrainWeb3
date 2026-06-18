@@ -879,7 +879,7 @@ watch(
   padding: var(--space-panel);
   border-radius: var(--radius-panel);
   border: 1px solid var(--line);
-  background: var(--panel-gradient);
+  background: var(--bg-panel);
   animation: consoleRise 0.5s ease both;
 }
 
@@ -888,10 +888,7 @@ watch(
   position: relative;
   overflow: hidden;
   border-color: var(--line-strong);
-  background:
-    radial-gradient(120% 130% at 100% 0%, rgba(160, 123, 255, 0.1), transparent 46%),
-    radial-gradient(120% 140% at 0% 100%, rgba(52, 225, 214, 0.07), transparent 50%),
-    var(--panel-gradient);
+  background: var(--bg-panel);
 }
 
 /* Staggered console boot per section */
@@ -961,7 +958,7 @@ watch(
   padding: var(--space-subpanel);
   border-radius: var(--radius-block);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .metric-card span,
@@ -1059,14 +1056,12 @@ watch(
   cursor: pointer;
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
     background 0.2s ease;
 }
 
 .registry-overview__event:hover {
-  border-color: rgba(160, 123, 255, 0.35);
-  box-shadow: 0 0 22px rgba(160, 123, 255, 0.1);
-  background: var(--panel-soft-gradient);
+  border-color: var(--line-strong);
+  background: var(--bg-panel-muted);
 }
 
 .registry-overview__event-head {
@@ -1084,7 +1079,7 @@ watch(
 }
 
 .governance-lane {
-  border-color: rgba(160, 123, 255, 0.22);
+  border-color: var(--line-strong);
 }
 
 .governance-lane__grid {
@@ -1094,10 +1089,8 @@ watch(
 .governance-lane__spotlight {
   padding: var(--space-card);
   border-radius: var(--radius-block);
-  border: 1px solid rgba(160, 123, 255, 0.24);
-  background:
-    radial-gradient(140% 120% at 0% 0%, rgba(160, 123, 255, 0.1), transparent 52%),
-    var(--panel-soft-gradient);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
 }
 
 .governance-lane__headline {
@@ -1115,7 +1108,7 @@ watch(
   padding: var(--space-card);
   border-radius: var(--radius-block);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .governance-event {
@@ -1124,14 +1117,11 @@ watch(
   border: 1px solid var(--line);
   border-radius: var(--radius-subpanel);
   background: var(--bg-panel-soft);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .governance-event:hover {
-  border-color: rgba(52, 225, 214, 0.28);
-  box-shadow: 0 0 18px rgba(52, 225, 214, 0.07);
+  border-color: var(--line-strong);
 }
 
 .governance-event__head strong {
@@ -1145,10 +1135,8 @@ watch(
   gap: 14px;
   padding: var(--space-card);
   border-radius: var(--radius-subpanel);
-  border: 1px solid rgba(160, 123, 255, 0.3);
-  background:
-    radial-gradient(130% 130% at 100% 0%, rgba(160, 123, 255, 0.12), transparent 54%),
-    var(--bg-panel-soft);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
 }
 
 .version-compare__rank {
@@ -1156,7 +1144,7 @@ watch(
   font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--accent-2);
+  color: var(--text-muted);
 }
 
 .version-compare__ids {
@@ -1176,8 +1164,7 @@ watch(
 }
 
 .version-compare__id--active {
-  border-color: rgba(52, 225, 214, 0.4);
-  box-shadow: inset 0 0 0 1px rgba(52, 225, 214, 0.12);
+  border-color: var(--line-warm);
 }
 
 .version-compare__id .version-id {
@@ -1201,10 +1188,9 @@ watch(
 }
 
 .version-compare__arrow {
-  color: var(--accent-2);
+  color: var(--text-muted);
   font-family: var(--mono);
   font-size: 1.3rem;
-  text-shadow: 0 0 12px rgba(160, 123, 255, 0.45);
 }
 
 .version-compare__stats {
@@ -1223,32 +1209,26 @@ watch(
   min-height: var(--field-height);
   border-radius: var(--radius-control);
   border: 1px solid var(--line);
-  background: var(--bg-panel);
+  background: #0e1013;
   color: var(--text-main);
   padding: var(--space-field-x);
 }
 
 /* Focused record -> cyan workspace signal (was warm brown) */
 .record-card {
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .record-card:hover {
-  border-color: rgba(52, 225, 214, 0.24);
-  box-shadow: 0 0 22px rgba(52, 225, 214, 0.06);
+  border-color: var(--line-strong);
 }
 
 .record-card--focus {
-  border-color: rgba(52, 225, 214, 0.4);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.16),
-    0 0 26px rgba(52, 225, 214, 0.1);
+  border-color: var(--line-warm);
 }
 
 .record-card--focus .record-card__eyebrow {
-  color: var(--accent-strong);
+  color: var(--accent);
 }
 
 .record-card__meta {
@@ -1275,26 +1255,24 @@ watch(
   color: var(--text-faint);
 }
 
-/* Transition guide -> violet governance affordance */
+/* Transition guide -> neutral governance affordance */
 .record-card__transition-guide {
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
-  border: 1px solid rgba(160, 123, 255, 0.28);
-  background:
-    linear-gradient(180deg, rgba(160, 123, 255, 0.08), transparent),
-    var(--bg-panel-soft);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
 }
 
 /* ---- Governance domain status chips ---- */
 .status-chip--active {
-  color: var(--accent-strong);
-  border-color: rgba(52, 225, 214, 0.45);
-  background: rgba(52, 225, 214, 0.08);
+  color: var(--accent);
+  border-color: var(--line-warm);
+  background: var(--bg-panel-soft);
 }
 
 .status-chip--ghost {
-  color: var(--accent-2);
-  border-color: rgba(160, 123, 255, 0.32);
+  color: var(--text-muted);
+  border-color: var(--line);
 }
 
 .ghost-link,
@@ -1305,7 +1283,7 @@ watch(
   justify-content: center;
   min-height: var(--control-height);
   padding: var(--space-button);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   font-family: var(--body);
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -1313,21 +1291,19 @@ watch(
   text-decoration: none;
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
     color 0.2s ease;
 }
 
 .ghost-link,
 .ghost-button {
   border: 1px solid var(--line);
-  background: var(--button-soft-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
 }
 
 .ghost-link:hover,
 .ghost-button:hover:not(:disabled) {
-  border-color: rgba(52, 225, 214, 0.4);
-  box-shadow: 0 0 18px rgba(52, 225, 214, 0.1);
+  border-color: var(--line-strong);
   color: var(--text-strong);
 }
 
@@ -1336,27 +1312,21 @@ watch(
   cursor: not-allowed;
 }
 
-/* Primary governance action -> cyan->violet signal */
+/* Primary governance action -> single accent signal */
 .primary-button {
   border: 1px solid var(--line-warm);
-  color: var(--text-strong);
-  background: var(--button-warm-gradient);
-  box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(52, 225, 214, 0.14);
+  color: var(--accent);
+  background: var(--bg-panel-soft);
 }
 
 .primary-button:hover:not(:disabled) {
-  border-color: rgba(52, 225, 214, 0.6);
-  box-shadow:
-    0 16px 32px rgba(0, 0, 0, 0.46),
-    0 0 28px rgba(52, 225, 214, 0.28);
+  border-color: var(--accent);
+  color: var(--text-strong);
 }
 
 .primary-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
 .governance-form {
@@ -1364,10 +1334,8 @@ watch(
   align-items: end;
   padding: var(--space-card);
   border-radius: var(--radius-block);
-  border: 1px solid rgba(160, 123, 255, 0.2);
-  background:
-    linear-gradient(180deg, rgba(160, 123, 255, 0.05), transparent),
-    var(--bg-panel-soft);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
 }
 
 @media (max-width: 980px) {

@@ -443,9 +443,9 @@ watch(
   align-items: center;
   min-height: var(--control-height);
   padding: var(--space-button);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   border: 1px solid var(--line);
-  background: var(--button-soft-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   text-decoration: none;
   font-family: var(--body);
@@ -455,14 +455,12 @@ watch(
   text-transform: uppercase;
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
     color 0.2s ease;
 }
 
 .hero-panel__secondary:hover {
-  border-color: var(--accent-2);
+  border-color: var(--line-strong);
   color: var(--text-strong);
-  box-shadow: var(--glow-violet);
 }
 
 .summary-strip,
@@ -476,17 +474,12 @@ watch(
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-/* Hero summary strip = governance signal surface, violet-led */
+/* Hero summary strip = governance signal surface, neutral instrument tiles */
 .summary-strip__card {
   padding: var(--space-card);
   border-radius: var(--radius-panel);
   border: 1px solid var(--line);
-  background:
-    linear-gradient(180deg, rgba(160, 123, 255, 0.08), rgba(160, 123, 255, 0.02)),
-    var(--panel-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(160, 123, 255, 0.06),
-    0 0 24px rgba(160, 123, 255, 0.05);
+  background: var(--bg-panel-soft);
   animation: consoleRise 0.5s ease both;
 }
 
@@ -508,7 +501,7 @@ watch(
   padding: var(--space-card);
   border-radius: var(--radius-panel);
   border: 1px solid var(--line);
-  background: var(--panel-gradient);
+  background: var(--bg-panel);
 }
 
 .summary-strip__card span,
@@ -540,25 +533,22 @@ watch(
   color: var(--text-strong);
 }
 
-/* Hero priority spotlight = top governance decision, violet rail */
+/* Hero priority spotlight = top governance decision, neutral rail */
 .hero-spotlight {
   display: grid;
   gap: 14px;
   position: relative;
   overflow: hidden;
-  border-color: rgba(160, 123, 255, 0.22);
-  background:
-    radial-gradient(120% 120% at 100% 0%, rgba(160, 123, 255, 0.1), transparent 52%),
-    var(--panel-gradient);
+  border-color: var(--line-strong);
+  background: var(--bg-panel);
 }
 
 .hero-spotlight::before {
   content: '';
   position: absolute;
   inset: 0 auto 0 0;
-  width: 3px;
-  background: linear-gradient(180deg, var(--accent-2), var(--accent));
-  box-shadow: 0 0 14px rgba(160, 123, 255, 0.5);
+  width: 2px;
+  background: var(--line-strong);
 }
 
 .hero-spotlight__kicker {
@@ -600,7 +590,7 @@ watch(
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .hero-spotlight__meta strong,
@@ -637,15 +627,12 @@ watch(
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  background: var(--bg-panel-soft);
+  transition: border-color 0.2s ease;
 }
 
 .policy-cards__item:hover {
-  border-color: rgba(160, 123, 255, 0.28);
-  box-shadow: 0 0 20px rgba(160, 123, 255, 0.08);
+  border-color: var(--line-strong);
 }
 
 .queue-card {
@@ -660,18 +647,15 @@ watch(
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  /* amber-tinted pending queue */
-  background:
-    linear-gradient(180deg, rgba(242, 178, 89, 0.06), transparent),
-    var(--panel-soft-gradient);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  /* pending queue, amber accent edge */
+  border-left: 2px solid var(--amber);
+  background: var(--bg-panel-soft);
+  transition: border-color 0.2s ease;
 }
 
 .queue-preview__item:hover {
-  border-color: rgba(242, 178, 89, 0.32);
-  box-shadow: 0 0 20px rgba(242, 178, 89, 0.08);
+  border-color: var(--line-strong);
+  border-left-color: var(--amber);
 }
 
 .queue-preview__item strong {
@@ -718,7 +702,7 @@ watch(
   padding: var(--space-field-x);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  background: var(--bg-panel);
+  background: #0e1013;
   color: var(--text-main);
 }
 
@@ -731,23 +715,18 @@ watch(
   padding: var(--space-card);
   border-radius: var(--radius-block);
   border: 1px solid var(--line);
-  background: var(--panel-gradient);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  background: var(--bg-panel);
+  transition: border-color 0.2s ease;
 }
 
 .request-card:hover {
-  border-color: rgba(160, 123, 255, 0.26);
-  box-shadow: 0 0 24px rgba(160, 123, 255, 0.07);
+  border-color: var(--line-strong);
 }
 
-/* Focused (deep-linked) request = highlighted governance target, violet */
+/* Focused (deep-linked) request = highlighted governance target, accent edge */
 .request-card--focus {
-  border-color: rgba(160, 123, 255, 0.4);
-  box-shadow:
-    inset 0 0 0 1px rgba(160, 123, 255, 0.14),
-    0 0 28px rgba(160, 123, 255, 0.12);
+  border-color: var(--line-warm);
+  border-left: 2px solid var(--accent);
 }
 
 .request-card__header,
@@ -782,8 +761,8 @@ watch(
   margin-top: 12px;
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  border-left: 2px solid var(--accent-2);
-  background: var(--panel-soft-gradient);
+  border-left: 2px solid var(--line-strong);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
 }
 
@@ -834,7 +813,6 @@ watch(
 
 .request-card__link:hover {
   color: var(--accent-strong);
-  text-shadow: 0 0 12px rgba(52, 225, 214, 0.45);
 }
 
 .request-card__actions {
@@ -847,8 +825,8 @@ watch(
   min-height: var(--control-height);
   padding: var(--space-button);
   border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--button-soft-gradient);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   font-family: var(--body);
   font-size: 0.8rem;
@@ -858,25 +836,19 @@ watch(
   cursor: pointer;
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
     color 0.2s ease;
 }
 
-/* Approve = deliberate primary decision, cyan->violet warm gradient */
+/* Approve = deliberate primary decision, accent edge */
 .request-card__approve {
   border-color: var(--line-warm);
-  background: var(--button-warm-gradient);
+  background: var(--bg-panel-muted);
   color: var(--text-strong);
-  box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.38),
-    0 0 18px rgba(52, 225, 214, 0.14);
 }
 
 .request-card__approve:hover:not(:disabled) {
   border-color: var(--accent);
-  box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.44),
-    0 0 26px rgba(52, 225, 214, 0.3);
+  color: var(--accent);
 }
 
 /* Reject / revoke = destructive decision, danger */
@@ -887,7 +859,6 @@ watch(
 
 .request-card__danger:hover:not(:disabled) {
   border-color: var(--danger);
-  box-shadow: 0 0 20px rgba(255, 97, 115, 0.22);
 }
 
 .request-card__actions button:disabled {

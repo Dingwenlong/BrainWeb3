@@ -39,9 +39,9 @@ const { toasts, removeToast } = useToast()
   gap: 16px;
   padding: 15px 18px;
   border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
   border-left: 2px solid var(--accent);
-  background: linear-gradient(180deg, rgba(19, 29, 49, 0.97), rgba(12, 19, 34, 0.97));
-  box-shadow: var(--shadow-soft), 0 0 24px rgba(52, 225, 214, 0.08);
+  background: var(--bg-panel);
   animation: consoleRise 0.32s ease both;
 }
 
@@ -51,13 +51,11 @@ const { toasts, removeToast } = useToast()
 
 .toast-card--warning {
   border-left-color: var(--amber);
-  box-shadow: var(--shadow-soft), 0 0 24px rgba(242, 178, 89, 0.1);
 }
 
 .toast-card--error,
 .toast-card--danger {
   border-left-color: var(--danger);
-  box-shadow: var(--shadow-soft), 0 0 24px rgba(255, 97, 115, 0.12);
 }
 
 .toast-card__title {

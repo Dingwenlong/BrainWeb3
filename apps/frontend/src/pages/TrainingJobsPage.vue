@@ -491,16 +491,6 @@ watch(
   align-items: stretch;
 }
 
-.training-hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(120% 130% at 0% 0%, rgba(52, 225, 214, 0.08), transparent 46%),
-    radial-gradient(120% 140% at 100% 100%, rgba(160, 123, 255, 0.07), transparent 50%);
-}
-
 .training-panel {
   animation-delay: 0.08s;
 }
@@ -528,10 +518,10 @@ watch(
   align-items: center;
   min-height: 28px;
   padding: 0 12px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   border: 1px solid var(--line-warm);
-  background: rgba(52, 225, 214, 0.08);
-  color: var(--accent-strong);
+  background: var(--bg-panel-soft);
+  color: var(--accent);
   font-family: var(--mono);
   font-size: 0.7rem;
   font-weight: 600;
@@ -588,19 +578,17 @@ watch(
   padding: var(--space-card);
   border-radius: var(--radius-block);
   border: 1px solid var(--line);
-  background: var(--panel-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .metric-card {
-  border-color: var(--line-warm);
-  background: var(--warm-panel-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
-    0 0 24px rgba(52, 225, 214, 0.05);
+  border-color: var(--line);
+  background: var(--bg-panel-soft);
 }
 
 .metric-card--live {
   position: relative;
+  border-color: var(--line-warm);
 }
 
 .metric-card--live::before {
@@ -608,24 +596,21 @@ watch(
   position: absolute;
   top: 16px;
   right: 16px;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
+  width: 7px;
+  height: 7px;
+  border-radius: 0;
   background: var(--accent);
-  box-shadow: 0 0 10px var(--accent);
 }
 
 .dataset-brief {
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-muted);
 }
 
 .job-card {
   position: relative;
   overflow: hidden;
   transition:
-    border-color 0.22s ease,
-    box-shadow 0.22s ease,
-    transform 0.22s ease;
+    border-color 0.22s ease;
 }
 
 .job-card::before {
@@ -637,35 +622,27 @@ watch(
 }
 
 .job-card--running::before {
-  background: linear-gradient(180deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 14px rgba(52, 225, 214, 0.45);
+  background: var(--accent);
 }
 
 .job-card--success::before {
-  background: var(--accent-strong);
-  box-shadow: 0 0 12px rgba(52, 225, 214, 0.4);
+  background: var(--accent);
 }
 
 .job-card--danger::before {
   background: var(--danger);
-  box-shadow: 0 0 12px var(--danger-soft);
 }
 
 .job-card:hover {
-  border-color: rgba(52, 225, 214, 0.32);
-  box-shadow: 0 0 24px rgba(52, 225, 214, 0.1);
+  border-color: var(--line-strong);
 }
 
 .job-card--danger:hover {
-  border-color: rgba(255, 97, 115, 0.34);
-  box-shadow: 0 0 24px var(--danger-soft);
+  border-color: var(--danger);
 }
 
 .job-card--focus {
-  border-color: rgba(52, 225, 214, 0.45);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.18),
-    0 0 28px rgba(52, 225, 214, 0.14);
+  border-color: var(--line-warm);
 }
 
 .dataset-brief--empty p:last-child {
@@ -780,7 +757,7 @@ watch(
   align-items: center;
   justify-content: center;
   min-height: var(--control-height);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   padding: var(--space-button);
   font-family: var(--body);
   font-weight: 600;
@@ -788,24 +765,18 @@ watch(
   text-transform: uppercase;
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
     color 0.2s ease;
 }
 
 .primary-button {
   border: 1px solid var(--line-warm);
-  color: var(--text-strong);
-  background: var(--button-warm-gradient);
-  box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(52, 225, 214, 0.14);
+  color: var(--accent);
+  background: var(--bg-panel-soft);
 }
 
 .primary-button:hover:not(:disabled) {
-  border-color: rgba(52, 225, 214, 0.6);
-  box-shadow:
-    0 16px 32px rgba(0, 0, 0, 0.46),
-    0 0 28px rgba(52, 225, 214, 0.28);
+  border-color: var(--accent);
+  color: var(--text-strong);
 }
 
 .primary-button:disabled {
@@ -816,16 +787,15 @@ watch(
 .ghost-button,
 .ghost-link {
   border: 1px solid var(--line);
-  background: var(--button-soft-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   text-decoration: none;
 }
 
 .ghost-button:hover:not(:disabled),
 .ghost-link:hover {
-  border-color: rgba(52, 225, 214, 0.34);
+  border-color: var(--line-strong);
   color: var(--text-strong);
-  box-shadow: 0 0 18px rgba(52, 225, 214, 0.08);
 }
 
 .ghost-button:disabled {
@@ -842,7 +812,7 @@ watch(
   align-items: center;
   min-height: 34px;
   padding: 0 12px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   border: 1px solid var(--line);
   background: var(--bg-panel-soft);
   color: var(--text-main);
@@ -853,18 +823,14 @@ watch(
   text-transform: uppercase;
 }
 
-/* Domain status mapping: running=cyan (live), succeeded=cyan-strong, failed=danger (global) */
+/* Domain status mapping: running=accent (live), succeeded=accent, failed=danger (global) */
 .status-chip--running {
   color: var(--accent);
   border-color: var(--line-warm);
 }
 
-.status-chip--running::before {
-  animation: signalPulse 1.8s ease-in-out infinite;
-}
-
 .status-chip--success {
-  color: var(--accent-strong);
+  color: var(--accent);
   border-color: var(--line-warm);
 }
 
@@ -889,7 +855,7 @@ watch(
 .job-card__progress-track {
   position: relative;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-control);
   overflow: hidden;
   background: var(--bg-panel-muted);
   border: 1px solid var(--line);
@@ -898,19 +864,17 @@ watch(
 .job-card__progress-fill {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 12px rgba(52, 225, 214, 0.4);
+  border-radius: var(--radius-control);
+  background: var(--accent);
   transition: width 0.5s ease;
 }
 
 .job-card--success .job-card__progress-fill {
-  background: var(--accent-strong);
+  background: var(--accent);
 }
 
 .job-card--danger .job-card__progress-fill {
-  background: linear-gradient(90deg, var(--danger), var(--amber));
-  box-shadow: 0 0 12px var(--danger-soft);
+  background: var(--danger);
 }
 
 .job-card__meta {
@@ -954,9 +918,8 @@ watch(
 .job-card__governance {
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
-  border: 1px solid var(--line-warm);
-  background: var(--warm-panel-gradient);
-  box-shadow: inset 0 0 0 1px rgba(52, 225, 214, 0.05);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-muted);
 }
 
 .job-card__governance p {

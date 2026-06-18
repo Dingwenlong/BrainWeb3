@@ -165,9 +165,7 @@ async function handleLogout() {
   gap: 24px;
   padding: 16px 24px;
   border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(13, 20, 36, 0.92), rgba(9, 15, 28, 0.84));
-  backdrop-filter: blur(16px) saturate(120%);
-  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  background: var(--bg-panel);
 }
 
 .app-brand {
@@ -183,15 +181,14 @@ async function handleLogout() {
   place-items: center;
   width: 42px;
   height: 42px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(52, 225, 214, 0.22), rgba(160, 123, 255, 0.3));
-  border: 1px solid rgba(52, 225, 214, 0.42);
-  color: var(--text-strong);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel-soft);
+  border: 1px solid var(--line-strong);
+  color: var(--accent);
   font-family: var(--mono);
   font-size: 0.84rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  box-shadow: 0 0 18px rgba(52, 225, 214, 0.25), inset 0 0 12px rgba(160, 123, 255, 0.16);
 }
 
 .app-brand__mark::after {
@@ -201,9 +198,7 @@ async function handleLogout() {
   right: 6px;
   width: 5px;
   height: 5px;
-  border-radius: 999px;
-  background: var(--accent-strong);
-  box-shadow: 0 0 8px var(--accent);
+  background: var(--accent);
   animation: signalPulse 2.4s ease-in-out infinite;
 }
 
@@ -254,9 +249,9 @@ async function handleLogout() {
   justify-content: center;
   min-height: 38px;
   padding: 0 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--line);
-  background: var(--button-soft-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   text-decoration: none;
   font-family: var(--mono);
@@ -266,20 +261,19 @@ async function handleLogout() {
 
 .app-header__link:hover,
 .app-header__button:hover {
-  border-color: rgba(52, 225, 214, 0.34);
+  border-color: var(--line-strong);
   color: var(--text-strong);
 }
 
 .app-header__button--primary {
-  border-color: rgba(52, 225, 214, 0.42);
-  background: linear-gradient(180deg, rgba(52, 225, 214, 0.2), rgba(160, 123, 255, 0.2));
-  color: var(--text-strong);
-  box-shadow: 0 0 16px rgba(52, 225, 214, 0.18);
+  border-color: var(--line-warm);
+  background: var(--bg-panel-soft);
+  color: var(--accent);
 }
 
 .app-header__button--primary:hover {
-  border-color: rgba(52, 225, 214, 0.6);
-  box-shadow: 0 0 22px rgba(52, 225, 214, 0.3);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .app-header__account {
@@ -297,7 +291,7 @@ async function handleLogout() {
 .app-sidebar {
   padding: 24px 18px 24px 24px;
   border-right: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(12, 19, 34, 0.72), rgba(8, 13, 26, 0.5));
+  background: var(--bg-panel);
 }
 
 .app-sidebar__group + .app-sidebar__group {
@@ -306,7 +300,7 @@ async function handleLogout() {
 
 .app-sidebar__label {
   margin: 0 0 10px;
-  color: var(--accent);
+  color: var(--text-muted);
   font-family: var(--mono);
   font-size: 0.66rem;
   font-weight: 600;
@@ -314,23 +308,21 @@ async function handleLogout() {
   text-transform: uppercase;
 }
 
-/* Violet identifies the governance + system domains; cyan stays the workspace signal */
+/* Governance + system domains stay neutral; the accent is reserved for active state */
 .app-sidebar__group:nth-of-type(2) .app-sidebar__label,
 .app-sidebar__group:nth-of-type(3) .app-sidebar__label {
-  color: var(--accent-2);
+  color: var(--text-muted);
 }
 
 .app-sidebar__group:nth-of-type(2) .app-menu__item.router-link-active,
 .app-sidebar__group:nth-of-type(3) .app-menu__item.router-link-active {
-  background: linear-gradient(180deg, rgba(160, 123, 255, 0.14), rgba(52, 225, 214, 0.06));
-  border-color: rgba(160, 123, 255, 0.34);
-  box-shadow: 0 0 18px rgba(160, 123, 255, 0.12), inset 0 0 0 1px rgba(160, 123, 255, 0.08);
+  background: var(--bg-panel-soft);
+  border-color: var(--line-warm);
 }
 
 .app-sidebar__group:nth-of-type(2) .app-menu__item.router-link-active::before,
 .app-sidebar__group:nth-of-type(3) .app-menu__item.router-link-active::before {
-  background: linear-gradient(180deg, var(--accent-2), var(--accent));
-  box-shadow: 0 0 12px var(--accent-2);
+  background: var(--accent);
 }
 
 .app-menu {
@@ -362,16 +354,15 @@ async function handleLogout() {
 }
 
 .app-menu__item:hover {
-  background: rgba(28, 41, 64, 0.6);
-  border-color: rgba(52, 225, 214, 0.16);
+  background: var(--bg-panel-soft);
+  border-color: var(--line-strong);
   color: var(--text-strong);
 }
 
 .app-menu__item.router-link-active {
-  background: linear-gradient(180deg, rgba(52, 225, 214, 0.12), rgba(160, 123, 255, 0.08));
-  border-color: rgba(52, 225, 214, 0.32);
+  background: var(--bg-panel-soft);
+  border-color: var(--line-warm);
   color: var(--text-strong);
-  box-shadow: 0 0 18px rgba(52, 225, 214, 0.12), inset 0 0 0 1px rgba(52, 225, 214, 0.08);
 }
 
 .app-menu__item.router-link-active::before {
@@ -383,8 +374,7 @@ async function handleLogout() {
   width: 3px;
   height: 62%;
   border-radius: 0 3px 3px 0;
-  background: linear-gradient(180deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 12px var(--accent);
+  background: var(--accent);
 }
 
 .app-menu__item.router-link-active strong {
@@ -406,7 +396,7 @@ async function handleLogout() {
 .session-card div {
   padding: 12px 14px;
   border-radius: var(--radius-subpanel);
-  background: rgba(18, 27, 45, 0.6);
+  background: var(--bg-panel-soft);
   border: 1px solid var(--line);
 }
 

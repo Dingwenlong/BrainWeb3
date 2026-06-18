@@ -623,11 +623,9 @@ watch(
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   gap: 20px;
   padding: var(--space-hero);
-  border-radius: var(--radius-hero);
-  background:
-    radial-gradient(120% 130% at 0% 0%, rgba(52, 225, 214, 0.08), transparent 46%),
-    radial-gradient(130% 150% at 100% 0%, rgba(160, 123, 255, 0.1), transparent 50%),
-    var(--panel-gradient);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
   animation: consoleRise 0.55s ease both;
 }
 
@@ -635,9 +633,8 @@ watch(
   content: '';
   position: absolute;
   inset: 0 0 auto;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2) 70%, transparent);
-  box-shadow: 0 0 16px rgba(52, 225, 214, 0.4);
+  height: 1px;
+  background: var(--line-strong);
 }
 
 .hero-panel__copy,
@@ -677,11 +674,9 @@ watch(
 .workspace-card__flash {
   margin: 0 0 14px;
   padding: var(--space-subpanel);
-  border: 1px solid rgba(52, 225, 214, 0.22);
+  border: 1px solid var(--line-warm);
   border-radius: var(--radius-subpanel);
-  background:
-    linear-gradient(180deg, rgba(52, 225, 214, 0.08), rgba(52, 225, 214, 0.02)),
-    var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   font-size: var(--supporting-text-size);
   line-height: var(--supporting-text-line-height);
@@ -703,20 +698,17 @@ watch(
   margin-top: 4px;
 }
 
-/* ---- Violet chip variant: governance / audit-only domain ---- */
+/* ---- Neutral chip variant: governance / audit-only domain ---- */
 .status-chip--violet {
-  color: var(--accent-2);
-  border-color: rgba(160, 123, 255, 0.34);
+  color: var(--text-muted);
+  border-color: var(--line-strong);
 }
 
-/* ---- Anchored chip: confirmed on-chain proof, cyan glow ---- */
+/* ---- Anchored chip: confirmed on-chain proof ---- */
 .status-chip--anchored {
   color: var(--accent);
-  border-color: rgba(52, 225, 214, 0.42);
-  background:
-    linear-gradient(180deg, rgba(52, 225, 214, 0.12), rgba(52, 225, 214, 0.04)),
-    rgba(18, 28, 47, 0.7);
-  box-shadow: 0 0 16px rgba(52, 225, 214, 0.18);
+  border-color: var(--line-warm);
+  background: var(--bg-panel-soft);
 }
 
 .hero-panel__secondary,
@@ -729,8 +721,8 @@ watch(
   min-height: var(--control-height);
   padding: var(--space-button);
   border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--button-soft-gradient);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   text-decoration: none;
   font-family: var(--body);
@@ -740,7 +732,6 @@ watch(
   cursor: pointer;
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
     color 0.2s ease;
 }
 
@@ -748,8 +739,7 @@ watch(
 .form-grid__secondary:hover,
 .chain-card__link:hover,
 .chain-card__action-button:not(:disabled):hover {
-  border-color: rgba(52, 225, 214, 0.4);
-  box-shadow: 0 0 20px rgba(52, 225, 214, 0.12);
+  border-color: var(--line-strong);
   color: var(--text-strong);
 }
 
@@ -808,15 +798,12 @@ watch(
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
-/* ---- Summary metric tiles (cyan signal surface) ---- */
+/* ---- Summary metric tiles ---- */
 .summary-strip__card {
   padding: var(--space-card);
-  border-radius: var(--radius-panel);
-  border: 1px solid var(--line-warm);
-  background: var(--warm-panel-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
-    0 0 26px rgba(52, 225, 214, 0.05);
+  border-radius: var(--radius-block);
+  border: 1px solid var(--line);
+  background: var(--bg-panel-soft);
   animation: consoleRise 0.5s ease both;
 }
 
@@ -838,9 +825,9 @@ watch(
 .policy-card,
 .chain-card {
   padding: var(--space-card);
-  border-radius: var(--radius-panel);
+  border-radius: var(--radius-block);
   border: 1px solid var(--line);
-  background: var(--panel-gradient);
+  background: var(--bg-panel);
 }
 
 .hero-spotlight,
@@ -851,10 +838,7 @@ watch(
 
 /* Spotlight = latest proof / focused model anchor */
 .hero-spotlight {
-  border-color: rgba(52, 225, 214, 0.2);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.05),
-    0 0 28px rgba(52, 225, 214, 0.06);
+  border-color: var(--line-warm);
 }
 
 .hero-spotlight__kicker {
@@ -904,9 +888,9 @@ watch(
 
 .hero-spotlight__reason {
   padding: var(--space-subpanel);
-  border-left: 2px solid rgba(160, 123, 255, 0.4);
+  border-left: 2px solid var(--line-strong);
   border-radius: var(--radius-subpanel);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
 }
 
@@ -932,12 +916,12 @@ watch(
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
 }
 
-/* Policy lane = violet governance accent */
+/* Policy lane = governance domain */
 .hero-lane {
-  border-color: rgba(160, 123, 255, 0.2);
+  border-color: var(--line);
 }
 
 .hero-lane__header {
@@ -955,7 +939,7 @@ watch(
 .hero-lane__step p {
   margin-top: 6px;
   font-family: var(--mono);
-  color: var(--accent-2);
+  color: var(--text-muted);
 }
 
 .hero-lane__empty {
@@ -984,15 +968,12 @@ watch(
 /* ---- Policy list ---- */
 .policy-card {
   padding: var(--space-subpanel);
-  background: var(--panel-soft-gradient);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  background: var(--bg-panel-soft);
+  transition: border-color 0.2s ease;
 }
 
 .policy-card:hover {
-  border-color: rgba(160, 123, 255, 0.3);
-  box-shadow: 0 0 18px rgba(160, 123, 255, 0.08);
+  border-color: var(--line-strong);
 }
 
 .policy-card strong {
@@ -1024,7 +1005,7 @@ watch(
   padding: var(--space-field-x);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  background: var(--bg-panel);
+  background: #0e1013;
   color: var(--text-main);
 }
 
@@ -1037,38 +1018,27 @@ watch(
   min-height: var(--control-height);
   padding: var(--space-button);
   border: 1px solid var(--line-warm);
-  border-radius: var(--radius-pill);
-  background: var(--button-warm-gradient);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel-soft);
   color: var(--text-strong);
   font-family: var(--body);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(52, 225, 214, 0.14);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .form-grid__submit:hover {
-  border-color: rgba(52, 225, 214, 0.6);
-  box-shadow:
-    0 16px 32px rgba(0, 0, 0, 0.46),
-    0 0 28px rgba(52, 225, 214, 0.28);
+  border-color: var(--accent);
 }
 
 /* ---- Chain record cards ---- */
 .chain-card {
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .chain-card:hover {
-  border-color: rgba(52, 225, 214, 0.3);
-  box-shadow: 0 0 22px rgba(52, 225, 214, 0.08);
+  border-color: var(--line-strong);
 }
 
 .chain-card__header strong {
@@ -1081,10 +1051,7 @@ watch(
 }
 
 .chain-card--focus {
-  border-color: rgba(160, 123, 255, 0.4);
-  box-shadow:
-    inset 0 0 0 1px rgba(160, 123, 255, 0.14),
-    0 0 26px rgba(160, 123, 255, 0.12);
+  border-color: var(--line-warm);
 }
 
 .chain-card__details {
@@ -1107,7 +1074,7 @@ watch(
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
   line-height: 1.7;
 }
 
@@ -1130,9 +1097,9 @@ watch(
   margin-top: 10px;
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
-  border: 1px solid rgba(255, 97, 115, 0.32);
-  background: var(--danger-soft);
-  color: #ffb3bc;
+  border: 1px solid var(--danger);
+  background: var(--bg-panel-soft);
+  color: var(--danger);
 }
 
 @media (max-width: 1040px) {

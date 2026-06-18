@@ -164,9 +164,9 @@ async function handlePasswordResetConfirm() {
       <svg class="login-trace" viewBox="0 0 640 220" preserveAspectRatio="none" aria-hidden="true" focusable="false">
         <defs>
           <linearGradient id="loginTrace" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#34e1d6" stop-opacity="0" />
-            <stop offset="0.45" stop-color="#34e1d6" stop-opacity="0.95" />
-            <stop offset="1" stop-color="#a07bff" stop-opacity="0.35" />
+            <stop offset="0" stop-color="var(--accent)" stop-opacity="0" />
+            <stop offset="0.45" stop-color="var(--accent)" stop-opacity="0.9" />
+            <stop offset="1" stop-color="var(--accent)" stop-opacity="0.25" />
           </linearGradient>
         </defs>
         <path
@@ -345,35 +345,6 @@ async function handlePasswordResetConfirm() {
   overflow-x: clip;
 }
 
-.login-page::before,
-.login-page::after {
-  content: '';
-  position: absolute;
-  inset: auto;
-  pointer-events: none;
-}
-
-.login-page::before {
-  top: 2%;
-  left: -4%;
-  width: 380px;
-  height: 380px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(52, 225, 214, 0.2), rgba(52, 225, 214, 0));
-  filter: blur(26px);
-}
-
-.login-page::after {
-  right: -6%;
-  bottom: 0%;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(160, 123, 255, 0.22), rgba(160, 123, 255, 0));
-  filter: blur(30px);
-  transform: rotate(14deg);
-}
-
 .login-shell {
   position: relative;
   overflow: hidden;
@@ -382,11 +353,9 @@ async function handlePasswordResetConfirm() {
   grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
   gap: 28px;
   padding: clamp(22px, 3vw, 34px);
-  border-radius: 26px;
-  background:
-    radial-gradient(120% 130% at 0% 0%, rgba(52, 225, 214, 0.1), transparent 44%),
-    radial-gradient(120% 140% at 100% 100%, rgba(160, 123, 255, 0.1), transparent 48%),
-    linear-gradient(180deg, rgba(17, 26, 44, 0.92), rgba(10, 16, 30, 0.94));
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
   animation: consoleRise 0.6s ease both;
 }
 
@@ -394,15 +363,14 @@ async function handlePasswordResetConfirm() {
   content: '';
   position: absolute;
   inset: 16px;
-  border-radius: 20px;
-  border: 1px solid rgba(124, 200, 232, 0.08);
+  border: 1px solid var(--line);
   background:
-    linear-gradient(90deg, rgba(124, 200, 232, 0.06) 1px, transparent 1px),
-    linear-gradient(rgba(124, 200, 232, 0.04) 1px, transparent 1px);
+    linear-gradient(90deg, var(--line) 1px, transparent 1px),
+    linear-gradient(var(--line) 1px, transparent 1px);
   background-size: 38px 38px;
   mask-image: linear-gradient(135deg, rgba(0, 0, 0, 0.6), transparent 72%);
   pointer-events: none;
-  opacity: 0.6;
+  opacity: 0.4;
 }
 
 .login-trace {
@@ -428,14 +396,12 @@ async function handlePasswordResetConfirm() {
   stroke-dasharray: 100;
   stroke-dashoffset: 0;
   animation: loginWireDraw 1.5s ease-out both;
-  filter: drop-shadow(0 0 3px rgba(52, 225, 214, 0.28));
 }
 
 .login-trace__wire--back {
-  stroke: rgba(160, 123, 255, 0.5);
+  stroke: var(--line-strong);
   stroke-width: 1.5;
-  opacity: 0.3;
-  filter: none;
+  opacity: 0.5;
 }
 
 @keyframes loginWireDraw {
@@ -447,16 +413,15 @@ async function handlePasswordResetConfirm() {
   }
 }
 
-/* Bright current pulse that keeps travelling along the wave — cyan forward, violet back */
+/* Oscilloscope scan pulse that keeps travelling along the wave — single accent, no glow */
 .login-trace__pulse {
   fill: none;
-  stroke: var(--accent-strong);
+  stroke: var(--accent);
   stroke-width: 2.5;
   stroke-linejoin: round;
   stroke-linecap: round;
   stroke-dasharray: 10.5 89.5;
   animation: loginPulse 2.2s linear infinite;
-  filter: drop-shadow(0 0 7px rgba(52, 225, 214, 0.7));
 }
 
 @keyframes loginPulse {
@@ -469,12 +434,11 @@ async function handlePasswordResetConfirm() {
 }
 
 .login-trace__pulse--back {
-  stroke: #b89bff;
+  stroke: var(--text-muted);
   stroke-width: 2;
   stroke-dasharray: 8.25 91.75;
   animation-duration: 2.8s;
   animation-direction: reverse;
-  filter: drop-shadow(0 0 6px rgba(160, 123, 255, 0.55));
 }
 
 .login-copy,
@@ -505,10 +469,10 @@ async function handlePasswordResetConfirm() {
   align-items: center;
   min-height: 30px;
   padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(52, 225, 214, 0.3);
-  background: rgba(52, 225, 214, 0.08);
-  color: var(--accent-strong);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line-strong);
+  background: var(--bg-panel-muted);
+  color: var(--accent);
   font-family: var(--mono);
   font-size: 0.7rem;
   font-weight: 600;
@@ -518,10 +482,6 @@ async function handlePasswordResetConfirm() {
 
 .login-copy h1 {
   margin: 0;
-  background: linear-gradient(120deg, var(--text-strong) 30%, var(--accent-strong));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
   color: var(--text-strong);
   font-family: var(--display);
   font-size: var(--page-heading-size);
@@ -587,36 +547,22 @@ async function handlePasswordResetConfirm() {
   padding: 15px 15px 13px;
   border-radius: var(--radius-block);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   text-align: left;
-  box-shadow:
-    inset 0 1px 0 rgba(150, 215, 240, 0.05),
-    0 18px 32px rgba(0, 0, 0, 0.32);
   transition:
-    transform 0.22s ease,
-    box-shadow 0.22s ease,
     border-color 0.22s ease,
     background 0.22s ease;
 }
 
 .login-accounts__item:hover {
-  transform: translateY(-3px);
-  border-color: rgba(52, 225, 214, 0.28);
-  box-shadow:
-    inset 0 1px 0 rgba(150, 215, 240, 0.06),
-    0 24px 40px rgba(0, 0, 0, 0.42);
+  border-color: var(--line-strong);
+  background: var(--bg-panel-muted);
 }
 
 .login-accounts__item--active {
-  border-color: rgba(52, 225, 214, 0.45);
-  background:
-    linear-gradient(180deg, rgba(52, 225, 214, 0.1), rgba(160, 123, 255, 0.06)),
-    var(--panel-soft-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.18),
-    0 26px 44px rgba(0, 0, 0, 0.46),
-    0 0 26px rgba(52, 225, 214, 0.14);
+  border-color: var(--line-warm);
+  background: var(--accent-soft);
 }
 
 .login-accounts__item strong,
@@ -688,10 +634,7 @@ async function handlePasswordResetConfirm() {
   padding: 18px;
   border-radius: var(--radius-panel);
   border: 1px solid var(--line);
-  background: var(--surface-gradient);
-  box-shadow:
-    inset 0 1px 0 rgba(150, 215, 240, 0.05),
-    0 18px 32px rgba(0, 0, 0, 0.3);
+  background: var(--bg-panel-soft);
 }
 
 .login-utilities__header {
@@ -702,14 +645,14 @@ async function handlePasswordResetConfirm() {
 .login-utility {
   border: 1px solid var(--line);
   border-radius: var(--radius-block);
-  background: rgba(15, 23, 40, 0.55);
+  background: var(--bg-panel);
   overflow: hidden;
   transition: border-color 0.2s ease;
 }
 
 .login-utility[open] {
-  border-color: rgba(52, 225, 214, 0.22);
-  background: rgba(18, 28, 47, 0.72);
+  border-color: var(--line-strong);
+  background: var(--bg-panel-muted);
 }
 
 .login-utility__summary {
@@ -757,28 +700,20 @@ async function handlePasswordResetConfirm() {
   padding: 22px 24px 24px;
   border-radius: var(--radius-panel);
   border: 1px solid var(--line);
-  background: var(--panel-gradient);
-  box-shadow:
-    inset 0 1px 0 rgba(150, 215, 240, 0.06),
-    0 20px 36px rgba(0, 0, 0, 0.34);
+  background: var(--bg-panel);
 }
 
 .login-form::before {
   content: '';
   position: absolute;
   inset: 0 0 auto;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 14px rgba(52, 225, 214, 0.5);
+  height: 2px;
+  background: var(--accent);
 }
 
 .login-form--primary {
   padding-top: 24px;
-  border-color: rgba(52, 225, 214, 0.2);
-  box-shadow:
-    inset 0 1px 0 rgba(150, 215, 240, 0.06),
-    0 28px 48px rgba(0, 0, 0, 0.46),
-    0 0 30px rgba(52, 225, 214, 0.06);
+  border-color: var(--line-warm);
 }
 
 .login-form__header {
@@ -801,35 +736,27 @@ async function handlePasswordResetConfirm() {
   padding: 0 15px;
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  background: rgba(9, 15, 28, 0.82);
+  background: #0e1013;
   color: var(--text-main);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .login-form input::placeholder {
-  color: #8b9ab1;
+  color: var(--text-faint);
 }
 
 .login-form__submit {
   min-height: 48px;
   padding: 0 18px;
-  border: 1px solid rgba(52, 225, 214, 0.4);
+  border: 1px solid var(--line-warm);
   border-radius: var(--radius-control);
-  background: linear-gradient(180deg, rgba(52, 225, 214, 0.24), rgba(160, 123, 255, 0.24));
-  color: var(--text-strong);
+  background: var(--accent-soft);
+  color: var(--accent);
   letter-spacing: 0.06em;
-  box-shadow:
-    inset 0 1px 0 rgba(150, 230, 245, 0.18),
-    0 16px 30px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(52, 225, 214, 0.16);
 }
 
 .login-form__submit:hover {
-  border-color: rgba(52, 225, 214, 0.62);
-  box-shadow:
-    inset 0 1px 0 rgba(150, 230, 245, 0.2),
-    0 18px 34px rgba(0, 0, 0, 0.46),
-    0 0 28px rgba(52, 225, 214, 0.32);
+  border-color: var(--accent);
+  background: var(--bg-panel-muted);
 }
 
 .login-form__submit:disabled {
@@ -842,11 +769,10 @@ async function handlePasswordResetConfirm() {
   border-color: var(--line-strong);
   background: var(--button-soft-gradient);
   color: var(--text-main);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
 }
 
 .login-form__submit--secondary:hover {
-  border-color: rgba(52, 225, 214, 0.34);
+  border-color: var(--line-warm);
 }
 
 .ticket-panel {
@@ -854,10 +780,8 @@ async function handlePasswordResetConfirm() {
   gap: 10px;
   padding: 16px;
   border-radius: var(--radius-block);
-  border: 1px solid rgba(242, 178, 89, 0.3);
-  background:
-    linear-gradient(180deg, rgba(242, 178, 89, 0.08), rgba(242, 178, 89, 0.02)),
-    var(--panel-soft-gradient);
+  border: 1px solid var(--amber-soft);
+  background: var(--amber-soft);
 }
 
 .ticket-panel code {
@@ -865,8 +789,8 @@ async function handlePasswordResetConfirm() {
   color: var(--amber);
   padding: 10px 12px;
   border-radius: var(--radius-control);
-  background: rgba(8, 13, 26, 0.6);
-  border: 1px dashed rgba(242, 178, 89, 0.34);
+  background: #0e1013;
+  border: 1px dashed var(--amber-soft);
 }
 
 @media (max-width: 1040px) {
@@ -905,15 +829,7 @@ async function handlePasswordResetConfirm() {
 
   .login-shell {
     padding: 18px;
-    border-radius: 24px;
-  }
-
-  .login-form,
-  .login-utilities,
-  .login-utility,
-  .login-accounts__item,
-  .ticket-panel {
-    border-radius: 20px;
+    border-radius: var(--radius-panel);
   }
 
 }

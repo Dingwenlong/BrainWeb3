@@ -135,7 +135,7 @@ const intensityBars = computed(() =>
 .metrics__ladder {
   border-radius: var(--radius-block);
   padding: var(--space-card);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
   border: 1px solid var(--line);
   animation: consoleRise 0.5s ease both;
 }
@@ -152,18 +152,13 @@ const intensityBars = computed(() =>
   animation-delay: 0.18s;
 }
 
-/* Focus readout — dominant / hovered region, signal-tinted instrument card */
+/* Focus readout — dominant / hovered region, instrument card */
 .metrics__focus {
   position: relative;
   overflow: hidden;
   --region-tone: var(--accent);
   border-color: var(--line-warm);
-  background:
-    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--region-tone) 14%, transparent), transparent 55%),
-    var(--warm-panel-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
-    0 0 26px rgba(52, 225, 214, 0.05);
+  background: var(--bg-panel-soft);
 }
 
 .metrics__focus::before {
@@ -171,8 +166,7 @@ const intensityBars = computed(() =>
   position: absolute;
   inset: 0 0 auto;
   height: 2px;
-  background: linear-gradient(90deg, var(--region-tone), transparent 80%);
-  box-shadow: 0 0 14px var(--region-tone);
+  background: var(--region-tone);
   opacity: 0.85;
 }
 
@@ -200,9 +194,7 @@ const intensityBars = computed(() =>
   content: '';
   width: 6px;
   height: 6px;
-  border-radius: 999px;
   background: var(--region-tone);
-  box-shadow: 0 0 10px var(--region-tone);
 }
 
 .metrics__focus-code {
@@ -227,7 +219,6 @@ const intensityBars = computed(() =>
   font-size: 2.4rem;
   line-height: 1;
   color: var(--text-strong);
-  text-shadow: 0 0 22px color-mix(in srgb, var(--region-tone) 45%, transparent);
 }
 
 .metrics__electrodes {
@@ -239,9 +230,9 @@ const intensityBars = computed(() =>
 
 .metrics__electrode {
   padding: 3px 9px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   border: 1px solid var(--line-strong);
-  background: rgba(8, 13, 26, 0.5);
+  background: var(--bg-panel-muted);
   color: var(--text-main);
   font-family: var(--mono);
   font-size: 0.74rem;
@@ -278,15 +269,13 @@ const intensityBars = computed(() =>
   border: 1px solid transparent;
   transition:
     border-color 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
+    background 0.2s ease;
 }
 
 .metrics__row:hover,
 .metrics__row--active {
-  border-color: rgba(52, 225, 214, 0.28);
-  background: rgba(52, 225, 214, 0.04);
-  box-shadow: 0 0 22px rgba(52, 225, 214, 0.08);
+  border-color: var(--line-warm);
+  background: var(--bg-panel-muted);
 }
 
 .metrics__copy {
@@ -307,9 +296,7 @@ const intensityBars = computed(() =>
 .metrics__dot {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
   flex-shrink: 0;
-  box-shadow: 0 0 8px currentColor;
 }
 
 .metrics__copy strong {
@@ -320,7 +307,7 @@ const intensityBars = computed(() =>
 
 .metrics__track {
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-control);
   background: var(--bg-panel-muted);
   border: 1px solid var(--line);
   overflow: hidden;
@@ -329,7 +316,6 @@ const intensityBars = computed(() =>
 .metrics__fill {
   height: 100%;
   border-radius: inherit;
-  box-shadow: 0 0 16px currentColor;
   transition: width 0.4s ease;
 }
 

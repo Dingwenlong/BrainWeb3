@@ -555,8 +555,8 @@ watch(
   min-height: var(--control-height);
   padding: var(--space-button);
   border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--button-soft-gradient);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   text-decoration: none;
   font-family: var(--body);
@@ -565,14 +565,12 @@ watch(
   text-transform: uppercase;
   transition:
     border-color 0.22s ease,
-    box-shadow 0.22s ease,
     color 0.22s ease;
 }
 
 .hero-panel__secondary:hover,
 .form-grid__secondary:hover {
-  border-color: var(--line-warm);
-  box-shadow: 0 0 18px rgba(52, 225, 214, 0.18);
+  border-color: var(--line-strong);
   color: var(--text-strong);
 }
 
@@ -592,8 +590,8 @@ watch(
   min-height: var(--control-height);
   padding: var(--space-button);
   border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--button-soft-gradient);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   text-decoration: none;
   font-family: var(--mono);
@@ -602,9 +600,7 @@ watch(
   text-transform: uppercase;
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
+    color 0.2s ease;
 }
 
 .quick-action {
@@ -620,15 +616,12 @@ watch(
   left: 14px;
   width: 6px;
   height: 6px;
-  border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 0 8px rgba(52, 225, 214, 0.6);
 }
 
 .quick-action:hover,
 .audit-card__link:hover {
-  border-color: var(--line-warm);
-  box-shadow: 0 0 18px rgba(52, 225, 214, 0.18);
+  border-color: var(--line-strong);
   color: var(--text-strong);
 }
 
@@ -643,16 +636,13 @@ watch(
   padding: var(--space-card);
   border-radius: var(--radius-panel);
   border: 1px solid var(--line);
-  background: var(--panel-gradient);
+  background: var(--bg-panel);
 }
 
-/* Summary strip = primary signal surface (cyan) with staggered console boot */
+/* Summary strip = primary signal surface with staggered console boot */
 .summary-strip__card {
-  border-color: var(--line-warm);
-  background: var(--warm-panel-gradient);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.06),
-    0 0 26px rgba(52, 225, 214, 0.05);
+  border-color: var(--line-strong);
+  background: var(--bg-panel-soft);
   animation: consoleRise 0.5s ease both;
 }
 
@@ -713,10 +703,7 @@ watch(
 }
 
 .hero-spotlight {
-  border-color: var(--line-warm);
-  box-shadow:
-    inset 0 0 0 1px rgba(52, 225, 214, 0.05),
-    0 0 28px rgba(52, 225, 214, 0.05);
+  border-color: var(--line-strong);
   animation-delay: 0.1s;
 }
 
@@ -757,7 +744,7 @@ watch(
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
   border-left: 2px solid var(--line-warm);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
 }
 
@@ -791,7 +778,7 @@ watch(
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
 }
 
 .hero-lane__header {
@@ -837,7 +824,7 @@ watch(
   padding: var(--space-field-x);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  background: var(--bg-panel);
+  background: #0e1013;
   color: var(--text-main);
 }
 
@@ -845,26 +832,18 @@ watch(
   min-height: var(--control-height);
   padding: var(--space-button);
   border: 1px solid var(--line-warm);
-  border-radius: var(--radius-pill);
-  background: var(--button-warm-gradient);
+  border-radius: var(--radius-control);
+  background: var(--bg-panel-soft);
   color: var(--text-strong);
   font-family: var(--body);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(52, 225, 214, 0.14);
-  transition:
-    border-color 0.22s ease,
-    box-shadow 0.22s ease;
+  transition: border-color 0.22s ease;
 }
 
 .form-grid__submit:hover {
   border-color: var(--accent);
-  box-shadow:
-    0 16px 32px rgba(0, 0, 0, 0.46),
-    0 0 28px rgba(52, 225, 214, 0.28);
 }
 
 /* === Audit event stream: instrument log rhythm === */
@@ -883,23 +862,13 @@ watch(
   bottom: 8px;
   left: 5px;
   width: 1px;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    var(--line-warm) 12%,
-    var(--line-warm) 88%,
-    transparent
-  );
-  opacity: 0.7;
+  background: var(--line);
 }
 
 .audit-card {
   position: relative;
   animation: consoleRise 0.5s ease both;
-  transition:
-    border-color 0.22s ease,
-    box-shadow 0.22s ease,
-    transform 0.22s ease;
+  transition: border-color 0.22s ease;
 }
 
 .audit-card:nth-child(1) { animation-delay: 0.06s; }
@@ -910,8 +879,7 @@ watch(
 .audit-card:nth-child(n + 6) { animation-delay: 0.36s; }
 
 .audit-card:hover {
-  border-color: var(--line-warm);
-  box-shadow: 0 0 22px rgba(52, 225, 214, 0.1);
+  border-color: var(--line-strong);
 }
 
 /* Stream node connecting each card to the rail */
@@ -919,12 +887,10 @@ watch(
   position: absolute;
   top: 26px;
   left: -19px;
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
+  width: 8px;
+  height: 8px;
   background: var(--bg-page);
-  border: 2px solid var(--accent);
-  box-shadow: 0 0 8px rgba(52, 225, 214, 0.55);
+  border: 1px solid var(--accent);
 }
 
 .audit-card--alert {
@@ -933,24 +899,18 @@ watch(
 
 .audit-card--alert .audit-card__node {
   border-color: var(--amber);
-  box-shadow: 0 0 8px rgba(242, 178, 89, 0.55);
 }
 
 .audit-card--alert:hover {
   border-color: var(--amber);
-  box-shadow: 0 0 22px rgba(242, 178, 89, 0.16);
 }
 
 .audit-card--focus {
-  border-color: var(--accent-2-soft);
-  box-shadow:
-    inset 0 0 0 1px rgba(160, 123, 255, 0.18),
-    0 0 24px rgba(160, 123, 255, 0.12);
+  border-color: var(--line-warm);
 }
 
 .audit-card--focus .audit-card__node {
-  border-color: var(--accent-2);
-  box-shadow: 0 0 9px rgba(160, 123, 255, 0.55);
+  border-color: var(--accent);
 }
 
 .audit-card__header strong {
@@ -981,7 +941,7 @@ watch(
   border-radius: var(--radius-subpanel);
   border: 1px solid var(--line);
   border-left: 2px solid var(--line-warm);
-  background: var(--panel-soft-gradient);
+  background: var(--bg-panel-soft);
   color: var(--text-main);
   line-height: var(--supporting-text-line-height);
 }
@@ -1002,12 +962,11 @@ watch(
 }
 
 .training-preview__item--model {
-  border-left-color: var(--accent-2-soft);
+  border-left-color: var(--line-strong);
 }
 
 .training-preview__item--model:hover {
-  border-color: var(--accent-2-soft);
-  box-shadow: 0 0 18px rgba(160, 123, 255, 0.16);
+  border-color: var(--line-strong);
 }
 
 .training-preview__item span,
