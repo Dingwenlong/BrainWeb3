@@ -955,8 +955,10 @@ watch(
 
 .training-preview__item {
   display: grid;
-  justify-content: flex-start;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: stretch;
   gap: 8px;
+  min-width: 0;
   min-height: unset;
   padding: var(--space-subpanel);
   border-radius: var(--radius-subpanel);
@@ -979,6 +981,22 @@ watch(
   font-size: 0.82rem;
   text-transform: none;
   letter-spacing: normal;
+}
+
+.training-preview__item span,
+.training-preview__item small,
+.training-preview__item strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Compact nav preview: cap long details (hashes/JSON) to 2 lines */
+.training-preview__item small {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .training-preview__item strong {
