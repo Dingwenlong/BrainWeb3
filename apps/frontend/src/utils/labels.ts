@@ -167,10 +167,12 @@ const SYSTEM_TOKEN_LABELS: Record<string, string> = {
 }
 
 const ORGANIZATION_LABELS: Record<string, string> = {
-  'Sichuan Neuro Lab': '四川神经实验室',
-  'Sichuan Neural Studio': '四川神经工作室',
-  'Huaxi Medical Union': '华西医疗联合体',
-  'West China Research Lab': '华西科研实验室',
+  // English keys are the stored identifiers (DB + auth matching) and must NOT
+  // change; only the Chinese display labels are re-themed to Shandong orgs.
+  'Sichuan Neuro Lab': '山东神经实验室',
+  'Sichuan Neural Studio': '山东神经工作室',
+  'Huaxi Medical Union': '齐鲁医疗联合体',
+  'West China Research Lab': '黄海脑科学研究院',
 }
 
 const APPLICATION_LABELS: Record<string, string> = {
