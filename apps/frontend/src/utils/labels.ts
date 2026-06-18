@@ -287,6 +287,44 @@ export function formatIdentityStatusSourceLabel(source: string | null | undefine
   return mapLabel(IDENTITY_STATUS_SOURCE_LABELS, source)
 }
 
+const CREDENTIAL_TYPE_LABELS: Record<string, string> = {
+  BrainWeb3AccountCredential: '账户凭证',
+  BrainWeb3OrganizationCredential: '机构凭证',
+}
+
+// 自动派生的样板说明映射为空串（界面隐藏，去冗余）；人工填写的原因原样保留
+const CREDENTIAL_REASON_LABELS: Record<string, string> = {
+  'Credential is active because the account is enabled.': '',
+  'Organization credential is active because the organization still has active accounts.': '',
+  'Credential proof matches the expected BrainWeb3 signature.': '签名校验通过',
+  'Credential suspended because the account is disabled.': '账户停用，凭证挂起',
+  'Organization credential suspended because the organization has no active accounts.': '机构无在用账户，凭证挂起',
+  'Credential revoked because the account is disabled.': '账户停用，凭证吊销',
+}
+
+export function formatCredentialType(value: string | null | undefined) {
+  if (!value) {
+    return '-'
+  }
+  return CREDENTIAL_TYPE_LABELS[value] ?? value
+}
+
+export function formatCredentialReason(reason: string | null | undefined) {
+  if (!reason) {
+    return ''
+  }
+  const trimmed = reason.trim()
+  const mapped = CREDENTIAL_REASON_LABELS[trimmed]
+  return mapped === undefined ? trimmed : mapped
+}
+
+export function formatActorName(value: string | null | undefined) {
+  if (!value || value === 'system') {
+    return '系统'
+  }
+  return value
+}
+
 export function formatProofStatusLabel(status: string | null | undefined) {
   return mapLabel(PROOF_STATUS_LABELS, status)
 }

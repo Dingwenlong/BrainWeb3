@@ -19,7 +19,10 @@ import type {
   OrganizationIdentity,
 } from '../types/api'
 import {
+  formatActorName,
   formatAuditActionLabel,
+  formatCredentialReason,
+  formatCredentialType,
   formatIdentityStatusLabel,
   formatIdentityStatusSourceLabel,
   formatOrganizationLabel,
@@ -210,7 +213,7 @@ onMounted(loadPage)
               </span>
             </div>
             <p class="hero-spotlight__context hero-spotlight__did">{{ identity.actorDid }}</p>
-            <p v-if="verification?.reason" class="hero-spotlight__reason">{{ verification.reason }}</p>
+            <p v-if="formatCredentialReason(verification?.reason)" class="hero-spotlight__reason">{{ formatCredentialReason(verification?.reason) }}</p>
             <div class="hero-spotlight__meta">
               <div>
                 <span>凭证状态</span>
@@ -288,7 +291,7 @@ onMounted(loadPage)
               </div>
               <div>
                 <dt>凭证类型</dt>
-                <dd class="mono">{{ identity.credential.type }}</dd>
+                <dd class="mono">{{ formatCredentialType(identity.credential.type) }}</dd>
               </div>
               <div>
                 <dt>签发方</dt>
@@ -296,7 +299,7 @@ onMounted(loadPage)
               </div>
             </dl>
 
-            <p v-if="verification?.reason" class="workspace-card__note">{{ verification.reason }}</p>
+            <p v-if="formatCredentialReason(verification?.reason)" class="workspace-card__note">{{ formatCredentialReason(verification?.reason) }}</p>
           </article>
 
           <article v-if="currentOrganization" class="workspace-card workspace-card--identity glass-panel">
@@ -338,10 +341,6 @@ onMounted(loadPage)
               </div>
             </dl>
 
-            <p v-if="currentOrganization.statusSnapshot.reason" class="workspace-card__note">
-              {{ currentOrganization.statusSnapshot.reason }}
-            </p>
-
             <div v-if="currentOrganization.credentialHistory.length" class="history-timeline">
               <div
                 v-for="entry in currentOrganization.credentialHistory.slice(0, 3)"
@@ -349,8 +348,8 @@ onMounted(loadPage)
                 class="history-timeline__item"
               >
                 <strong class="mono">{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
-                <p v-if="entry.reason">{{ entry.reason }}</p>
-                <span class="mono">{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
+                <p v-if="formatCredentialReason(entry.reason)">{{ formatCredentialReason(entry.reason) }}</p>
+                <span class="mono">{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ formatActorName(entry.updatedBy) }} · {{ formatTime(entry.createdAt) }}</span>
               </div>
             </div>
           </article>
@@ -406,8 +405,6 @@ onMounted(loadPage)
                   </div>
                 </dl>
 
-                <p v-if="row.credentialStatus.reason" class="identity-card__hint">{{ row.credentialStatus.reason }}</p>
-
                 <div class="history-timeline">
                   <div
                     v-for="entry in row.credentialHistory.slice(0, 3)"
@@ -415,8 +412,8 @@ onMounted(loadPage)
                     class="history-timeline__item"
                   >
                     <strong class="mono">{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
-                    <p v-if="entry.reason">{{ entry.reason }}</p>
-                    <span class="mono">{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
+                    <p v-if="formatCredentialReason(entry.reason)">{{ formatCredentialReason(entry.reason) }}</p>
+                    <span class="mono">{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ formatActorName(entry.updatedBy) }} · {{ formatTime(entry.createdAt) }}</span>
                   </div>
                 </div>
               </article>
@@ -457,7 +454,7 @@ onMounted(loadPage)
                 <dl class="identity-card__details">
                   <div>
                     <dt>凭证类型</dt>
-                    <dd class="mono">{{ row.credential.type }}</dd>
+                    <dd class="mono">{{ formatCredentialType(row.credential.type) }}</dd>
                   </div>
                   <div>
                     <dt>状态来源</dt>
@@ -473,8 +470,6 @@ onMounted(loadPage)
                   </div>
                 </dl>
 
-                <p v-if="row.statusSnapshot.reason" class="identity-card__hint">{{ row.statusSnapshot.reason }}</p>
-
                 <div class="history-timeline">
                   <div
                     v-for="entry in row.credentialHistory.slice(0, 3)"
@@ -482,8 +477,8 @@ onMounted(loadPage)
                     class="history-timeline__item"
                   >
                     <strong class="mono">{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
-                    <p v-if="entry.reason">{{ entry.reason }}</p>
-                    <span class="mono">{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
+                    <p v-if="formatCredentialReason(entry.reason)">{{ formatCredentialReason(entry.reason) }}</p>
+                    <span class="mono">{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ formatActorName(entry.updatedBy) }} · {{ formatTime(entry.createdAt) }}</span>
                   </div>
                 </div>
               </article>

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppToastStack from './components/AppToastStack.vue'
 import { useActorProfile } from './composables/useActorProfile'
+import { formatOrganizationLabel, formatRoleLabel } from './utils/labels'
 
 const router = useRouter()
 const route = useRoute()
@@ -85,7 +86,7 @@ async function handleLogout() {
           </a>
           <div class="app-header__account">
             <strong>{{ displayName || actorProfile.actorId }}</strong>
-            <span>{{ actorProfile.actorRole }} · {{ actorProfile.actorOrg }}</span>
+            <span>{{ formatRoleLabel(actorProfile.actorRole) }} · {{ formatOrganizationLabel(actorProfile.actorOrg) }}</span>
           </div>
           <RouterLink class="app-header__button" to="/accounts">账户</RouterLink>
           <button type="button" class="app-header__button app-header__button--primary" @click="handleLogout">
@@ -113,7 +114,7 @@ async function handleLogout() {
             </div>
             <div>
               <dt>角色</dt>
-              <dd>{{ actorProfile.actorRole }}</dd>
+              <dd>{{ formatRoleLabel(actorProfile.actorRole) }}</dd>
             </div>
             <div>
               <dt>机构</dt>

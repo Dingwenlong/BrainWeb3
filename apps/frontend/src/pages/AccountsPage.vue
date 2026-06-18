@@ -21,6 +21,9 @@ import { useActorProfile } from '../composables/useActorProfile'
 import { useToast } from '../composables/useToast'
 import type { AccountUser, ActorIdentity, CredentialVerificationResult, OrganizationIdentity } from '../types/api'
 import {
+  formatActorName,
+  formatCredentialReason,
+  formatCredentialType,
   formatIdentityStatusLabel,
   formatIdentityStatusSourceLabel,
   formatOrganizationLabel,
@@ -397,7 +400,7 @@ onMounted(loadPage)
               </div>
               <div>
                 <dt>凭证类型</dt>
-                <dd>{{ identity.credential.type }}</dd>
+                <dd>{{ formatCredentialType(identity.credential.type) }}</dd>
               </div>
               <div>
                 <dt>凭证状态</dt>
@@ -417,8 +420,8 @@ onMounted(loadPage)
               </div>
             </dl>
 
-            <template v-if="credentialVerification?.reason" #note>
-              <p class="panel-note">{{ credentialVerification.reason }}</p>
+            <template v-if="formatCredentialReason(credentialVerification?.reason)" #note>
+              <p class="panel-note">{{ formatCredentialReason(credentialVerification?.reason) }}</p>
             </template>
           </SurfaceCard>
 
@@ -507,13 +510,11 @@ onMounted(loadPage)
                   </div>
                 </dl>
 
-                <p v-if="row.credentialStatus.reason" class="account-card__hint">{{ row.credentialStatus.reason }}</p>
-
                 <div class="history-timeline">
                   <div v-for="entry in row.credentialHistory.slice(0, 3)" :key="`${row.actorId}-${entry.id ?? entry.createdAt ?? entry.nextStatus}`" class="history-timeline__item">
                     <strong>{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
-                    <p v-if="entry.reason">{{ entry.reason }}</p>
-                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
+                    <p v-if="formatCredentialReason(entry.reason)">{{ formatCredentialReason(entry.reason) }}</p>
+                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ formatActorName(entry.updatedBy) }} · {{ formatTime(entry.createdAt) }}</span>
                   </div>
                 </div>
 
@@ -592,7 +593,7 @@ onMounted(loadPage)
                 <dl class="account-card__details">
                   <div>
                     <dt>凭证类型</dt>
-                    <dd>{{ row.credential.type }}</dd>
+                    <dd>{{ formatCredentialType(row.credential.type) }}</dd>
                   </div>
                   <div>
                     <dt>状态来源</dt>
@@ -608,13 +609,11 @@ onMounted(loadPage)
                   </div>
                 </dl>
 
-                <p v-if="row.statusSnapshot.reason" class="account-card__hint">{{ row.statusSnapshot.reason }}</p>
-
                 <div class="history-timeline">
                   <div v-for="entry in row.credentialHistory.slice(0, 3)" :key="`${row.organizationName}-${entry.id ?? entry.createdAt ?? entry.nextStatus}`" class="history-timeline__item">
                     <strong>{{ formatHistoryTransition(entry.previousStatus, entry.nextStatus) }}</strong>
-                    <p v-if="entry.reason">{{ entry.reason }}</p>
-                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ entry.updatedBy || '系统' }} · {{ formatTime(entry.createdAt) }}</span>
+                    <p v-if="formatCredentialReason(entry.reason)">{{ formatCredentialReason(entry.reason) }}</p>
+                    <span>{{ formatIdentityStatusSourceLabel(entry.source) }} · {{ formatActorName(entry.updatedBy) }} · {{ formatTime(entry.createdAt) }}</span>
                   </div>
                 </div>
 
