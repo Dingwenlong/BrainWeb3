@@ -68,6 +68,7 @@ const ownerCredentialVerification = ref<CredentialVerificationResult | null>(nul
 const accessRequests = ref<AccessRequest[]>([])
 const audits = ref<AuditEvent[]>([])
 const hoveredRegionCode = ref<string | null>(null)
+const showGovernance = ref(false)
 const cortexOpacity = ref(0.94)
 const heatContrast = ref(1)
 const isPrivilegedActor = computed(() =>
@@ -631,7 +632,26 @@ onMounted(loadAll)
             </div>
           </div>
         </article>
+      </section>
 
+      <section v-if="dataset" class="governance-fold">
+        <button
+          type="button"
+          class="governance-fold__toggle"
+          :class="{ 'governance-fold__toggle--open': showGovernance }"
+          :aria-expanded="showGovernance"
+          @click="showGovernance = !showGovernance"
+        >
+          <span class="governance-fold__title">
+            <span class="section-kicker">治理与溯源</span>
+            <strong class="section-title">存证 · 授权记录 · 审计 · 销毁 · 身份凭证</strong>
+            <span class="governance-fold__desc">这份数据的链上存证与操作轨迹，需要核验/追溯时再展开</span>
+          </span>
+          <span class="governance-fold__state">{{ showGovernance ? '收起' : '展开' }}</span>
+          <span class="governance-fold__chev">▾</span>
+        </button>
+
+        <div v-show="showGovernance" class="info-grid">
         <article v-if="ownerIdentity" class="workspace-card workspace-card--violet glass-panel">
           <div class="workspace-card__header">
             <div>
@@ -871,6 +891,7 @@ onMounted(loadAll)
             <div v-else class="empty-state">暂无审计事件</div>
           </template>
         </article>
+        </div>
       </section>
     </template>
   </div>
@@ -1008,6 +1029,72 @@ onMounted(loadAll)
 
 .info-grid {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* === Collapsible governance / provenance section === */
+.governance-fold {
+  display: grid;
+  gap: 14px;
+}
+
+.governance-fold__toggle {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 15px 20px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--bg-panel);
+  color: inherit;
+  transition:
+    border-color 0.14s ease,
+    background-color 0.14s ease;
+}
+
+.governance-fold__toggle:hover {
+  border-color: var(--line-strong);
+  background: var(--bg-panel-soft);
+}
+
+.governance-fold__title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.governance-fold__title .section-kicker {
+  margin: 0;
+}
+
+.governance-fold__desc {
+  color: var(--text-faint);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.governance-fold__state {
+  margin-left: auto;
+  flex: none;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.governance-fold__chev {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1;
+  transition: transform 0.16s ease;
+}
+
+.governance-fold__toggle--open .governance-fold__chev {
+  transform: rotate(180deg);
 }
 
 .workspace-card {
