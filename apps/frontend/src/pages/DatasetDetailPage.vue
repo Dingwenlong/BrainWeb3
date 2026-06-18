@@ -328,6 +328,9 @@ onMounted(loadAll)
           <span class="page-header__id">{{ dataset.id }}</span>
         </div>
         <h1 class="page-main-heading">{{ dataset.title }}</h1>
+        <p class="page-main-lede">
+          在这里查看这份脑电数据的脑区活跃度，并管理它的访问与溯源。一般先看「脑区热力图」；若提示无权限，先到「访问门禁」提交访问申请。其余面板（存证摘要、授权与训练记录、审计追踪等）记录这份数据的链上存证与操作轨迹，供核验与追溯。
+        </p>
         <div class="page-header__chips">
           <span class="status-chip">{{ formatProofStatusLabel(dataset.proofStatus) }}</span>
           <span class="status-chip status-chip--ghost">{{ formatUploadStatusLabel(dataset.uploadStatus) }}</span>
@@ -1542,6 +1545,7 @@ span.is-mono {
 .chain-record__error {
   margin: 6px 0 0;
   color: var(--text-muted);
+  overflow-wrap: anywhere;
 }
 
 .chain-record__headline p .is-mono {
@@ -1669,6 +1673,7 @@ span.is-mono {
   margin: 5px 0 0;
   color: var(--text-muted);
   font-size: 0.88rem;
+  overflow-wrap: anywhere;
 }
 
 .audit-timeline__card time {
