@@ -349,6 +349,25 @@ export interface ModelRecord {
   updatedAt: string
   governedAt: string | null
   completedAt: string | null
+  verificationStatus: string
+  latestEvaluationId: string
+  latestResultHash: string
+}
+
+export interface EvaluationRun {
+  id: string
+  modelRecordId: string
+  datasetId: string
+  evaluatorActorId: string
+  evaluatorRole: string
+  evaluatorOrg: string
+  testSetHash: string
+  evalScriptHash: string
+  metricsJson: string
+  resultHash: string
+  verificationStatus: string
+  notes: string
+  createdAt: string
 }
 
 export interface ModelGovernanceSummary {

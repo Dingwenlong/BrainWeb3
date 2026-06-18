@@ -6,8 +6,12 @@ import com.brainweb3.backend.audit.AuditService;
 import com.brainweb3.backend.chain.ChainBusinessRecordResponse;
 import com.brainweb3.backend.chain.ChainBusinessRecordService;
 import com.brainweb3.backend.dataset.persistence.DatasetRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -23,24 +27,33 @@ import org.springframework.web.server.ResponseStatusException;
 public class ModelRecordService {
 
   private static final Pattern MODEL_RECORD_ID_PATTERN = Pattern.compile("^mr-(\\d+)$");
+  private static final Pattern EVALUATION_ID_PATTERN = Pattern.compile("^er-(\\d+)$");
   private static final Map<String, List<String>> GOVERNANCE_TRANSITIONS = Map.of(
       "candidate", List.of("active", "archived"),
       "active", List.of("archived"),
       "archived", List.of("active")
   );
+  private static final List<String> VERIFICATION_RANK = List.of(
+      "unverified",
+      "self-reported",
+      "third-party-verified"
+  );
 
   private final ModelRecordRepository modelRecordRepository;
+  private final EvaluationRunRepository evaluationRunRepository;
   private final DatasetRepository datasetRepository;
   private final AuditService auditService;
   private final ChainBusinessRecordService chainBusinessRecordService;
 
   public ModelRecordService(
       ModelRecordRepository modelRecordRepository,
+      EvaluationRunRepository evaluationRunRepository,
       DatasetRepository datasetRepository,
       AuditService auditService,
       ChainBusinessRecordService chainBusinessRecordService
   ) {
     this.modelRecordRepository = modelRecordRepository;
+    this.evaluationRunRepository = evaluationRunRepository;
     this.datasetRepository = datasetRepository;
     this.auditService = auditService;
     this.chainBusinessRecordService = chainBusinessRecordService;
@@ -198,6 +211,57 @@ public class ModelRecordService {
         "%s registered from %s".formatted(record.getId(), job.getId())
     );
     return toResponse(record);
+  }
+
+  @Transactional(readOnly = true)
+  public List<EvaluationRunResponse> listEvaluations(String modelId, ActorContext actor) {
+    ModelRecordEntity record = requireVisibleModel(modelId, actor);
+    return evaluationRunRepository.findAllByModelRecordIdOrderByCreatedAtDesc(record.getId()).stream()
+        .map(this::toEvaluationResponse)
+        .toList();
+  }
+
+  @Transactional
+  public EvaluationRunResponse createEvaluation(String modelId, ActorContext actor, CreateEvaluationRequest request) {
+    ModelRecordEntity record = requireVisibleModel(modelId, actor);
+    Instant now = Instant.now();
+
+    String testSetHash = request.testSetHash().trim();
+    String evalScriptHash = request.evalScriptHash().trim();
+    String metricsJson = request.metricsJson().trim();
+    String evaluatorOrg = actor.actorOrg() == null ? "" : actor.actorOrg();
+    String resultHash = computeResultHash(record.getId(), record.getDatasetId(), testSetHash, evalScriptHash, metricsJson, evaluatorOrg, now);
+    String verificationStatus = actor.belongsTo(record.getActorOrg()) ? "self-reported" : "third-party-verified";
+
+    EvaluationRunEntity evaluation = new EvaluationRunEntity();
+    evaluation.setId(nextEvaluationId());
+    evaluation.setModelRecordId(record.getId());
+    evaluation.setDatasetId(record.getDatasetId());
+    evaluation.setEvaluatorActorId(valueOrEmpty(actor.actorId()));
+    evaluation.setEvaluatorRole(valueOrEmpty(actor.actorRole()));
+    evaluation.setEvaluatorOrg(evaluatorOrg);
+    evaluation.setTestSetHash(testSetHash);
+    evaluation.setEvalScriptHash(evalScriptHash);
+    evaluation.setMetricsJson(metricsJson);
+    evaluation.setResultHash(resultHash);
+    evaluation.setVerificationStatus(verificationStatus);
+    evaluation.setNotes(normalizeNote(request.notes()));
+    evaluation.setCreatedAt(now);
+    evaluationRunRepository.save(evaluation);
+
+    if (verificationRank(verificationStatus) >= verificationRank(record.getVerificationStatus())) {
+      record.setVerificationStatus(verificationStatus);
+    }
+    record.setLatestEvaluationId(evaluation.getId());
+    record.setLatestResultHash(resultHash);
+    record.setUpdatedAt(now);
+    modelRecordRepository.save(record);
+
+    String detail = "%s evaluated by %s | result=%s | %s".formatted(record.getId(), evaluatorOrg, resultHash, metricsJson);
+    auditService.record(record.getDatasetId(), actor, "MODEL_EVALUATED", verificationStatus, detail);
+    chainBusinessRecordService.record(record.getDatasetId(), actor, "MODEL_EVALUATED", record.getId(), verificationStatus, detail);
+
+    return toEvaluationResponse(evaluation);
   }
 
   private ModelRecordEntity requireVisibleModel(String modelId, ActorContext actor) {
@@ -407,8 +471,81 @@ public class ModelRecordService {
         record.getCreatedAt(),
         record.getUpdatedAt(),
         record.getGovernedAt(),
-        record.getCompletedAt()
+        record.getCompletedAt(),
+        valueOrEmpty(record.getVerificationStatus()),
+        valueOrEmpty(record.getLatestEvaluationId()),
+        valueOrEmpty(record.getLatestResultHash())
     );
+  }
+
+  private EvaluationRunResponse toEvaluationResponse(EvaluationRunEntity evaluation) {
+    return new EvaluationRunResponse(
+        evaluation.getId(),
+        evaluation.getModelRecordId(),
+        evaluation.getDatasetId(),
+        evaluation.getEvaluatorActorId(),
+        evaluation.getEvaluatorRole(),
+        evaluation.getEvaluatorOrg(),
+        evaluation.getTestSetHash(),
+        evaluation.getEvalScriptHash(),
+        evaluation.getMetricsJson(),
+        evaluation.getResultHash(),
+        evaluation.getVerificationStatus(),
+        valueOrEmpty(evaluation.getNotes()),
+        evaluation.getCreatedAt()
+    );
+  }
+
+  private String nextEvaluationId() {
+    int next = evaluationRunRepository.findAllIds().stream()
+        .map(this::parseEvaluationId)
+        .max(Comparator.naturalOrder())
+        .orElse(0) + 1;
+    return "er-%d".formatted(next);
+  }
+
+  private int parseEvaluationId(String value) {
+    Matcher matcher = EVALUATION_ID_PATTERN.matcher(value == null ? "" : value.trim());
+    if (!matcher.matches()) {
+      return 0;
+    }
+    return Integer.parseInt(matcher.group(1));
+  }
+
+  private int verificationRank(String status) {
+    int index = VERIFICATION_RANK.indexOf(status == null ? "" : status.trim().toLowerCase(Locale.ROOT));
+    return index < 0 ? 0 : index;
+  }
+
+  private String computeResultHash(
+      String modelId,
+      String datasetId,
+      String testSetHash,
+      String evalScriptHash,
+      String metricsJson,
+      String evaluatorOrg,
+      Instant createdAt
+  ) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      String payload = String.join(
+          "|",
+          modelId,
+          datasetId,
+          testSetHash,
+          evalScriptHash,
+          metricsJson,
+          evaluatorOrg,
+          createdAt.toString()
+      );
+      return HexFormat.of().formatHex(digest.digest(payload.getBytes(StandardCharsets.UTF_8)));
+    } catch (NoSuchAlgorithmException exception) {
+      throw new ResponseStatusException(
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          "Unable to compute evaluation result hash.",
+          exception
+      );
+    }
   }
 
   private String valueOrEmpty(String value) {

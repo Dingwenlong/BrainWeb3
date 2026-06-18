@@ -1,6 +1,7 @@
 package com.brainweb3.backend.training;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -257,6 +258,49 @@ class ModelRecordControllerTests {
             .header("Authorization", bearer(ownerToken)))
         .andExpect(status().isBadRequest())
         .andExpect(status().reason("Unsupported model governance transition: active -> candidate."));
+  }
+
+  @Test
+  void recordsEvaluationEvidenceAndUpdatesVerificationStatus() throws Exception {
+    createSucceededTrainingRun();
+
+    mockMvc.perform(post("/api/v1/model-records/mr-1/evaluations")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                """
+                    {
+                      "testSetHash": "sha256:testset-holdout-001",
+                      "evalScriptHash": "sha256:eval-harness-v1",
+                      "metricsJson": "{\\"auc\\":0.91,\\"f1\\":0.87}",
+                      "notes": "Holdout evaluation on a frozen test set."
+                    }
+                    """
+            )
+            .header("Authorization", bearer(researcherToken)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id").value("er-1"))
+        .andExpect(jsonPath("$.verificationStatus").value("self-reported"))
+        .andExpect(jsonPath("$.resultHash", matchesPattern("[a-f0-9]{64}")));
+
+    mockMvc.perform(get("/api/v1/model-records/mr-1")
+            .header("Authorization", bearer(ownerToken)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.verificationStatus").value("self-reported"))
+        .andExpect(jsonPath("$.latestEvaluationId").value("er-1"))
+        .andExpect(jsonPath("$.latestResultHash", matchesPattern("[a-f0-9]{64}")));
+
+    mockMvc.perform(get("/api/v1/model-records/mr-1/evaluations")
+            .header("Authorization", bearer(researcherToken)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(1)))
+        .andExpect(jsonPath("$[0].testSetHash").value("sha256:testset-holdout-001"));
+
+    mockMvc.perform(get("/api/v1/chain-records")
+            .queryParam("eventType", "MODEL_EVALUATED")
+            .header("Authorization", bearer(adminToken)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(1)))
+        .andExpect(jsonPath("$[0].businessStatus").value("self-reported"));
   }
 
   private void createSucceededTrainingRun() throws Exception {

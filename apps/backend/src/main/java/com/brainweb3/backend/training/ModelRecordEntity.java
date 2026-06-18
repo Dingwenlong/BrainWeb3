@@ -62,6 +62,15 @@ public class ModelRecordEntity {
   @Column(name = "last_governed_by", length = 80)
   private String lastGovernedBy;
 
+  @Column(name = "verification_status", length = 40, nullable = false)
+  private String verificationStatus = "unverified";
+
+  @Column(name = "latest_evaluation_id", length = 40)
+  private String latestEvaluationId;
+
+  @Column(name = "latest_result_hash", length = 80)
+  private String latestResultHash;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
@@ -208,6 +217,30 @@ public class ModelRecordEntity {
 
   public void setLastGovernedBy(String lastGovernedBy) {
     this.lastGovernedBy = lastGovernedBy;
+  }
+
+  public String getVerificationStatus() {
+    return verificationStatus;
+  }
+
+  public void setVerificationStatus(String verificationStatus) {
+    this.verificationStatus = verificationStatus;
+  }
+
+  public String getLatestEvaluationId() {
+    return latestEvaluationId;
+  }
+
+  public void setLatestEvaluationId(String latestEvaluationId) {
+    this.latestEvaluationId = latestEvaluationId;
+  }
+
+  public String getLatestResultHash() {
+    return latestResultHash;
+  }
+
+  public void setLatestResultHash(String latestResultHash) {
+    this.latestResultHash = latestResultHash;
   }
 
   public Instant getCreatedAt() {

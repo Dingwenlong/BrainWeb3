@@ -19,6 +19,7 @@ import type {
   TrainingJob,
   ModelRecord,
   ModelGovernanceLane,
+  EvaluationRun,
 } from '../types/api'
 import type { ActorProfile } from '../composables/useActorProfile'
 import { getAuthToken, refreshAuthSession } from '../composables/useActorProfile'
@@ -504,6 +505,32 @@ export function updateModelGovernance(
 export function getModelGovernanceLane(modelId: string, actor: ActorProfile) {
   return request<ModelGovernanceLane>(`/model-records/${encodeURIComponent(modelId)}/governance-lane`, {
     headers: buildActorHeaders(actor),
+  })
+}
+
+export function getEvaluations(modelId: string, actor: ActorProfile) {
+  return request<EvaluationRun[]>(`/model-records/${encodeURIComponent(modelId)}/evaluations`, {
+    headers: buildActorHeaders(actor),
+  })
+}
+
+export function createEvaluation(
+  modelId: string,
+  actor: ActorProfile,
+  payload: {
+    testSetHash: string
+    evalScriptHash: string
+    metricsJson: string
+    notes: string
+  },
+) {
+  return requestWithInit<EvaluationRun>(`/model-records/${encodeURIComponent(modelId)}/evaluations`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...buildActorHeaders(actor),
+    },
+    body: JSON.stringify(payload),
   })
 }
 

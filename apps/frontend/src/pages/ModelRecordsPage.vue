@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { getDatasets, getModelGovernanceLane, getModelRecords, updateModelGovernance } from '../api/client'
+import {
+  createEvaluation,
+  getDatasets,
+  getEvaluations,
+  getModelGovernanceLane,
+  getModelRecords,
+  updateModelGovernance,
+} from '../api/client'
 import { useActorProfile } from '../composables/useActorProfile'
 import { useToast } from '../composables/useToast'
 import type {
   AuditEvent,
   ChainBusinessRecord,
   DatasetSummary,
+  EvaluationRun,
   ModelGovernanceSummary,
   ModelRecord,
   ModelVersionComparison,
@@ -20,6 +28,7 @@ import {
   formatOrganizationLabel,
   formatRoleLabel,
   formatRequestStatusLabel,
+  formatVerificationStatusLabel,
 } from '../utils/labels'
 import { canInspectChainRecords } from '../utils/permissions'
 
@@ -39,7 +48,23 @@ const governanceSummary = ref<ModelGovernanceSummary | null>(null)
 const versionComparison = ref<ModelVersionComparison | null>(null)
 const relatedModels = ref<ModelRecord[]>([])
 const chainVisible = ref(false)
+const evaluations = ref<EvaluationRun[]>([])
+const submittingEval = ref(false)
+const evalForm = reactive({
+  testSetHash: '',
+  evalScriptHash: '',
+  metricsJson: '',
+  notes: '',
+})
 const canInspectChainWorkspace = computed(() => canInspectChainRecords(actorProfile.value.actorRole))
+
+function verificationChipClass(status: string) {
+  return {
+    'status-chip--accent': status === 'third-party-verified',
+    'status-chip--warn': status === 'self-reported',
+    'status-chip--ghost': status === 'unverified' || !status,
+  }
+}
 
 const filters = reactive({
   datasetId: typeof route.query.datasetId === 'string' ? route.query.datasetId : '',
@@ -160,18 +185,23 @@ async function loadGovernanceTimeline() {
     versionComparison.value = null
     relatedModels.value = []
     chainVisible.value = false
+    evaluations.value = []
     return
   }
 
   timelineLoading.value = true
   try {
-    const lane = await getModelGovernanceLane(record.id, actorProfile.value)
+    const [lane, evaluationPayload] = await Promise.all([
+      getModelGovernanceLane(record.id, actorProfile.value),
+      getEvaluations(record.id, actorProfile.value),
+    ])
     governanceSummary.value = lane.summary
     versionComparison.value = lane.comparison
     governanceAudits.value = lane.auditEvents
     governanceChains.value = lane.chainRecords
     relatedModels.value = lane.relatedModels
     chainVisible.value = lane.chainVisible
+    evaluations.value = evaluationPayload
   } catch (error) {
     pushToast({
       tone: 'warning',
@@ -257,6 +287,59 @@ async function submitGovernance(record: ModelRecord) {
     })
   } finally {
     savingId.value = ''
+  }
+}
+
+async function submitEvaluation() {
+  const record = focusedRecord.value
+  if (!record) {
+    return
+  }
+  if (!evalForm.testSetHash.trim() || !evalForm.evalScriptHash.trim() || !evalForm.metricsJson.trim()) {
+    pushToast({
+      tone: 'warning',
+      title: '评测信息不完整',
+      message: '请填写测试集指纹、评测脚本指纹与指标。',
+    })
+    return
+  }
+  submittingEval.value = true
+  try {
+    const evaluation = await createEvaluation(record.id, actorProfile.value, {
+      testSetHash: evalForm.testSetHash.trim(),
+      evalScriptHash: evalForm.evalScriptHash.trim(),
+      metricsJson: evalForm.metricsJson.trim(),
+      notes: evalForm.notes.trim(),
+    })
+    evaluations.value = [evaluation, ...evaluations.value]
+    records.value = records.value.map((item) =>
+      item.id === record.id
+        ? {
+            ...item,
+            verificationStatus: evaluation.verificationStatus,
+            latestEvaluationId: evaluation.id,
+            latestResultHash: evaluation.resultHash,
+          }
+        : item,
+    )
+    evalForm.testSetHash = ''
+    evalForm.evalScriptHash = ''
+    evalForm.metricsJson = ''
+    evalForm.notes = ''
+    pushToast({
+      tone: 'success',
+      title: '评测证据已记录',
+      message: `${evaluation.id} 已生成结果哈希并锚定上链（${formatVerificationStatusLabel(evaluation.verificationStatus)}）。`,
+    })
+    void loadGovernanceTimeline()
+  } catch (error) {
+    pushToast({
+      tone: 'warning',
+      title: '评测提交失败',
+      message: error instanceof Error ? error.message : '请稍后重试。',
+    })
+  } finally {
+    submittingEval.value = false
   }
 }
 
@@ -409,6 +492,16 @@ watch(
             >{{ formatModelGovernanceStatusLabel(focusedRecord.governanceStatus) }}</span>
           </div>
 
+          <div class="evidence-banner">
+            <span class="status-chip" :class="verificationChipClass(focusedRecord.verificationStatus)">
+              {{ formatVerificationStatusLabel(focusedRecord.verificationStatus) }}
+            </span>
+            <span v-if="focusedRecord.latestResultHash" class="evidence-banner__hash">
+              结果哈希 {{ focusedRecord.latestResultHash.slice(0, 16) }}…
+            </span>
+            <span v-else class="evidence-banner__hint">质量声明尚无可验证证据</span>
+          </div>
+
           <p class="record-card__summary">{{ focusedRecord.objective }}</p>
 
           <div class="governance-lane__stats">
@@ -539,6 +632,59 @@ watch(
             </button>
           </div>
         </article>
+
+        <article class="governance-lane__stream governance-lane__stream--evidence">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">领域验证 · L3</p>
+              <h3>评测证据</h3>
+            </div>
+            <span class="status-chip" :class="verificationChipClass(focusedRecord.verificationStatus)">
+              {{ formatVerificationStatusLabel(focusedRecord.verificationStatus) }}
+            </span>
+          </div>
+
+          <div v-if="timelineLoading" class="empty-state">评测证据正在加载...</div>
+          <div v-else-if="!evaluations.length" class="empty-state">
+            尚无评测证据 · 模型质量仍是自我声明。提交一次带测试集 / 脚本指纹的评测，即可生成结果哈希并锚定上链。
+          </div>
+          <div v-else class="governance-lane__events">
+            <article v-for="evaluation in evaluations" :key="evaluation.id" class="governance-event">
+              <div class="governance-event__head">
+                <strong>{{ evaluation.id }} · {{ evaluation.metricsJson }}</strong>
+                <span class="status-chip" :class="verificationChipClass(evaluation.verificationStatus)">
+                  {{ formatVerificationStatusLabel(evaluation.verificationStatus) }}
+                </span>
+              </div>
+              <p>评测方：{{ formatOrganizationLabel(evaluation.evaluatorOrg) }} · {{ evaluation.evaluatorActorId }}</p>
+              <p class="evidence-hash">测试集 {{ evaluation.testSetHash }} · 脚本 {{ evaluation.evalScriptHash }}</p>
+              <p class="evidence-hash">结果哈希 {{ evaluation.resultHash }}</p>
+              <small>{{ formatTime(evaluation.createdAt) }}<template v-if="evaluation.notes"> · {{ evaluation.notes }}</template></small>
+            </article>
+          </div>
+
+          <form class="evidence-form" @submit.prevent="submitEvaluation">
+            <label>
+              <span>测试集指纹</span>
+              <input v-model="evalForm.testSetHash" type="text" placeholder="sha256:holdout-..." />
+            </label>
+            <label>
+              <span>评测脚本指纹</span>
+              <input v-model="evalForm.evalScriptHash" type="text" placeholder="sha256:eval-harness-..." />
+            </label>
+            <label class="evidence-form__wide">
+              <span>指标 (JSON)</span>
+              <input v-model="evalForm.metricsJson" type="text" placeholder='{&quot;auc&quot;:0.91,&quot;f1&quot;:0.87}' />
+            </label>
+            <label class="evidence-form__wide">
+              <span>备注</span>
+              <input v-model="evalForm.notes" type="text" placeholder="留出集评测说明（可选）" />
+            </label>
+            <button type="submit" class="primary-button evidence-form__submit" :disabled="submittingEval">
+              {{ submittingEval ? '提交中...' : '提交评测并锚定上链' }}
+            </button>
+          </form>
+        </article>
       </div>
     </section>
 
@@ -627,6 +773,7 @@ watch(
           </div>
 
           <div class="record-card__notes">
+            <p><strong>验证状态：</strong>{{ formatVerificationStatusLabel(record.verificationStatus) }}<template v-if="record.latestResultHash"> · 哈希 {{ record.latestResultHash.slice(0, 12) }}…</template></p>
             <p v-if="record.metricSummary"><strong>指标摘要：</strong>{{ record.metricSummary }}</p>
             <p v-if="record.resultSummary"><strong>结果说明：</strong>{{ record.resultSummary }}</p>
             <p><strong>模型引用：</strong>{{ record.artifactRef }}</p>
@@ -1257,6 +1404,68 @@ watch(
   .version-compare__arrow {
     transform: rotate(90deg);
     justify-self: center;
+  }
+}
+
+.evidence-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.evidence-banner__hash {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.evidence-banner__hint {
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+
+.governance-lane__stream--evidence {
+  grid-column: 1 / -1;
+}
+
+.evidence-hash {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  word-break: break-all;
+}
+
+.evidence-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.evidence-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.evidence-form__wide {
+  grid-column: 1 / -1;
+}
+
+.evidence-form__submit {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+@media (max-width: 720px) {
+  .evidence-form {
+    grid-template-columns: 1fr;
   }
 }
 </style>

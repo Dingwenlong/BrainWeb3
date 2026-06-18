@@ -4,12 +4,15 @@ import com.brainweb3.backend.access.ActorContextResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -59,6 +62,25 @@ public class ModelRecordController {
       HttpServletRequest servletRequest
   ) {
     return modelRecordService.updateGovernance(
+        modelId,
+        actorContextResolver.resolveRequired(servletRequest),
+        request
+    );
+  }
+
+  @GetMapping("/{modelId}/evaluations")
+  public List<EvaluationRunResponse> listEvaluations(@PathVariable String modelId, HttpServletRequest request) {
+    return modelRecordService.listEvaluations(modelId, actorContextResolver.resolveRequired(request));
+  }
+
+  @PostMapping("/{modelId}/evaluations")
+  @ResponseStatus(HttpStatus.CREATED)
+  public EvaluationRunResponse createEvaluation(
+      @PathVariable String modelId,
+      @Valid @RequestBody CreateEvaluationRequest request,
+      HttpServletRequest servletRequest
+  ) {
+    return modelRecordService.createEvaluation(
         modelId,
         actorContextResolver.resolveRequired(servletRequest),
         request

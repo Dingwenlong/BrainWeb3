@@ -25,6 +25,9 @@ public record ModelRecordResponse(
     Instant createdAt,
     Instant updatedAt,
     Instant governedAt,
-    Instant completedAt
+    Instant completedAt,
+    String verificationStatus,
+    String latestEvaluationId,
+    String latestResultHash
 ) {
 }

@@ -39,6 +39,12 @@ const MODEL_GOVERNANCE_LABELS: Record<string, string> = {
   archived: '已归档',
 }
 
+const VERIFICATION_STATUS_LABELS: Record<string, string> = {
+  unverified: '未验证',
+  'self-reported': '自报指标',
+  'third-party-verified': '第三方已验证',
+}
+
 const DESTRUCTION_STATUS_LABELS: Record<string, string> = {
   active: '正常可用',
   'pending-destruction': '待销毁审批',
@@ -216,6 +222,7 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
   TRAINING_RUN_FAILED: '训练任务失败',
   MODEL_VERSION_REGISTERED: '模型版本已登记',
   MODEL_GOVERNANCE_UPDATED: '模型治理已更新',
+  MODEL_EVALUATED: '模型评测已记录',
 }
 
 const CHAIN_EVENT_LABELS: Record<string, string> = {
@@ -227,6 +234,7 @@ const CHAIN_EVENT_LABELS: Record<string, string> = {
   DESTRUCTION_STORAGE_PURGED: '物理清理凭证已上链',
   MODEL_REGISTERED: '模型版本已登记上链',
   MODEL_GOVERNED: '模型治理已上链',
+  MODEL_EVALUATED: '模型评测已上链',
 }
 
 const CHAIN_POLICY_LABELS: Record<string, string> = {
@@ -265,6 +273,10 @@ export function formatCleanupStatusLabel(status: string | null | undefined) {
 
 export function formatModelGovernanceStatusLabel(status: string | null | undefined) {
   return mapLabel(MODEL_GOVERNANCE_LABELS, status)
+}
+
+export function formatVerificationStatusLabel(status: string | null | undefined) {
+  return mapLabel(VERIFICATION_STATUS_LABELS, status)
 }
 
 export function formatIdentityStatusLabel(status: string | null | undefined) {
