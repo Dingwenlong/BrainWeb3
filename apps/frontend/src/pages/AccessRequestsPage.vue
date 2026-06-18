@@ -31,16 +31,28 @@ const focusRequestId = computed(() => (typeof route.query.focusRequestId === 'st
 const isPrivilegedActor = computed(() =>
   ['owner', 'approver', 'admin'].includes(actorProfile.value.actorRole.toLowerCase()),
 )
+
+const pageLede = computed(() =>
+  isPrivilegedActor.value
+    ? '审批数据访问申请：查看待审批队列，批准 / 拒绝 / 撤销，并为通过的申请带入训练编排。'
+    : '这里跟踪你提交的访问申请的进度。要申请新数据，请到对应数据集页的「访问门禁」提交；获批后回数据详情页读取脑区活跃度。',
+)
+
+// Front-end effective expiry: an approved grant past its expiresAt no longer
+// works (the backend already denies it), so surface it as 已过期 rather than
+// leaving a stale 已批准 chip and a live 发起训练 link.
+function isExpired(row: AccessRequest) {
+  return row.status === 'approved' && !!row.expiresAt && new Date(row.expiresAt).getTime() <= Date.now()
+}
+function effectiveStatusLabel(row: AccessRequest) {
+  return isExpired(row) ? '已过期' : formatRequestStatusLabel(row.status)
+}
+function isClosedStatus(status: string) {
+  return status === 'rejected' || status === 'revoked'
+}
+
 const roleGuide = computed(() => {
-  const role = actorProfile.value.actorRole.toLowerCase()
-  if (role === 'admin') {
-    return {
-      emptySpotlight: '暂无访问申请',
-      emptyQueue: '暂无待审批记录',
-      emptyList: '暂无访问申请记录',
-    }
-  }
-  if (role === 'owner' || role === 'approver') {
+  if (isPrivilegedActor.value) {
     return {
       emptySpotlight: '暂无访问申请',
       emptyQueue: '暂无待审批记录',
@@ -48,9 +60,9 @@ const roleGuide = computed(() => {
     }
   }
   return {
-    emptySpotlight: '暂无访问申请',
-    emptyQueue: '暂无待审批记录',
-    emptyList: '暂无访问申请记录',
+    emptySpotlight: '你还没有提交访问申请',
+    emptyQueue: '暂无待处理申请',
+    emptyList: '你还没有提交访问申请。打开任意数据集，在「访问门禁」处发起申请。',
   }
 })
 
@@ -191,12 +203,13 @@ watch(
 <template>
   <div class="requests-page">
     <PageHero
-      kicker="治理"
+      :kicker="isPrivilegedActor ? '治理' : '我的申请'"
       title="访问申请"
+      :lede="pageLede"
       layout="balanced"
     >
       <template #actions>
-        <span class="status-chip">{{ isPrivilegedActor ? '审批模式' : '只读模式' }}</span>
+        <span class="status-chip">{{ isPrivilegedActor ? '审批模式' : '我的申请' }}</span>
         <RouterLink class="hero-panel__secondary" to="/">返回总览</RouterLink>
       </template>
 
@@ -209,7 +222,7 @@ watch(
 
       <template #rail>
         <article class="hero-spotlight">
-          <p class="hero-spotlight__kicker">优先事项</p>
+          <p class="hero-spotlight__kicker">{{ isPrivilegedActor ? '优先事项' : '我的最新申请' }}</p>
           <template v-if="spotlightRequest">
             <div class="hero-spotlight__headline">
               <strong class="data-id">{{ spotlightRequest.id }}</strong>
@@ -218,10 +231,10 @@ watch(
                 :class="{
                   'status-chip--warn': spotlightRequest.status === 'pending',
                   'status-chip--danger':
-                    spotlightRequest.status === 'rejected' || spotlightRequest.status === 'revoked',
+                    isClosedStatus(spotlightRequest.status) || isExpired(spotlightRequest),
                 }"
               >
-                {{ formatRequestStatusLabel(spotlightRequest.status) }}
+                {{ effectiveStatusLabel(spotlightRequest) }}
               </span>
             </div>
             <p class="hero-spotlight__context">
@@ -257,28 +270,46 @@ watch(
     <template v-else>
       <section class="requests-layout">
         <aside class="requests-layout__side">
-          <SurfaceCard kicker="审批策略" title="策略编辑台">
-
-            <div class="form-grid">
-              <label>
-                <span>批准策略</span>
-                <input v-model="approvalPolicy" type="text" />
-              </label>
-              <label>
-                <span>拒绝说明</span>
-                <input v-model="rejectionPolicy" type="text" />
-              </label>
-            </div>
-
-            <div class="policy-cards">
-              <div v-for="card in policyCards" :key="card.label" class="policy-cards__item">
-                <span>{{ card.label }}</span>
-                <strong>{{ card.value }}</strong>
+          <SurfaceCard
+            :kicker="isPrivilegedActor ? '审批策略' : '审批参考'"
+            :title="isPrivilegedActor ? '策略编辑台' : '审批口径（参考）'"
+          >
+            <template v-if="isPrivilegedActor">
+              <div class="form-grid">
+                <label>
+                  <span>批准策略</span>
+                  <input v-model="approvalPolicy" type="text" />
+                </label>
+                <label>
+                  <span>拒绝说明</span>
+                  <input v-model="rejectionPolicy" type="text" />
+                </label>
               </div>
-            </div>
+
+              <div class="policy-cards">
+                <div v-for="card in policyCards" :key="card.label" class="policy-cards__item">
+                  <span>{{ card.label }}</span>
+                  <strong>{{ card.value }}</strong>
+                </div>
+              </div>
+            </template>
+
+            <template v-else>
+              <p class="policy-readonly__note">了解审批方的标准口径，能让你的申请更容易通过。下面为只读参考，仅审批方可修改。</p>
+              <div class="policy-cards">
+                <div class="policy-cards__item">
+                  <span>批准口径</span>
+                  <strong>{{ approvalPolicy }}</strong>
+                </div>
+                <div class="policy-cards__item">
+                  <span>拒绝口径</span>
+                  <strong>{{ rejectionPolicy }}</strong>
+                </div>
+              </div>
+            </template>
           </SurfaceCard>
 
-          <SurfaceCard class="queue-card" kicker="待决队列" title="优先处理视图">
+          <SurfaceCard v-if="isPrivilegedActor" class="queue-card" kicker="待决队列" title="优先处理视图">
             <template #meta>
               <span class="status-chip status-chip--warn">{{ queuePreview.length }} 条待处理</span>
             </template>
@@ -300,7 +331,10 @@ watch(
         </aside>
 
         <div class="requests-layout__main">
-          <SurfaceCard kicker="列表" title="访问申请记录">
+          <SurfaceCard
+            :kicker="isPrivilegedActor ? '列表' : '我的申请'"
+            :title="isPrivilegedActor ? '访问申请记录' : '我的访问申请'"
+          >
             <template #meta>
               <span class="status-chip">{{ requestRows.length }} 条记录</span>
             </template>
@@ -321,10 +355,10 @@ watch(
                     class="status-chip"
                     :class="{
                       'status-chip--warn': row.status === 'pending',
-                      'status-chip--danger': row.status === 'rejected' || row.status === 'revoked',
+                      'status-chip--danger': isClosedStatus(row.status) || isExpired(row),
                     }"
                   >
-                    {{ formatRequestStatusLabel(row.status) }}
+                    {{ effectiveStatusLabel(row) }}
                   </span>
                 </div>
 
@@ -386,7 +420,7 @@ watch(
                   </div>
 
                   <div v-else-if="isPrivilegedActor && row.status === 'approved'" class="request-card__actions">
-                    <RouterLink class="request-card__link" :to="trainingLinkFor(row)">
+                    <RouterLink v-if="!isExpired(row)" class="request-card__link" :to="trainingLinkFor(row)">
                       带入训练页
                     </RouterLink>
                     <button
@@ -398,10 +432,26 @@ watch(
                       撤销访问
                     </button>
                   </div>
-                  <div v-else-if="!isPrivilegedActor && row.status === 'approved'" class="request-card__actions">
-                    <RouterLink class="request-card__link" :to="trainingLinkFor(row)">
+                  <div v-else-if="!isPrivilegedActor" class="request-card__actions">
+                    <RouterLink
+                      v-if="row.status === 'approved' && !isExpired(row)"
+                      class="request-card__link"
+                      :to="trainingLinkFor(row)"
+                    >
                       发起训练
                     </RouterLink>
+                    <span v-else-if="row.status === 'approved'" class="request-card__hint">
+                      授权已过期，可在「打开数据详情」处重新申请。
+                    </span>
+                    <span v-else-if="row.status === 'pending'" class="request-card__hint">
+                      已提交，等待归属机构审批。
+                    </span>
+                    <span v-else-if="row.status === 'rejected'" class="request-card__hint">
+                      未通过，可补充说明后重新申请。
+                    </span>
+                    <span v-else-if="row.status === 'revoked'" class="request-card__hint">
+                      授权已撤销，如需继续请重新申请。
+                    </span>
                   </div>
                 </div>
               </article>
@@ -621,6 +671,19 @@ watch(
 
 .policy-cards {
   margin-top: 14px;
+}
+
+/* Researcher read-only reference: explain these are the approver's standing terms */
+.policy-readonly__note {
+  margin: 0;
+  padding: var(--space-subpanel);
+  border-radius: var(--radius-subpanel);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--line-strong);
+  background: var(--bg-panel-soft);
+  color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
 }
 
 .policy-cards__item {
@@ -864,6 +927,16 @@ watch(
 .request-card__actions button:disabled {
   opacity: 0.58;
   cursor: progress;
+}
+
+/* Researcher status hint (pending / expired / rejected / revoked) — plain text, not an action */
+.request-card__hint {
+  align-self: center;
+  color: var(--text-muted);
+  font-size: var(--supporting-text-size);
+  line-height: var(--supporting-text-line-height);
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 1040px) {
