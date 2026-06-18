@@ -186,7 +186,16 @@ public class AccessRequestService {
     if ("destroyed".equalsIgnoreCase(dataset.getDestructionStatus())) {
       return false;
     }
-    if (actor.belongsTo(dataset.getOwnerOrganization())) {
+    // Platform admins read globally; owners/approvers of the owning org read
+    // their own governed data directly. Everyone else — researchers and any
+    // cross-org actor — must hold an approved, unexpired access request. A bare
+    // same-org string (e.g. on a self-registered researcher) must NOT grant a
+    // free pass, otherwise approval can be bypassed by picking the owner org.
+    if (actor.hasRole("admin")) {
+      return true;
+    }
+    if ((actor.hasRole("owner") || actor.hasRole("approver"))
+        && actor.belongsTo(dataset.getOwnerOrganization())) {
       return true;
     }
 
@@ -215,7 +224,14 @@ public class AccessRequestService {
   }
 
   private void ensureApprover(ActorContext actor, DatasetEntity dataset) {
-    boolean privilegedRole = actor.hasRole("owner") || actor.hasRole("admin") || actor.hasRole("approver");
+    // Platform admin is a global approver (mirrors the destruction flow), so a
+    // dataset whose owning org has no local approver — e.g. ds-205 / West China
+    // Research Lab — is still decidable. Otherwise the actor must be an
+    // owner/approver of the dataset's owning org.
+    if (actor.hasRole("admin")) {
+      return;
+    }
+    boolean privilegedRole = actor.hasRole("owner") || actor.hasRole("approver");
     if (!privilegedRole || !actor.belongsTo(dataset.getOwnerOrganization())) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Actor is not allowed to decide access requests.");
     }

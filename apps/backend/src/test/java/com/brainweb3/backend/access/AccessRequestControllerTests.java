@@ -170,6 +170,58 @@ class AccessRequestControllerTests {
   }
 
   @Test
+  void adminApprovesCrossOrgAccessRequest() throws Exception {
+    // ds-205 is owned by "West China Research Lab"; no seeded owner/approver
+    // belongs to that org, so only the platform admin can decide the request.
+    mockMvc.perform(post("/api/v1/access-requests")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                """
+                    {
+                      "datasetId": "ds-205",
+                      "purpose": "cross-org-analysis",
+                      "requestedDurationHours": 12,
+                      "reason": "Need West China data for analysis."
+                    }
+                    """
+            )
+            .header("Authorization", bearer(researcherToken)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id").value("ar-1"))
+        .andExpect(jsonPath("$.status").value("pending"));
+
+    // An owner from another org (Huaxi) still cannot decide a West China request.
+    mockMvc.perform(post("/api/v1/access-requests/ar-1/approve")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                """
+                    {
+                      "approvedDurationHours": 12,
+                      "policy": "cross-org-review"
+                    }
+                    """
+            )
+            .header("Authorization", bearer(ownerToken)))
+        .andExpect(status().isForbidden());
+
+    // The platform admin is a global approver and can decide it.
+    mockMvc.perform(post("/api/v1/access-requests/ar-1/approve")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                """
+                    {
+                      "approvedDurationHours": 12,
+                      "policy": "cross-org-review"
+                    }
+                    """
+            )
+            .header("Authorization", bearer(adminToken)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("approved"))
+        .andExpect(jsonPath("$.approverId").value("admin-01"));
+  }
+
+  @Test
   void filtersAccessRequestVisibilityByRole() throws Exception {
     mockMvc.perform(post("/api/v1/access-requests")
             .contentType(MediaType.APPLICATION_JSON)
